@@ -11,7 +11,7 @@ import SetPassword from "./pages/SetPassword";
 import Dashboard from "./pages/Dashboard";
 import Trainers from "./pages/Trainers";
 import TrainerDetail from "./pages/TrainerDetail";
-
+import Questionnaire from "./pages/Questionnaire";
 function LoadingScreen() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -104,6 +104,14 @@ export default function App() {
           element={
             <AppShell session={session} profile={profile} title="Trainer Detail">
               <TrainerDetail profile={profile} />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/questionnaire"
+          element={
+            <AppShell session={session} profile={profile} title="Skills Questionnaire">
+              <Questionnaire profile={profile} />
             </AppShell>
           }
         />
