@@ -42,12 +42,10 @@ function UnitCard({ unit, response, onChange }) {
           {expanded ? "▲ Hide" : "▼ Elements"}
         </button>
       </div>
-
       {/* Experience question */}
       <div className="px-5 pb-3">
         <p className="text-sm text-gray-600 leading-relaxed">{unit.question}</p>
       </div>
-
       {/* Expandable elements */}
       {expanded && (
         <div className="px-5 pb-4 border-t border-gray-100 pt-3">
@@ -62,21 +60,21 @@ function UnitCard({ unit, response, onChange }) {
           </div>
         </div>
       )}
-
       {/* Response options */}
       <div className="flex gap-2 px-5 py-3 border-t border-gray-100 bg-gray-50">
         <span className="text-xs text-gray-400 self-center mr-1 flex-shrink-0">Your response:</span>
         {RESPONSE_OPTIONS.map((opt) => (
           <button
             key={opt.value}
-            onClick={() => onChange(unit.code, opt.value)}
+            onClick={() => onChange(unit.code, opt.value === response ? null : opt.value)}
             className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
             style={response === opt.value ? { backgroundColor: opt.bg, color: opt.color, borderColor: opt.border } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
           >
+            {response === opt.value ? "✓ " : ""}
             {opt.label}
           </button>
         ))}
-      </div>
+      </div>{" "}
     </div>
   );
 }
