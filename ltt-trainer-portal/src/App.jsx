@@ -13,6 +13,8 @@ import Trainers from "./pages/Trainers";
 import TrainerDetail from "./pages/TrainerDetail";
 import Questionnaire from "./pages/Questionnaire";
 import Profile from "./pages/Profile";
+import CredentialRegister from "./pages/CredentialRegister";
+import EvidenceVault from "./pages/EvidenceVault";
 
 function LoadingScreen() {
   return (
@@ -122,6 +124,22 @@ export default function App() {
           element={
             <AppShell session={session} profile={profile} title="Trainer Profile (AF3.21)">
               <Profile profile={profile} />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <AppShell session={session} profile={profile} title="Credential Register">
+              <CredentialRegister />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/evidence"
+          element={
+            <AppShell session={session} profile={profile} title="Evidence Vault">
+              <EvidenceVault profile={profile} />
             </AppShell>
           }
         />
