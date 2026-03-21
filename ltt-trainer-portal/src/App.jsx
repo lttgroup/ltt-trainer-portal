@@ -9,6 +9,7 @@ import Shell from "./components/layout/Shell";
 import Login from "./pages/Login";
 import SetPassword from "./pages/SetPassword";
 import Dashboard from "./pages/Dashboard";
+import Trainers from "./pages/Trainers";
 
 function LoadingScreen() {
   return (
@@ -80,7 +81,23 @@ export default function App() {
             </AppShell>
           }
         />
+        <Route
+          path="/trainers"
+          element={
+            <AppShell session={session} profile={profile} title="Trainers">
+              <Trainers />
+            </AppShell>
+          }
+        />
 
+        <Route
+          path="/trainers/invite"
+          element={
+            <AppShell session={session} profile={profile} title="Trainers">
+              <Trainers showInviteOnLoad={true} />
+            </AppShell>
+          }
+        />
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
