@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { UNITS, INDUSTRIES } from "../lib/units";
@@ -86,7 +86,6 @@ function Step1({ onContinue }) {
         })}
       </div>
 
-      {/* Summary */}
       {selected.size > 0 && (
         <div className="rounded-xl p-4 mb-5 text-sm" style={{ backgroundColor: "#f0f5ff", border: "1px solid #c7d9f5" }}>
           <p style={{ color: "#1c5ea8" }}>
@@ -106,17 +105,9 @@ function Step1({ onContinue }) {
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-gray-400">Select at least one industry to continue</p>
-        <button
-          onClick={() => {
-            onContinue([...selected]);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-          disabled={selected.size === 0}
-          className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors"
-          style={{ backgroundColor: selected.size === 0 ? "#9ca3af" : "#1c5ea8" }}
-        >
+        <button onClick={() => onContinue([...selected])} disabled={selected.size === 0} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: selected.size === 0 ? "#9ca3af" : "#1c5ea8" }}>
           Continue →
-        </button>{" "}
+        </button>
       </div>
     </div>
   );
@@ -147,13 +138,11 @@ function Step2({ relevantIndustries, onConfirm, onBack }) {
         </p>
       </div>
 
-      {/* Unselected industries and their units */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
         {unselectedIndustries.map((ind, idx) => {
           const units = UNITS.filter((u) => u.industry === ind.code);
           return (
             <div key={ind.code} className={idx < unselectedIndustries.length - 1 ? "mb-6 pb-6 border-b border-gray-100" : ""}>
-              {/* Industry header */}
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-xs font-bold px-2.5 py-1 rounded font-mono" style={{ backgroundColor: "#f0f4f8", color: "#1c5ea8" }}>
                   {ind.code}
@@ -163,18 +152,9 @@ function Step2({ relevantIndustries, onConfirm, onBack }) {
                   {units.length} unit{units.length !== 1 ? "s" : ""} → marked No
                 </span>
               </div>
-
-              {/* Unit cards grid */}
               <div className="grid grid-cols-3 gap-2">
                 {units.map((unit) => (
-                  <div
-                    key={unit.code}
-                    className="rounded-lg p-2.5"
-                    style={{
-                      backgroundColor: "#fdeaea",
-                      border: "0.5px solid #fca5a5",
-                    }}
-                  >
+                  <div key={unit.code} className="rounded-lg p-2.5" style={{ backgroundColor: "#fdeaea", border: "0.5px solid #fca5a5" }}>
                     <div className="text-xs font-bold font-mono mb-1" style={{ color: "#c93535" }}>
                       {unit.code}
                     </div>
@@ -188,6 +168,7 @@ function Step2({ relevantIndustries, onConfirm, onBack }) {
           );
         })}
       </div>
+
       {/* Warning */}
       <div className="rounded-xl p-4 mb-4" style={{ backgroundColor: "#fff8ed", border: "1px solid #fcd34d" }}>
         <p className="text-sm font-semibold text-amber-800 mb-1">⚠ Please review carefully before confirming</p>
@@ -198,6 +179,7 @@ function Step2({ relevantIndustries, onConfirm, onBack }) {
           ← Go back and review my industry selections
         </button>
       </div>
+
       {/* Confirmation checkbox */}
       <div className="rounded-xl p-4 mb-5" style={{ backgroundColor: "#fff8ed", border: "1px solid #fcd34d" }}>
         <label className="flex items-start gap-3 cursor-pointer">
@@ -228,7 +210,6 @@ function UnitCard({ unit, response, onChange }) {
 
   return (
     <div className="bg-white rounded-xl overflow-hidden mb-3 border border-gray-200">
-      {/* Header */}
       <div className="flex items-center gap-3 px-5 py-3">
         <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
           {unit.code}
@@ -248,12 +229,10 @@ function UnitCard({ unit, response, onChange }) {
         )}
       </div>
 
-      {/* Experience question */}
       <div className="px-5 pb-2">
         <p className="text-sm text-gray-600 leading-relaxed">{unit.question}</p>
       </div>
 
-      {/* Expandable elements */}
       <div className="px-5 pb-2">
         <button onClick={() => setExpanded(!expanded)} className="text-xs font-medium" style={{ color: "#1c5ea8" }}>
           {expanded ? "▲ Hide unit elements" : "▼ View unit elements"}
@@ -270,9 +249,7 @@ function UnitCard({ unit, response, onChange }) {
         )}
       </div>
 
-      {/* Response options */}
       <div className="px-5 py-3 border-t border-gray-100" style={{ backgroundColor: "#f9fafb" }}>
-        {/* Yes / No */}
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs text-gray-400 mr-1 flex-shrink-0">Workplace experience:</span>
           {RESPONSE_OPTIONS.map((opt) => (
@@ -293,7 +270,6 @@ function UnitCard({ unit, response, onChange }) {
           ))}
         </div>
 
-        {/* I hold this unit */}
         <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
           <span className="text-xs text-gray-400 mr-1 flex-shrink-0">Qualification held:</span>
           <button
@@ -369,7 +345,6 @@ function Step3({ relevantIndustries, responses, onChange, onSave, onSubmit, savi
     const unanswered = relevantUnits.filter((u) => !responses[u.code]?.experience);
     if (unanswered.length > 0) {
       setShowIncomplete(true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     onSubmit();
@@ -379,7 +354,6 @@ function Step3({ relevantIndustries, responses, onChange, onSave, onSubmit, savi
 
   return (
     <div>
-      {/* Progress header */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
         <div className="flex items-center justify-between mb-3">
           <div>
@@ -407,7 +381,6 @@ function Step3({ relevantIndustries, responses, onChange, onSave, onSubmit, savi
         </p>
       </div>
 
-      {/* Incomplete warning */}
       {showIncomplete && (
         <div className="rounded-xl px-4 py-3 mb-5" style={{ backgroundColor: "#fff8ed", border: "1px solid #fcd34d" }}>
           <p className="text-sm font-semibold text-amber-800 mb-1">
@@ -422,12 +395,10 @@ function Step3({ relevantIndustries, responses, onChange, onSave, onSubmit, savi
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5">{error}</div>}
 
-      {/* Industry sections */}
       {orderedIndustries.map((industry) => (
         <IndustrySection key={industry.code} industry={industry} units={UNITS.filter((u) => u.industry === industry.code)} responses={responses} onChange={onChange} />
       ))}
 
-      {/* Action buttons */}
       <div className="flex items-center justify-between pt-2 pb-8">
         <button onClick={onSave} disabled={saving} className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors">
           {saving ? "Saving..." : saved ? "✓ Saved" : "Save progress"}
@@ -443,6 +414,7 @@ function Step3({ relevantIndustries, responses, onChange, onSave, onSubmit, savi
 // ─── MAIN ───
 export default function Questionnaire({ profile }) {
   const navigate = useNavigate();
+  const topRef = useRef(null);
   const [step, setStep] = useState(1);
   const [relevantIndustries, setRelevantIndustries] = useState([]);
   const [trainerId, setTrainerId] = useState(null);
@@ -481,8 +453,6 @@ export default function Questionnaire({ profile }) {
       });
       setResponses(mapped);
 
-      // Work out which industries had yes/hold responses
-      // to pre-populate relevant industries on return visit
       const answeredIndustries = new Set(
         existing
           .filter((r) => r.response === "yes")
@@ -498,6 +468,10 @@ export default function Questionnaire({ profile }) {
     }
 
     setLoading(false);
+  };
+
+  const scrollToTop = () => {
+    topRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleResponse = (unitCode, value) => {
@@ -556,8 +530,9 @@ export default function Questionnaire({ profile }) {
     });
     setResponses(updated);
     setStep(3);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToTop();
   };
+
   const handleSubmit = async () => {
     await handleSave();
     navigate("/profile");
@@ -573,16 +548,28 @@ export default function Questionnaire({ profile }) {
 
   return (
     <div>
+      <div ref={topRef} />
+
       {step === 1 && (
         <Step1
           onContinue={(selected) => {
             setRelevantIndustries(selected);
             setStep(2);
+            scrollToTop();
           }}
         />
       )}
 
-      {step === 2 && <Step2 relevantIndustries={relevantIndustries} onConfirm={handleConfirmStep2} onBack={() => setStep(1)} />}
+      {step === 2 && (
+        <Step2
+          relevantIndustries={relevantIndustries}
+          onConfirm={handleConfirmStep2}
+          onBack={() => {
+            setStep(1);
+            scrollToTop();
+          }}
+        />
+      )}
 
       {step === 3 && <Step3 relevantIndustries={relevantIndustries} responses={responses} onChange={handleResponse} onSave={handleSave} onSubmit={handleSubmit} saving={saving} saved={saved} error={error} />}
     </div>
