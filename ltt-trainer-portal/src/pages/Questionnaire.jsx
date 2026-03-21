@@ -192,7 +192,7 @@ export default function Questionnaire({ profile }) {
   }
 
   return (
-    <div className="max-w-5xl">
+    <div>
       {/* Progress header */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
         <div className="flex items-center justify-between mb-3">
