@@ -12,6 +12,8 @@ import Dashboard from "./pages/Dashboard";
 import Trainers from "./pages/Trainers";
 import TrainerDetail from "./pages/TrainerDetail";
 import Questionnaire from "./pages/Questionnaire";
+import Profile from "./pages/Profile";
+
 function LoadingScreen() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -112,6 +114,14 @@ export default function App() {
           element={
             <AppShell session={session} profile={profile} title="Skills Questionnaire">
               <Questionnaire profile={profile} />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <AppShell session={session} profile={profile} title="Trainer Profile (AF3.21)">
+              <Profile profile={profile} />
             </AppShell>
           }
         />
