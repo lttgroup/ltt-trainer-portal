@@ -15,6 +15,7 @@ import Questionnaire from "./pages/Questionnaire";
 import Profile from "./pages/Profile";
 import CredentialRegister from "./pages/CredentialRegister";
 import EvidenceVault from "./pages/EvidenceVault";
+import Experience from "./pages/Experience";
 
 function LoadingScreen() {
   return (
@@ -76,7 +77,6 @@ export default function App() {
         {/* Public */}
         <Route path="/login" element={session ? <Navigate to="/dashboard" replace /> : <Login />} />
         <Route path="/set-password" element={<SetPassword />} />
-
         {/* Protected */}
         <Route
           path="/dashboard"
@@ -94,7 +94,6 @@ export default function App() {
             </AppShell>
           }
         />
-
         <Route
           path="/trainers/invite"
           element={
@@ -126,7 +125,7 @@ export default function App() {
               <Profile profile={profile} />
             </AppShell>
           }
-        />
+        />{" "}
         <Route
           path="/register"
           element={
@@ -140,6 +139,14 @@ export default function App() {
           element={
             <AppShell session={session} profile={profile} title="Evidence Vault">
               <EvidenceVault profile={profile} />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/experience"
+          element={
+            <AppShell session={session} profile={profile} title="Industry Experience">
+              <Experience profile={profile} />
             </AppShell>
           }
         />

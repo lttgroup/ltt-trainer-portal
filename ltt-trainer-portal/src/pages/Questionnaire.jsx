@@ -210,6 +210,7 @@ function UnitCard({ unit, response, onChange }) {
 
   return (
     <div className="bg-white rounded-xl overflow-hidden mb-3 border border-gray-200">
+      {/* Header */}
       <div className="flex items-center gap-3 px-5 py-3">
         <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
           {unit.code}
@@ -229,10 +230,12 @@ function UnitCard({ unit, response, onChange }) {
         )}
       </div>
 
+      {/* Experience question */}
       <div className="px-5 pb-2">
         <p className="text-sm text-gray-600 leading-relaxed">{unit.question}</p>
       </div>
 
+      {/* Expandable elements */}
       <div className="px-5 pb-2">
         <button onClick={() => setExpanded(!expanded)} className="text-xs font-medium" style={{ color: "#1c5ea8" }}>
           {expanded ? "▲ Hide unit elements" : "▼ View unit elements"}
@@ -249,7 +252,9 @@ function UnitCard({ unit, response, onChange }) {
         )}
       </div>
 
+      {/* Response options */}
       <div className="px-5 py-3 border-t border-gray-100" style={{ backgroundColor: "#f9fafb" }}>
+        {/* Yes / No */}
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs text-gray-400 mr-1 flex-shrink-0">Workplace experience:</span>
           {RESPONSE_OPTIONS.map((opt) => (
@@ -270,6 +275,7 @@ function UnitCard({ unit, response, onChange }) {
           ))}
         </div>
 
+        {/* I hold this unit */}
         <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
           <span className="text-xs text-gray-400 mr-1 flex-shrink-0">Qualification held:</span>
           <button
@@ -354,6 +360,7 @@ function Step3({ relevantIndustries, responses, onChange, onSave, onSubmit, savi
 
   return (
     <div>
+      {/* Progress header */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
         <div className="flex items-center justify-between mb-3">
           <div>
@@ -399,12 +406,13 @@ function Step3({ relevantIndustries, responses, onChange, onSave, onSubmit, savi
         <IndustrySection key={industry.code} industry={industry} units={UNITS.filter((u) => u.industry === industry.code)} responses={responses} onChange={onChange} />
       ))}
 
+      {/* Action buttons */}
       <div className="flex items-center justify-between pt-2 pb-8">
         <button onClick={onSave} disabled={saving} className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors">
           {saving ? "Saving..." : saved ? "✓ Saved" : "Save progress"}
         </button>
         <button onClick={handleSubmitClick} disabled={saving} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: pct === 100 ? "#32ba9a" : "#1c5ea8" }}>
-          {pct === 100 ? "Submit & continue to profile →" : `Submit & continue → (${totalCount - answeredCount} remaining)`}
+          {pct === 100 ? "Submit & continue to Industry Experience →" : `Submit & continue → (${totalCount - answeredCount} remaining)`}
         </button>
       </div>
     </div>
@@ -535,7 +543,7 @@ export default function Questionnaire({ profile }) {
 
   const handleSubmit = async () => {
     await handleSave();
-    navigate("/profile");
+    navigate("/experience");
   };
 
   if (loading) {

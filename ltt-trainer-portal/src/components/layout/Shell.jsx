@@ -14,8 +14,9 @@ const navItems = [
   {
     section: "Onboarding",
     items: [
-      { to: "/questionnaire", label: "Skills Questionnaire", icon: "📋" },
       { to: "/profile", label: "Trainer Profile (AF3.21)", icon: "📄" },
+      { to: "/questionnaire", label: "Skills Questionnaire", icon: "📋" },
+      { to: "/experience", label: "Industry Experience", icon: "🔬" },
     ],
   },
   {
