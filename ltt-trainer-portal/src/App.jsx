@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import SetPassword from "./pages/SetPassword";
 import Dashboard from "./pages/Dashboard";
 import Trainers from "./pages/Trainers";
+import TrainerDetail from "./pages/TrainerDetail";
 
 function LoadingScreen() {
   return (
@@ -95,6 +96,14 @@ export default function App() {
           element={
             <AppShell session={session} profile={profile} title="Trainers">
               <Trainers showInviteOnLoad={true} />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/trainers/:id"
+          element={
+            <AppShell session={session} profile={profile} title="Trainer Detail">
+              <TrainerDetail profile={profile} />
             </AppShell>
           }
         />

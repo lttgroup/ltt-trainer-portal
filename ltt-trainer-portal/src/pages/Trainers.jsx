@@ -196,6 +196,7 @@ export default function Trainers() {
                   : "?";
                 return (
                   <tr key={trainer.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => navigate(`/trainers/${trainer.id}`)}>
+                    {" "}
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
@@ -224,7 +225,7 @@ export default function Trainers() {
                         }}
                       >
                         View
-                      </button>
+                      </button>{" "}
                     </td>
                   </tr>
                 );
