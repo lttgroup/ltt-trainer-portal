@@ -180,7 +180,16 @@ function Step2({ relevantIndustries, onConfirm, onBack }) {
           );
         })}
       </div>
-
+      {/* Warning */}
+      <div className="rounded-xl p-4 mb-4" style={{ backgroundColor: "#fff8ed", border: "1px solid #fcd34d" }}>
+        <p className="text-sm font-semibold text-amber-800 mb-1">⚠ Please review carefully before confirming</p>
+        <p className="text-xs text-amber-700 mb-2">
+          If you have <strong>any</strong> experience in an industry listed above — even partial experience in just one unit — you should go back and select that industry. All units within unselected industries will be permanently recorded as No.
+        </p>
+        <button onClick={onBack} className="text-xs font-semibold underline" style={{ color: "#b45309" }}>
+          ← Go back and review my industry selections
+        </button>
+      </div>
       {/* Confirmation checkbox */}
       <div className="rounded-xl p-4 mb-5" style={{ backgroundColor: "#fff8ed", border: "1px solid #fcd34d" }}>
         <label className="flex items-start gap-3 cursor-pointer">
