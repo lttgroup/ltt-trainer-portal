@@ -157,7 +157,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
   const statusStyle = STATUS_STYLES[trainer.compliance_status] || STATUS_STYLES["Incomplete"];
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-5xl">
       {/* Back button */}
       <button onClick={() => navigate("/trainers")} className="flex items-center gap-2 text-sm mb-5 transition-colors" style={{ color: "#1c5ea8" }}>
         ← Back to trainers

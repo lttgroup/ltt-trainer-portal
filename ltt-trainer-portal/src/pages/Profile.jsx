@@ -250,7 +250,7 @@ export default function Profile({ profile }) {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-5xl">
       {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5">{error}</div>}
 
       {/* Section 1 */}
