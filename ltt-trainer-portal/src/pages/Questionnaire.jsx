@@ -61,19 +61,54 @@ function UnitCard({ unit, response, onChange }) {
         </div>
       )}
       {/* Response options */}
-      <div className="flex gap-2 px-5 py-3 border-t border-gray-100 bg-gray-50">
-        <span className="text-xs text-gray-400 self-center mr-1 flex-shrink-0">Your response:</span>
-        {RESPONSE_OPTIONS.map((opt) => (
+      <div className="px-5 py-3 border-t border-gray-100 bg-gray-50">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xs text-gray-400 self-center mr-1 flex-shrink-0">Workplace experience:</span>
+          {[
+            { value: "yes", label: "Yes", bg: "#e6f9f4", color: "#0f7a5a", border: "#32ba9a" },
+            { value: "no", label: "No", bg: "#fdeaea", color: "#c93535", border: "#c93535" },
+          ].map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => {
+                const currentExp = response?.experience;
+                onChange(unit.code, {
+                  experience: currentExp === opt.value ? null : opt.value,
+                  holds: response?.holds || false,
+                });
+              }}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
+              style={response?.experience === opt.value ? { backgroundColor: opt.bg, color: opt.color, borderColor: opt.border } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
+            >
+              {response?.experience === opt.value ? "✓ " : ""}
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2 pt-1 border-t border-gray-200">
+          <span className="text-xs text-gray-400 self-center mr-1 flex-shrink-0">Qualification held:</span>
           <button
-            key={opt.value}
-            onClick={() => onChange(unit.code, opt.value === response ? null : opt.value)}
+            onClick={() => {
+              if (!response?.experience) return;
+              onChange(unit.code, {
+                experience: response.experience,
+                holds: !response?.holds,
+              });
+            }}
             className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
-            style={response === opt.value ? { backgroundColor: opt.bg, color: opt.color, borderColor: opt.border } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
+            style={
+              response?.holds
+                ? { backgroundColor: "#e6f0ff", color: "#1c5ea8", borderColor: "#1c5ea8" }
+                : !response?.experience
+                  ? { backgroundColor: "#f9fafb", color: "#d1d5db", borderColor: "#e5e7eb", cursor: "not-allowed" }
+                  : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }
+            }
           >
-            {response === opt.value ? "✓ " : ""}
-            {opt.label}
+            {response?.holds ? "✓ " : ""}I hold this unit
           </button>
-        ))}
+          {!response?.experience && <span className="text-xs text-gray-400 italic">Select Yes or No first</span>}
+        </div>
       </div>{" "}
     </div>
   );
@@ -122,18 +157,19 @@ export default function Questionnaire({ profile }) {
     if (existing) {
       const mapped = {};
       existing.forEach((r) => {
-        mapped[r.unit_code] = r.response;
+        mapped[r.unit_code] = {
+          experience: r.response,
+          holds: r.holds_unit || false,
+        };
       });
       setResponses(mapped);
     }
-
     setLoading(false);
   };
   const handleResponse = (unitCode, value) => {
     setResponses((prev) => ({ ...prev, [unitCode]: value }));
     setSaved(false);
   };
-
   const handleSave = async () => {
     if (!trainerId) {
       setError("No trainer record found. Please contact your compliance officer.");
@@ -143,17 +179,22 @@ export default function Questionnaire({ profile }) {
     setSaving(true);
     setError("");
 
-    const upserts = Object.entries(responses).map(([unitCode, response]) => {
-      const unit = UNITS.find((u) => u.code === unitCode);
-      return {
-        trainer_id: trainerId,
-        unit_code: unitCode,
-        unit_title: unit?.title || "",
-        industry: unit?.industry || "",
-        response,
-      };
-    });
-
+    const upserts = Object.entries(responses)
+      .map(([unitCode, response]) => {
+        const unit = UNITS.find((u) => u.code === unitCode);
+        // Handle both old string format and new object format
+        const experience = typeof response === "object" ? response?.experience : response;
+        const holds = typeof response === "object" ? response?.holds : false;
+        return {
+          trainer_id: trainerId,
+          unit_code: unitCode,
+          unit_title: unit?.title || "",
+          industry: unit?.industry || "",
+          response: experience || "no",
+          holds_unit: holds || false,
+        };
+      })
+      .filter((u) => u.response);
     const { error: saveError } = await supabase.from("questionnaire_responses").upsert(upserts, { onConflict: "trainer_id,unit_code" });
 
     if (saveError) {
@@ -169,7 +210,7 @@ export default function Questionnaire({ profile }) {
     navigate("/profile");
   };
 
-  const completedCount = Object.keys(responses).length;
+  const completedCount = Object.values(responses).filter((r) => (typeof r === "object" ? r?.experience : r)).length;
   const totalCount = UNITS.length;
   const pct = Math.round((completedCount / totalCount) * 100);
 
