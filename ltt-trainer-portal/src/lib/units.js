@@ -5,7 +5,7 @@ export const UNITS = [
     title: "Comply with Quality Assurance and HACCP requirements",
     industry: "AMP",
     industryName: "Australian Meat Processing",
-    desc: "Apply QA procedures and Hazard Analysis and Critical Control Points requirements in a meat establishment.",
+    question: "Have you applied Quality Assurance (QA) procedures and Hazard Analysis and Critical Control Points (HACCP) requirements in a meat establishment?",
     elements: ["Identify hazards and control points", "Identify elements of the QA system", "Follow requirements of a HACCP-based QA system", "Inspect own work"],
   },
 
@@ -15,7 +15,7 @@ export const UNITS = [
     title: "Apply communication skills",
     industry: "BSB",
     industryName: "Business Services",
-    desc: "Apply basic communication skills in the workplace including identifying, gathering and conveying information and completing assigned written information.",
+    question: "Have you applied basic communication skills in the workplace, including identifying, gathering and conveying information along with completing assigned written information?",
     elements: ["Identify workplace communication procedures", "Communicate in the workplace", "Draft written information"],
   },
   {
@@ -23,7 +23,7 @@ export const UNITS = [
     title: "Lead effective workplace relationships",
     industry: "BSB",
     industryName: "Business Services",
-    desc: "Use leadership to promote team cohesion.",
+    question: "Have you used leadership to promote team cohesion? This includes motivating, mentoring, coaching and developing the team and forming the bridge between the team and management.",
     elements: ["Prepare to lead workplace relationships", "Lead workplace relationships", "Review leadership"],
   },
   {
@@ -31,7 +31,7 @@ export const UNITS = [
     title: "Lead team effectiveness",
     industry: "BSB",
     industryName: "Business Services",
-    desc: "Lead the performance of a team and develop team cohesion.",
+    question: "Have you led the performance of a team and developed team cohesion?",
     elements: ["Plan team outcomes", "Promote team cohesion", "Supervise team performance", "Liaise with management"],
   },
   {
@@ -39,7 +39,7 @@ export const UNITS = [
     title: "Interpret and apply medical terminology appropriately",
     industry: "BSB",
     industryName: "Business Services",
-    desc: "Understand and respond to instructions and communicate with a range of internal and external clients using appropriate medical terminology.",
+    question: "Have you understood and responded to instructions, carried out routine tasks and communicated with a range of internal/external clients in a medical environment, using appropriate medical terminology?",
     elements: ["Respond appropriately to instructions containing medical terminology", "Carry out routine tasks", "Use appropriate medical terminology in oral and written communication"],
   },
   {
@@ -47,16 +47,23 @@ export const UNITS = [
     title: "Deliver a service to customers",
     industry: "BSB",
     industryName: "Business Services",
-    desc: "Deliver aspects of customer service at an introductory level including creating relationships, identifying needs, delivering services and processing feedback.",
+    question: "Have you delivered all aspects of customer service at an introductory level? This includes creating a relationship with customers, identifying their needs, delivering services or products, and processing customer feedback.",
     elements: ["Establish contact with customers", "Identify customer needs", "Provide service to customers", "Process customer feedback"],
   },
-  { code: "BSBOPS305", title: "Process customer complaints", industry: "BSB", industryName: "Business Services", desc: "Handle complaints from customers.", elements: ["Receive complaints", "Process complaints", "Resolve complaints"] },
+  {
+    code: "BSBOPS305",
+    title: "Process customer complaints",
+    industry: "BSB",
+    industryName: "Business Services",
+    question: "Have you handled complaints from customers?",
+    elements: ["Receive complaints", "Process complaints", "Resolve complaints"],
+  },
   {
     code: "BSBTEC201",
     title: "Use business software applications",
     industry: "BSB",
     industryName: "Business Services",
-    desc: "Select and use software and organise electronic information and data.",
+    question: "Have you selected and used computer software and organised electronic information and data?",
     elements: ["Select and use software applications", "Create and use simple spreadsheets", "Organise electronic data"],
   },
 
@@ -66,7 +73,7 @@ export const UNITS = [
     title: "Respond effectively to behaviours of concern",
     industry: "CHC",
     industryName: "Community Services",
-    desc: "Respond effectively to behaviours of concern in a community services context.",
+    question: "Have you responded effectively to behaviours of concern in a community services context, including identifying, assessing and implementing a response?",
     elements: ["Identify and assess behaviours of concern", "Plan and implement response", "Evaluate response and report"],
   },
   {
@@ -74,7 +81,7 @@ export const UNITS = [
     title: "Visit and support people in their homes",
     industry: "CHC",
     industryName: "Community Services",
-    desc: "Make visits to and support people in their homes in a community services setting.",
+    question: "Have you visited and supported people in their homes in a community services setting?",
     elements: ["Prepare for visit", "Conduct visit", "Follow up on visit"],
   },
   {
@@ -82,7 +89,7 @@ export const UNITS = [
     title: "Provide first point of contact",
     industry: "CHC",
     industryName: "Community Services",
-    desc: "Greet and observe people and provide initial information and referrals in a community services context.",
+    question: "Have you greeted clients and exchanged routine information, to prioritise the individual's needs, and to respond to immediate needs?",
     elements: ["Greet and observe people", "Identify and clarify needs", "Provide information and referral"],
   },
   {
@@ -90,7 +97,7 @@ export const UNITS = [
     title: "Communicate and work in health or community services",
     industry: "CHC",
     industryName: "Community Services",
-    desc: "Communicate effectively with people accessing health or community services.",
+    question: "Have you communicated effectively with clients, colleagues, management and other industry providers?",
     elements: ["Communicate with people", "Collaborate with colleagues", "Address communication challenges"],
   },
   {
@@ -98,7 +105,7 @@ export const UNITS = [
     title: "Work with diverse people",
     industry: "CHC",
     industryName: "Community Services",
-    desc: "Identify and work with diverse people in a community services context.",
+    question: "Have you worked respectfully with people from diverse social and cultural groups and situations, including Aboriginal and/or Torres Strait Islander people?",
     elements: ["Reflect on own perspectives", "Appreciate diversity", "Communicate with people from diverse backgrounds", "Promote understanding"],
   },
   {
@@ -106,7 +113,7 @@ export const UNITS = [
     title: "Promote Aboriginal and/or Torres Strait Islander cultural safety",
     industry: "CHC",
     industryName: "Community Services",
-    desc: "Identify and promote Aboriginal and/or Torres Strait Islander cultural safety in a community services context.",
+    question: "Have you identified and promoted Aboriginal and/or Torres Strait Islander cultural safety in a community services context?",
     elements: ["Identify cultural safety issues", "Model culturally safe practices", "Develop strategies for cultural safety"],
   },
   {
@@ -114,7 +121,7 @@ export const UNITS = [
     title: "Engage respectfully with young people",
     industry: "CHC",
     industryName: "Community Services",
-    desc: "Communicate effectively and respectfully with young people in a community services context.",
+    question: "Have you communicated effectively and respectfully with young people in a community services context?",
     elements: ["Communicate with young people", "Establish relationships", "Respond to concerns"],
   },
 
@@ -124,7 +131,7 @@ export const UNITS = [
     title: "Perform microbiological tests",
     industry: "FBP",
     industryName: "Food, Beverage & Pharmaceutical",
-    desc: "Perform microbiological tests in a food science laboratory.",
+    question: "Have you performed on-site microbiological procedures in the food industry? This includes monitoring the microbiology of food and food processing operations.",
     elements: ["Prepare for microbiological testing", "Conduct microbiological tests", "Interpret and report results"],
   },
   {
@@ -132,7 +139,7 @@ export const UNITS = [
     title: "Examine and present food microbiology test results",
     industry: "FBP",
     industryName: "Food, Beverage & Pharmaceutical",
-    desc: "Use and apply terms and techniques in food microbiology and examine and present test results.",
+    question: "Have you examined biochemical substances and reactions and applied knowledge to food product development and processing?",
     elements: ["Use microbiological terms and techniques", "Examine test results", "Present and report results"],
   },
   {
@@ -140,7 +147,7 @@ export const UNITS = [
     title: "Participate in a food safety program",
     industry: "FBP",
     industryName: "Food, Beverage & Pharmaceutical",
-    desc: "Participate in and support a food safety program in a food processing or food service environment.",
+    question: "Have you participated in the development and review of a hazard analysis critical control point (HACCP)-based food safety program?",
     elements: ["Prepare to participate in food safety program", "Contribute to implementation", "Monitor food safety practices"],
   },
   {
@@ -148,7 +155,7 @@ export const UNITS = [
     title: "Provide a food safety program service",
     industry: "FBP",
     industryName: "Food, Beverage & Pharmaceutical",
-    desc: "Provide a food safety program service to clients in a food processing environment.",
+    question: "Have you provided a leadership role in supporting day-to-day implementation of the food safety (including food allergen management) and quality programs?",
     elements: ["Prepare to provide service", "Assess food safety needs", "Provide food safety advice"],
   },
   {
@@ -156,7 +163,7 @@ export const UNITS = [
     title: "Maintain and implement a food safety plan",
     industry: "FBP",
     industryName: "Food, Beverage & Pharmaceutical",
-    desc: "Maintain and implement an existing food safety plan in a food processing environment.",
+    question: "Have you maintained and implemented a hazard analysis critical control point (HACCP) based food safety plan? This includes the ability to monitor the food safety plan.",
     elements: ["Maintain existing food safety plan", "Implement food safety plan", "Monitor and review plan"],
   },
   {
@@ -164,7 +171,7 @@ export const UNITS = [
     title: "Develop a food safety program",
     industry: "FBP",
     industryName: "Food, Beverage & Pharmaceutical",
-    desc: "Develop a food safety program using HACCP principles for a food processing environment.",
+    question: "Have you developed a hazard analysis critical control point (HACCP)-based food safety plan and overseen its implementation and monitoring?",
     elements: ["Describe the product and its distribution", "Develop a food safety program", "Validate and review program"],
   },
   {
@@ -172,7 +179,7 @@ export const UNITS = [
     title: "Perform sugar-related testing",
     industry: "FBP",
     industryName: "Food, Beverage & Pharmaceutical",
-    desc: "Perform sugar-related testing in a food or pharmaceutical laboratory.",
+    question: "Have you performed standard tests on cane samples for routine factory control?",
     elements: ["Prepare for testing", "Conduct sugar tests", "Record and report results"],
   },
   {
@@ -180,7 +187,7 @@ export const UNITS = [
     title: "Perform tests on sugar and associated products",
     industry: "FBP",
     industryName: "Food, Beverage & Pharmaceutical",
-    desc: "Perform tests on sugar and associated products in a food processing environment.",
+    question: "Have you performed tests for factory control?",
     elements: ["Prepare samples", "Conduct tests", "Interpret and report results"],
   },
   {
@@ -188,7 +195,7 @@ export const UNITS = [
     title: "Identify the physical and chemical properties of food",
     industry: "FBP",
     industryName: "Food, Beverage & Pharmaceutical",
-    desc: "Apply common physical and chemical properties of food in a food technology context.",
+    question: "Have you identified the physical and chemical properties of materials, foods and related products within a production environment?",
     elements: ["Identify physical properties", "Identify chemical properties", "Apply knowledge to food technology"],
   },
 
@@ -198,7 +205,7 @@ export const UNITS = [
     title: "Recognise healthy body systems",
     industry: "HLT",
     industryName: "Health",
-    desc: "Recognise healthy body systems and their interrelationships in a health services context.",
+    question: "Have you worked with basic information about the human body and recognised and promoted ways to maintain healthy functioning of the body?",
     elements: ["Work with information about healthy body systems", "Recognise body systems and how they work", "Identify interrelationships between body systems"],
   },
   {
@@ -206,7 +213,7 @@ export const UNITS = [
     title: "Provide cardiopulmonary resuscitation",
     industry: "HLT",
     industryName: "Health",
-    desc: "Perform CPR in line with the Australian Resuscitation Council guidelines.",
+    question: "Have you performed cardiopulmonary resuscitation (CPR) in line with the Australian Resuscitation Council (ARC) guidelines?",
     elements: ["Respond to an emergency situation", "Perform CPR", "Communicate details of the incident"],
   },
   {
@@ -214,7 +221,7 @@ export const UNITS = [
     title: "Prepare and conduct an ECG",
     industry: "HLT",
     industryName: "Health",
-    desc: "Prepare the patient and conduct an ECG in a clinical setting.",
+    question: "Have you prepared for and conducted electrocardiography (ECG) procedures, producing traces that are suitable for diagnostic purposes?",
     elements: ["Prepare ECG machine for use", "Prepare patient for ECG", "Conduct ECG", "Report results"],
   },
   {
@@ -222,7 +229,7 @@ export const UNITS = [
     title: "Prepare and maintain equipment for cardiology procedures",
     industry: "HLT",
     industryName: "Health",
-    desc: "Prepare equipment for cardiology procedures and maintain its condition.",
+    question: "Have you attached a holter monitor and produced a diagnostic trace for submission to the requesting medical officer?",
     elements: ["Prepare equipment for procedures", "Maintain cardiology equipment", "Report faults or problems"],
   },
   {
@@ -230,7 +237,7 @@ export const UNITS = [
     title: "Comply with infection prevention and control policies and procedures",
     industry: "HLT",
     industryName: "Health",
-    desc: "Comply with infection prevention and control policies and procedures in a health setting.",
+    question: "Have you applied basic infection prevention and control principles in work settings including implementing standard and transmission-based precautions?",
     elements: ["Follow standard and transmission-based precautions", "Identify infection risks", "Respond to infection risks"],
   },
   {
@@ -238,7 +245,7 @@ export const UNITS = [
     title: "Prepare and maintain environments, instruments and equipment for clinical procedures",
     industry: "HLT",
     industryName: "Health",
-    desc: "Prepare clinical environments, instruments and equipment for clinical procedures.",
+    question: "Have you completed preparation, general assistance and follow-up tasks that support health professionals in the delivery of care to clients?",
     elements: ["Prepare environment", "Prepare instruments and equipment", "Maintain instruments and equipment"],
   },
   {
@@ -246,15 +253,15 @@ export const UNITS = [
     title: "Assist with clinical measurements",
     industry: "HLT",
     industryName: "Health",
-    desc: "Assist with clinical measurement procedures in a health services context.",
+    question: "Have you prepared for, obtained and recorded simple clinical measurements?",
     elements: ["Prepare for clinical measurements", "Assist with measurements", "Report results"],
   },
   {
     code: "HLTPAT008",
-    title: "Collect pathology specimens - anatomical",
+    title: "Collect pathology specimens — anatomical",
     industry: "HLT",
     industryName: "Health",
-    desc: "Collect anatomical pathology specimens from patients.",
+    question: "Have you confirmed collection requirements, prepared client and equipment, and made routine pathology specimen collections?",
     elements: ["Confirm collection requirements", "Prepare patient", "Collect specimens", "Process and label specimens"],
   },
   {
@@ -262,7 +269,7 @@ export const UNITS = [
     title: "Confirm pathology collection requirements and prepare patient",
     industry: "HLT",
     industryName: "Health",
-    desc: "Confirm pathology collection requirements and prepare the patient for collection.",
+    question: "Have you confirmed collection requirements, prepared client and equipment, and collected specimens via urine and/or oral and breath testing?",
     elements: ["Confirm collection requirements", "Prepare patient for collection", "Document collection details"],
   },
   {
@@ -270,7 +277,7 @@ export const UNITS = [
     title: "Perform standard phlebotomy",
     industry: "HLT",
     industryName: "Health",
-    desc: "Perform standard phlebotomy procedures to collect venous blood samples.",
+    question: "Have you confirmed collection requirements, prepared client and equipment, and performed routine blood collections using venous blood collection?",
     elements: ["Prepare for phlebotomy", "Collect venous blood", "Process samples", "Manage adverse events"],
   },
   {
@@ -278,7 +285,7 @@ export const UNITS = [
     title: "Receive and sort pathology specimens",
     industry: "HLT",
     industryName: "Health",
-    desc: "Receive, sort and process pathology specimens in a laboratory.",
+    question: "Have you received specimens, completed the administrative process to prepare samples for pathology testing, and dispatched specimens?",
     elements: ["Receive specimens", "Sort and label specimens", "Process specimens", "Manage non-conforming specimens"],
   },
   {
@@ -286,7 +293,7 @@ export const UNITS = [
     title: "Prepare patients for capillary blood collection",
     industry: "HLT",
     industryName: "Health",
-    desc: "Prepare patients for capillary blood collection procedures.",
+    question: "Have you confirmed collection requirements, prepared client and equipment, and collected capillary blood using specific collection criteria?",
     elements: ["Greet client and confirm requirements", "Prepare client for collection", "Collect capillary blood", "Process and label samples"],
   },
   {
@@ -294,7 +301,7 @@ export const UNITS = [
     title: "Collect venous blood samples using a vacuum collection system",
     industry: "HLT",
     industryName: "Health",
-    desc: "Collect venous blood samples from patients using a vacuum collection system.",
+    question: "Have you recognised client risk factors, identified emergency situations and provided emergency or first aid response to client reactions associated with pathology collection?",
     elements: ["Prepare to collect venous blood", "Collect venous blood", "Process samples", "Complete documentation"],
   },
   {
@@ -302,7 +309,7 @@ export const UNITS = [
     title: "Collect pathology specimens from patients with special needs",
     industry: "HLT",
     industryName: "Health",
-    desc: "Collect pathology specimens from patients with special collection needs.",
+    question: "Have you collected pathology specimens from patients with special collection needs?",
     elements: ["Identify special collection requirements", "Prepare patient", "Collect specimens", "Process and document collection"],
   },
   {
@@ -310,7 +317,7 @@ export const UNITS = [
     title: "Participate in workplace health and safety",
     industry: "HLT",
     industryName: "Health",
-    desc: "Follow safe work practices for direct client care in a health setting.",
+    question: "Have you participated in safe work practices to ensure their own health and safety, and that of others?",
     elements: ["Follow safe work practices", "Contribute to workplace safety", "Participate in WHS consultative processes"],
   },
   {
@@ -318,7 +325,7 @@ export const UNITS = [
     title: "Manage personal stressors in the work environment",
     industry: "HLT",
     industryName: "Health",
-    desc: "Identify and manage personal stressors in the work environment in a health services context.",
+    question: "Have you identified and managed personal stressors in the work environment in a health services context?",
     elements: ["Identify personal stressors", "Develop strategies to manage personal stressors", "Seek support when required"],
   },
 
@@ -328,7 +335,7 @@ export const UNITS = [
     title: "Calibrate measuring equipment",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Calibrate measuring equipment in a laboratory or field environment.",
+    question: "Have you calibrated test and measurement equipment in accordance with standard calibration procedures and documented test methods?",
     elements: ["Prepare for calibration", "Calibrate measuring equipment", "Record calibration results"],
   },
   {
@@ -336,7 +343,7 @@ export const UNITS = [
     title: "Recognise and respond to deviation from experimental procedure",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Recognise and respond to deviation from experimental procedure in a laboratory or field environment.",
+    question: "Have you recognised non-conforming calibration work, researched and selected the most appropriate test method or calibration procedure for a given measurement?",
     elements: ["Identify deviations from procedure", "Assess impact of deviation", "Respond to deviation and document"],
   },
   {
@@ -344,7 +351,7 @@ export const UNITS = [
     title: "Create or modify laboratory procedures",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Create or modify laboratory procedures to meet operational requirements.",
+    question: "Have you created or modified calibration procedures in response to the introduction of alternative or new equipment, changing test circumstances or activities?",
     elements: ["Identify need for new or modified procedure", "Develop procedure", "Review and validate procedure"],
   },
   {
@@ -352,7 +359,7 @@ export const UNITS = [
     title: "Work within a quality assurance framework",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Work within a quality assurance framework in a laboratory or field environment.",
+    question: "Have you worked effectively in a laboratory or field workplace, complying with quality assurance frameworks and maintaining accurate records?",
     elements: ["Comply with quality assurance frameworks", "Maintain records", "Participate in quality improvement"],
   },
   {
@@ -360,7 +367,7 @@ export const UNITS = [
     title: "Plan and organise a personal work program",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Plan and organise a personal work program in a laboratory or field environment.",
+    question: "Have you planned and completed tasks individually or in a team context? This includes tasks involving established routines and procedures using allocated resources.",
     elements: ["Plan work activities", "Organise activities", "Review work program"],
   },
   {
@@ -368,7 +375,7 @@ export const UNITS = [
     title: "Manage the maintenance of laboratory and field equipment",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Manage the maintenance of laboratory and field equipment.",
+    question: "Have you managed the day-to-day running of science teaching laboratories and the preparation of practical experiments, demonstrations and field trips?",
     elements: ["Develop maintenance schedule", "Implement maintenance program", "Monitor and review maintenance"],
   },
   {
@@ -376,7 +383,7 @@ export const UNITS = [
     title: "Respond to and manage a chemical spill",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Respond to and manage a chemical spill in a laboratory or field environment.",
+    question: "Have you responded to both internal and external inquiries of a specialised technical nature? This includes gathering information, such as trend analysis and investigations.",
     elements: ["Assess the information", "Respond to the spill", "Review and report on response"],
   },
   {
@@ -384,7 +391,7 @@ export const UNITS = [
     title: "Schedule and coordinate laboratory or field activities",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Schedule and coordinate laboratory or field activities to meet operational requirements.",
+    question: "Have you scheduled laboratory work for a small team to meet operational requirements? This includes the ability to identify resource requirements.",
     elements: ["Determine work and laboratory requirements", "Schedule activities", "Coordinate activities and monitor progress"],
   },
   {
@@ -392,7 +399,7 @@ export const UNITS = [
     title: "Recognise structural features of chemical compounds",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Recognise structural features of chemical compounds from their names and formulae.",
+    question: "Have you developed and maintained relevant documentation in response to identified information requirements or changes in laboratory policy or external requirements?",
     elements: ["Identify classes of chemical compounds", "Recognise structural features", "Apply knowledge to laboratory practice"],
   },
   {
@@ -400,7 +407,7 @@ export const UNITS = [
     title: "Develop and manage work health and safety systems",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Develop and manage work health and safety systems in a laboratory or field environment.",
+    question: "Have you developed and empowered team members through motivating, mentoring, coaching and promoted team cohesion to achieve planned outcomes?",
     elements: ["Develop WHS systems", "Implement WHS systems", "Monitor and review WHS systems"],
   },
   {
@@ -408,7 +415,7 @@ export const UNITS = [
     title: "Monitor and direct the implementation of safe practices",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Monitor and direct the implementation of safe practices in a laboratory or field environment.",
+    question: "Have you monitored and directed work practices, coordinated and supported personnel and managed and optimised resources within the laboratory?",
     elements: ["Monitor safe work practices", "Direct work activities", "Review and report on safety"],
   },
   {
@@ -416,7 +423,7 @@ export const UNITS = [
     title: "Take responsibility for workplace health and safety",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Take responsibility for own actions and workplace health and safety in a laboratory or field environment.",
+    question: "Have you taken responsibility for the day-to-day operation of the work or functional area and its compliance with legislation and licensing, registration and certification requirements?",
     elements: ["Take responsibility for WHS", "Contribute to WHS management", "Respond to WHS issues"],
   },
   {
@@ -424,16 +431,23 @@ export const UNITS = [
     title: "Interpret and apply compliance requirements",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Interpret and apply compliance requirements in a laboratory or field environment.",
+    question: "Have you interpreted complex project briefs, determined project methodologies and resource requirements, established project plans and managed projects to successful completion?",
     elements: ["Identify compliance requirements", "Implement compliance requirements", "Monitor and review compliance"],
   },
-  { code: "MSL922002", title: "Record and present data", industry: "MSL", industryName: "Laboratory Operations", desc: "Record and present data from laboratory or field activities.", elements: ["Record data", "Check data", "Present data"] },
+  {
+    code: "MSL922002",
+    title: "Record and present data",
+    industry: "MSL",
+    industryName: "Laboratory Operations",
+    question: "Have you recorded and stored data, performed simple calculations of scientific quantities and presented information in tables and graphs?",
+    elements: ["Record data", "Check data", "Present data"],
+  },
   {
     code: "MSL924005",
     title: "Retrieve data and information from laboratory information systems",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Retrieve data and information from laboratory information systems.",
+    question: "Have you retrieved data, evaluated formulae, performed scientific calculations, presented and interpreted information in tables and graphs?",
     elements: ["Retrieve and verify data", "Present retrieved data", "Identify data discrepancies"],
   },
   {
@@ -441,7 +455,7 @@ export const UNITS = [
     title: "Use enterprise/laboratory information systems",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Use enterprise and laboratory information systems for laboratory activities.",
+    question: "Have you used enterprise laboratory-specific software such as laboratory information management systems, quality information management systems or laboratory information systems?",
     elements: ["Access and use laboratory information systems", "Enter and retrieve data", "Generate reports"],
   },
   {
@@ -449,7 +463,7 @@ export const UNITS = [
     title: "Use computers for scientific purposes",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Use computers for scientific data management and communication purposes.",
+    question: "Have you used statistical analysis to estimate and report measurement uncertainty in accordance with the ISO Guide to the Expression of Uncertainty in Measurement?",
     elements: ["Use computer hardware and software", "Process scientific data", "Communicate using computers"],
   },
   {
@@ -457,7 +471,7 @@ export const UNITS = [
     title: "Perform scientific calculations",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Perform scientific calculations for laboratory or field work.",
+    question: "Have you performed scientific calculations, analysed trends and uncertainty in data and reported results within the required timeframe?",
     elements: ["Identify calculation requirements", "Perform calculations", "Check and report results"],
   },
   {
@@ -465,7 +479,7 @@ export const UNITS = [
     title: "Clean and prepare sampling and testing equipment",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Clean and prepare sampling and testing equipment in a laboratory or field environment.",
+    question: "Have you cleaned laboratory work surfaces, cleaned and stored laboratory equipment and monitored laboratory stocks under direct supervision?",
     elements: ["Plan for cleaning and preparation", "Clean equipment", "Prepare equipment for use"],
   },
   {
@@ -473,7 +487,7 @@ export const UNITS = [
     title: "Monitor routine and non-routine inputs",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Monitor routine and non-routine inputs into laboratory processes.",
+    question: "Have you monitored critical, quality, and regulatory control points related to your work responsibilities in the food processing or manufacturing environment?",
     elements: ["Monitor routine input", "Monitor non-routine input", "Report monitoring results"],
   },
   {
@@ -481,7 +495,7 @@ export const UNITS = [
     title: "Perform routine laboratory procedures",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Perform routine laboratory procedures using established methods.",
+    question: "Have you performed set-up, pre-use and in-house calibration/validation checks on laboratory equipment and assisted with laboratory equipment maintenance?",
     elements: ["Prepare for routine procedures", "Perform routine procedures", "Report results"],
   },
   {
@@ -489,7 +503,7 @@ export const UNITS = [
     title: "Apply quality procedures in a laboratory or field environment",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Apply quality procedures in a laboratory or field environment.",
+    question: "Have you applied quality principles to laboratory or field work to achieve quality outcomes?",
     elements: ["Apply quality procedures", "Monitor quality", "Identify and report non-conformances"],
   },
   {
@@ -497,7 +511,7 @@ export const UNITS = [
     title: "Check the performance of instrumentation and test equipment",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Check the performance of instrumentation and test equipment in a laboratory environment.",
+    question: "Have you checked the serviceability and calibration of laboratory or field instruments and equipment and performed routine maintenance, such as cleaning?",
     elements: ["Check instrument performance", "Identify and report problems", "Document checks"],
   },
   {
@@ -505,7 +519,7 @@ export const UNITS = [
     title: "Use quality control procedures to maintain test data integrity",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Use quality control procedures to satisfy quality requirements and maintain data integrity.",
+    question: "Have you used quality laboratory practice and effectively participated in quality improvement teams? This includes ensuring the quality and integrity of your own work.",
     elements: ["Satisfy quality requirements in test processes", "Apply statistical quality control", "Report quality control results"],
   },
   {
@@ -513,7 +527,7 @@ export const UNITS = [
     title: "Order, maintain and store laboratory stocks and supplies",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Order, maintain and store laboratory stocks and supplies.",
+    question: "Have you ordered, maintained and controlled the use of laboratory materials and/or equipment in the work area?",
     elements: ["Maintain and store stocks", "Order stocks and supplies", "Manage stock records"],
   },
   {
@@ -521,7 +535,7 @@ export const UNITS = [
     title: "Critically evaluate and apply information from scientific literature",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Critically evaluate and apply information from scientific literature.",
+    question: "Have you critically assessed the accuracy of data and validity of test results prior to formally authorising their release to the client?",
     elements: ["Identify and access literature", "Evaluate accuracy of information", "Apply information"],
   },
   {
@@ -529,7 +543,7 @@ export const UNITS = [
     title: "Assist in the acquisition of biological specimens",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Assist in the acquisition of biological specimens for laboratory analysis.",
+    question: "Have you assisted in the maintenance of reference materials that can be used in tests and the identification of new specimens as part of quality control?",
     elements: ["Prepare for specimen acquisition", "Acquire specimens", "Process and store specimens"],
   },
   {
@@ -537,7 +551,7 @@ export const UNITS = [
     title: "Analyse a sample using spectroscopic techniques",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Analyse a sample using spectroscopic techniques.",
+    question: "Have you analysed a series of test results and data to detect potential or actual non-conformances, assessed their significance and recommended preventative or corrective action?",
     elements: ["Prepare for spectroscopic analysis", "Perform spectroscopic analysis", "Interpret and report results"],
   },
   {
@@ -545,7 +559,7 @@ export const UNITS = [
     title: "Take representative samples from a static material",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Take representative samples from a static material for laboratory analysis.",
+    question: "Have you taken responsibility for the day-to-day operation of the work or functional area and ensured that quality system requirements are met and continually improved?",
     elements: ["Prepare for sampling", "Take samples", "Document sampling"],
   },
   {
@@ -553,7 +567,7 @@ export const UNITS = [
     title: "Prepare for and conduct audits",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Prepare for and conduct audits of laboratory quality systems.",
+    question: "Have you prepared for, conducted and documented an internal audit of aspects of the laboratory's quality system? This includes the implementation of improvements.",
     elements: ["Prepare for audit", "Conduct audit", "Report audit findings"],
   },
   {
@@ -561,7 +575,7 @@ export const UNITS = [
     title: "Safely store, handle and dispose of laboratory chemicals and substances",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Safely store, handle and dispose of chemicals and substances in a laboratory.",
+    question: "Have you safely stored, transported and operated instruments that emit ionising radiation following established safe work practices and in accordance with legislation?",
     elements: ["Identify chemical hazards", "Store and handle chemicals safely", "Dispose of chemicals safely"],
   },
   {
@@ -569,7 +583,7 @@ export const UNITS = [
     title: "Follow work health and safety procedures in a laboratory or field environment",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Follow work health and safety procedures in a laboratory or field environment.",
+    question: "Have you followed work health and safety (WHS) policies and procedures, dealt with the identification and control of hazards, and worked safely at all times?",
     elements: ["Follow WHS procedures", "Report hazards", "Respond to WHS incidents"],
   },
   {
@@ -577,7 +591,7 @@ export const UNITS = [
     title: "Monitor and safely use hazardous chemicals in the laboratory",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Monitor and safely use hazardous chemicals in the laboratory environment.",
+    question: "Have you monitored and maintained work health and safety (WHS) within a work area where you had supervisory responsibility for others?",
     elements: ["Assess chemical hazards", "Monitor use of hazardous chemicals", "Manage chemical incidents"],
   },
   {
@@ -585,7 +599,7 @@ export const UNITS = [
     title: "Implement and monitor environmentally sustainable work practices",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Implement and monitor environmentally sustainable work practices in a laboratory.",
+    question: "Have you implemented and monitored the work health and safety (WHS) and environmental management systems for a work group or laboratory?",
     elements: ["Identify sustainability requirements", "Implement sustainable practices", "Monitor and improve sustainability"],
   },
   {
@@ -593,7 +607,7 @@ export const UNITS = [
     title: "Collect samples from a natural or managed environment",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Collect samples from a natural or managed environment for laboratory analysis.",
+    question: "Have you collected samples at field or production sites using specified equipment and workplace procedures?",
     elements: ["Prepare for sampling", "Collect samples", "Preserve and transport samples"],
   },
   {
@@ -601,7 +615,7 @@ export const UNITS = [
     title: "Pick up and prepare pathology specimens for transport",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Pick up and prepare pathology specimens for transport to the laboratory.",
+    question: "Have you picked up and transported samples or test/calibration equipment in a way that ensures the integrity of subsequent test results?",
     elements: ["Prepare for pickup", "Collect and package specimens", "Transport specimens"],
   },
   {
@@ -609,7 +623,7 @@ export const UNITS = [
     title: "Operate a robotic sample processing system",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Operate a robotic sample processing system in a laboratory environment.",
+    question: "Have you operated a robotic sample preparation system to ensure efficient throughput of samples without sacrificing quality or safety?",
     elements: ["Prepare robotic system", "Operate system", "Troubleshoot system problems"],
   },
   {
@@ -617,7 +631,7 @@ export const UNITS = [
     title: "Log samples, specimens and associated documentation",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Log samples, specimens and associated documentation in a laboratory information system.",
+    question: "Have you logged samples, checked sample documentation, and scheduled and prepared samples for testing in accordance with workplace procedures?",
     elements: ["Receive and check samples", "Log samples and documentation", "Manage non-conforming samples"],
   },
   {
@@ -625,7 +639,7 @@ export const UNITS = [
     title: "Reduce given samples to laboratory test portions",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Reduce given samples to laboratory test portions for analysis.",
+    question: "Have you reduced given mineral samples to representative client samples and analytical portions that meet client requirements for analysis?",
     elements: ["Prepare for sample reduction", "Reduce samples", "Document sample reduction"],
   },
   {
@@ -633,7 +647,7 @@ export const UNITS = [
     title: "Recognise and respond to emergency situations in pathology",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Recognise and respond to emergency situations involving patients in a pathology setting.",
+    question: "Have you recognised and interpreted different types of biological test samples to direct the specimen to the appropriate laboratory for testing?",
     elements: ["Identify emergency situations", "Respond to emergencies", "Document and report emergencies"],
   },
   {
@@ -641,7 +655,7 @@ export const UNITS = [
     title: "Obtain a range of specimens for pathological examination",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Obtain a range of specimens for pathological examination using appropriate techniques.",
+    question: "Have you obtained a range of samples that are representative of the source material and prepared the samples for testing? This includes all sampling activities.",
     elements: ["Confirm collection requirements", "Obtain specimens", "Process and label specimens"],
   },
   {
@@ -649,7 +663,7 @@ export const UNITS = [
     title: "Take direct measurements",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Take direct measurements in a laboratory or field environment.",
+    question: "Have you taken direct measurements on site using workplace procedures? Measurements will be straightforward and involve a minimal number of steps.",
     elements: ["Prepare for measurements", "Take measurements", "Record and report measurements"],
   },
   {
@@ -657,7 +671,7 @@ export const UNITS = [
     title: "Prepare microbiological media and reagents",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Prepare microbiological media and reagents for laboratory use.",
+    question: "Have you prepared culture media which is free of contamination to facilitate optimal growth of organisms and cells in the biomedical, biological or food science laboratory?",
     elements: ["Prepare media and reagents", "Check media and reagent quality", "Store media and reagents"],
   },
   {
@@ -665,7 +679,7 @@ export const UNITS = [
     title: "Perform tasks associated with fieldwork",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Perform tasks associated with fieldwork in a scientific environment.",
+    question: "Have you performed tasks associated with the organisation of fieldwork and field surveys in the environmental, mining, construction materials testing or related sector?",
     elements: ["Prepare for fieldwork", "Assist with fieldwork", "Complete fieldwork documentation"],
   },
   {
@@ -673,7 +687,7 @@ export const UNITS = [
     title: "Prepare trial batch of a food product",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Prepare a trial batch of a food product in a laboratory or pilot plant environment.",
+    question: "Have you prepared trial batches of materials for evaluation? Materials can include soil, minerals, and manufactured products.",
     elements: ["Prepare trial batch", "Monitor production", "Evaluate and report on trial batch"],
   },
   {
@@ -681,7 +695,7 @@ export const UNITS = [
     title: "Conduct in field-based environmental monitoring",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Conduct in field-based environmental monitoring activities.",
+    question: "Have you conducted in situ tests to confirm the acceptability of raw or manufactured construction materials prior to or during placement?",
     elements: ["Prepare for monitoring", "Conduct field-based monitoring", "Record and report results"],
   },
   {
@@ -689,7 +703,7 @@ export const UNITS = [
     title: "Conduct laboratory-based environmental analysis",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Conduct laboratory-based environmental analysis using standard methods.",
+    question: "Have you conducted laboratory tests to confirm the acceptability of raw and/or manufactured construction materials?",
     elements: ["Prepare for analysis", "Conduct analysis", "Interpret and report results"],
   },
   {
@@ -697,7 +711,7 @@ export const UNITS = [
     title: "Follow shift work procedures",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Follow shift work procedures in a laboratory environment.",
+    question: "Have you followed standard procedures for extracting precious metals from their host matrices in readiness for analysis?",
     elements: ["Prepare for shift", "Conduct shift work", "Complete shift handover"],
   },
   {
@@ -705,7 +719,7 @@ export const UNITS = [
     title: "Prepare for on-site environmental sampling",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Prepare for on-site environmental sampling activities.",
+    question: "Have you prepared for and conducted activities, such as excavations, sampling and testing, as part of a site investigation?",
     elements: ["Plan sampling activities", "Prepare equipment", "Travel to sampling site"],
   },
   {
@@ -713,7 +727,7 @@ export const UNITS = [
     title: "Prepare reagents, standard solutions and culture media",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Prepare reagents, standard solutions and culture media for laboratory use.",
+    question: "Have you prepared samples and performed tests and measurements using standard methods with access to readily available instruments and equipment?",
     elements: ["Interpret test requirements", "Prepare solutions and media", "Check and store preparations"],
   },
   {
@@ -721,7 +735,7 @@ export const UNITS = [
     title: "Make up solutions of defined concentration",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Make up solutions of defined concentration for laboratory use.",
+    question: "Have you prepared working solutions and checked that existing stocks of solutions are suitable for use?",
     elements: ["Identify solution requirements", "Make up solutions", "Check and label solutions"],
   },
   {
@@ -729,7 +743,7 @@ export const UNITS = [
     title: "Perform gravimetric analysis",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Perform gravimetric analysis in a laboratory environment.",
+    question: "Have you performed techniques that prevent cross-contamination to maintain the integrity of both the sample source and the analytical process?",
     elements: ["Prepare for gravimetric analysis", "Perform analysis", "Calculate and report results"],
   },
   {
@@ -737,7 +751,7 @@ export const UNITS = [
     title: "Set up a light microscope",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Set up a light microscope for examination of specimens.",
+    question: "Have you set up a light microscope for optimum resolution, to prepare routine samples and to observe, identify and record microscopic structures?",
     elements: ["Prepare microscope for use", "Set up for examination", "Maintain microscope"],
   },
   {
@@ -745,7 +759,7 @@ export const UNITS = [
     title: "Perform basic microbiology tests",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Perform basic microbiology tests in a laboratory environment.",
+    question: "Have you performed straightforward histological procedures involving processing and sectioning (by rotary microtome) of plant and animal tissues?",
     elements: ["Prepare for microbiology testing", "Perform tests", "Process and report results"],
   },
   {
@@ -753,7 +767,7 @@ export const UNITS = [
     title: "Interpret and report chemical test results",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Interpret and report chemical test results in a laboratory environment.",
+    question: "Have you interpreted physical and mechanical test requirements, prepared samples, conducted pre-use and calibration checks on equipment and performed routine physical tests?",
     elements: ["Interpret test results", "Evaluate results", "Report results"],
   },
   {
@@ -761,7 +775,7 @@ export const UNITS = [
     title: "Prepare for and conduct chromatographic analysis",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Prepare for and conduct chromatographic analysis of samples.",
+    question: "Have you prepared for and conducted and concluded site activities, such as excavations, sampling and testing as part of a geotechnical investigation?",
     elements: ["Prepare for chromatographic analysis", "Conduct analysis", "Interpret and report results"],
   },
   {
@@ -769,7 +783,7 @@ export const UNITS = [
     title: "Organise and manage fieldwork activities",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Organise and manage fieldwork activities in a scientific environment.",
+    question: "Have you organised and undertaken field monitoring programs that are primarily focused on the determination of physical, chemical and biological parameters?",
     elements: ["Plan fieldwork", "Organise fieldwork", "Manage fieldwork activities"],
   },
   {
@@ -777,7 +791,7 @@ export const UNITS = [
     title: "Capture and record field data",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Capture and record field data during environmental or scientific fieldwork.",
+    question: "Have you captured accurate and reproducible images of scientific (environmental, medical, and technical) subjects using a scientific approach and workplace procedures?",
     elements: ["Prepare for data capture", "Capture and record data", "Report field data"],
   },
   {
@@ -785,7 +799,7 @@ export const UNITS = [
     title: "Schedule and conduct test analyses",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Schedule and conduct test analyses in a laboratory environment.",
+    question: "Have you conducted multi-stage tests to determine the properties of raw and/or manufactured construction materials?",
     elements: ["Schedule test analyses", "Conduct analyses", "Report results"],
   },
   {
@@ -793,7 +807,7 @@ export const UNITS = [
     title: "Classify soils for engineering and construction",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Classify soils for engineering and construction investigations.",
+    question: "Have you classified soils for geotechnical and civil construction purposes using the symbols and descriptors specified in the Australian Standard for Geotechnical Site Investigations?",
     elements: ["Classify soil samples", "Conduct soil tests", "Report classification results"],
   },
   {
@@ -801,7 +815,7 @@ export const UNITS = [
     title: "Operate a spectrophotometer for chemical analysis",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Operate a spectrophotometer for chemical analysis in a laboratory environment.",
+    question: "Have you operated a computer-controlled robotic system for the specialised analysis of minerals, such as iron ore?",
     elements: ["Prepare spectrophotometer", "Conduct spectrophotometric analysis", "Report results"],
   },
   {
@@ -809,7 +823,7 @@ export const UNITS = [
     title: "Prepare, standardise and use volumetric solutions",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Prepare, standardise and use volumetric solutions for laboratory analysis.",
+    question: "Have you prepared, standardised and monitored the quality of solutions?",
     elements: ["Prepare volumetric solutions", "Standardise solutions", "Use solutions for analysis"],
   },
   {
@@ -817,7 +831,7 @@ export const UNITS = [
     title: "Interpret and apply spectral data",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Interpret and apply spectral data from spectroscopic analysis.",
+    question: "Have you interpreted chemical test requirements, prepared samples, conducted pre-use and calibration checks on equipment and performed routine chemical testing?",
     elements: ["Interpret spectral data", "Apply data interpretation", "Report findings"],
   },
   {
@@ -825,7 +839,7 @@ export const UNITS = [
     title: "Interpret food chemistry test results",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Interpret food chemistry test results in a food laboratory environment.",
+    question: "Have you interpreted food test requirements, prepared samples, conducted pre-use and calibration checks on equipment, and performed routine testing of raw and processed food products?",
     elements: ["Interpret test results", "Evaluate results against specifications", "Report results"],
   },
   {
@@ -833,7 +847,7 @@ export const UNITS = [
     title: "Interpret work instructions for chemistry testing",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Interpret work instructions for chemistry testing in a laboratory environment.",
+    question: "Have you interpreted work requirements, prepared samples, and performed routine biological procedures? These procedures may involve several steps.",
     elements: ["Interpret and apply work instructions", "Apply instructions to chemistry testing", "Report any discrepancies"],
   },
   {
@@ -841,7 +855,7 @@ export const UNITS = [
     title: "Prepare and operate an electron microscope",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Prepare and operate an electron microscope for specimen examination.",
+    question: "Have you prepared primary tissue cultures for applications, such as maintenance of animal cell lines and propagation of plants by tissue culture?",
     elements: ["Prepare electron microscope", "Operate microscope", "Process and report results"],
   },
   {
@@ -849,7 +863,7 @@ export const UNITS = [
     title: "Complete pre-analytical processes for pathology",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Complete pre-analytical processes for pathology specimens.",
+    question: "Have you completed pre-analytics, analysed body fluid specimens, recorded results and maintained a point of care testing (PoCT) device?",
     elements: ["Receive specimens", "Complete pre-analytical processes", "Forward specimens for analysis"],
   },
   {
@@ -857,7 +871,7 @@ export const UNITS = [
     title: "Triage and prioritise pathology specimens",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Triage and prioritise pathology specimens for analysis.",
+    question: "Have you triaged and allocated tissue specimens for transfer or surgical cut-up?",
     elements: ["Receive and assess specimens", "Triage and prioritise specimens", "Document and report triaging"],
   },
   {
@@ -865,7 +879,7 @@ export const UNITS = [
     title: "Process and prepare tissue specimens",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Process and prepare tissue specimens for pathological examination.",
+    question: "Have you processed and transferred tissue specimens that require no selection or cutting? This includes the placement of whole specimens in uniquely identified cassettes.",
     elements: ["Receive tissue specimens", "Process specimens", "Prepare specimens for examination"],
   },
   {
@@ -873,7 +887,7 @@ export const UNITS = [
     title: "Work closely with a medical practitioner or specialist",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Work closely with a medical practitioner or specialist in a pathology environment.",
+    question: "Have you worked closely with production personnel to conduct a routine trial to adjust formulations or develop products and processes?",
     elements: ["Prepare for specialist consultation", "Support specialist activities", "Document activities"],
   },
   {
@@ -881,7 +895,7 @@ export const UNITS = [
     title: "Set up and calibrate analytical instruments",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Set up and calibrate analytical instruments for laboratory use.",
+    question: "Have you set up and coordinated sensory analysis and assessed the results obtained from a routine sensory analysis?",
     elements: ["Set up instruments", "Calibrate instruments", "Document calibration"],
   },
   {
@@ -889,7 +903,7 @@ export const UNITS = [
     title: "Safely extract ore samples by fire assay",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Safely extract ore samples by fire assay for laboratory analysis.",
+    question: "Have you safely extracted a range of precious metals from their host matrices in readiness for analysis? This includes the ability to select and apply appropriate flux combinations.",
     elements: ["Prepare for fire assay", "Conduct fire assay", "Process results"],
   },
   {
@@ -897,7 +911,7 @@ export const UNITS = [
     title: "Design and conduct field-based surveys",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Design and conduct field-based environmental or scientific surveys.",
+    question: "Have you designed and supervised complex field surveys for a wide range of environmental systems in the environmental industry sector?",
     elements: ["Design surveys", "Conduct field surveys", "Analyse and report survey results"],
   },
   {
@@ -905,7 +919,7 @@ export const UNITS = [
     title: "Perform a site assessment",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Perform a site assessment for environmental or scientific purposes.",
+    question: "Have you performed a range of techniques to collect and preserve animals and plant material for both public and scientific research display?",
     elements: ["Prepare for site assessment", "Conduct site assessment", "Report assessment findings"],
   },
   {
@@ -913,7 +927,7 @@ export const UNITS = [
     title: "Prepare and interpret test results for regulatory compliance",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Prepare and interpret test results for regulatory compliance purposes.",
+    question: "Have you prepared test specimens and performed multi-stage mechanical tests on them? This includes creating test conditions that suit the materials being investigated.",
     elements: ["Prepare test results", "Interpret results", "Report compliance status"],
   },
   {
@@ -921,7 +935,7 @@ export const UNITS = [
     title: "Supervise and conduct sampling activities",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Supervise and conduct sampling activities in a laboratory or field environment.",
+    question: "Have you supervised and directed geotechnical site investigations based on observation and testing in the construction materials testing sector?",
     elements: ["Plan sampling activities", "Supervise sampling", "Conduct and document sampling"],
   },
   {
@@ -929,7 +943,7 @@ export const UNITS = [
     title: "Locate, record and collect biological specimens",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Locate, record and collect biological specimens from natural environments.",
+    question: "Have you located, recorded, and collected evidence or samples that will be used for forensic examination or testing?",
     elements: ["Prepare for collection", "Locate and record specimens", "Collect and process specimens"],
   },
   {
@@ -937,7 +951,7 @@ export const UNITS = [
     title: "Classify collected organisms",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Classify collected organisms using appropriate taxonomic methods.",
+    question: "Have you classified building sites, including residential, light industrial, commercial, and institutional structures for the purpose of providing guidance on footing design?",
     elements: ["Prepare for classification", "Classify organisms", "Document classification results"],
   },
   {
@@ -945,7 +959,7 @@ export const UNITS = [
     title: "Perform tests related to disease diagnosis",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Perform tests related to disease diagnosis in a pathology laboratory.",
+    question: "Have you performed procedures associated with embedding tissue and performing microtomy on those tissues in preparation for staining for examination?",
     elements: ["Prepare for diagnostic testing", "Perform diagnostic tests", "Interpret and report results"],
   },
   {
@@ -953,7 +967,7 @@ export const UNITS = [
     title: "Perform tests on specimens for infectious disease",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Perform tests on specimens for infectious disease diagnosis.",
+    question: "Have you performed tests and procedures associated with processing and staining tissues for examination of tissue structure and abnormalities by pathologists?",
     elements: ["Prepare for testing", "Perform infectious disease tests", "Interpret and report results"],
   },
   {
@@ -961,7 +975,7 @@ export const UNITS = [
     title: "Perform tests on blood and blood products",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Perform tests on blood and blood products in a pathology laboratory.",
+    question: "Have you performed routine tests and procedures that are part of the requirements of pre- and post-blood transfusion practice?",
     elements: ["Prepare for blood testing", "Perform blood tests", "Interpret and report results"],
   },
   {
@@ -969,7 +983,7 @@ export const UNITS = [
     title: "Supervise and conduct on-site environmental sampling",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Supervise and conduct on-site environmental sampling activities.",
+    question: "Have you supervised and directed the placement of materials, such as soil, concrete and asphalt, at a construction site?",
     elements: ["Plan on-site sampling", "Supervise sampling activities", "Document and report sampling"],
   },
   {
@@ -977,7 +991,7 @@ export const UNITS = [
     title: "Prepare, separate and identify components of samples",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Prepare, separate and identify the components of samples for analysis.",
+    question: "Have you prepared, maintained and preserved cells and cell lines for a variety of applications, such as large-scale culture and production of monoclonal antibodies?",
     elements: ["Prepare samples", "Separate sample components", "Identify and report components"],
   },
   {
@@ -985,7 +999,7 @@ export const UNITS = [
     title: "Isolate, identify and type microorganisms",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Isolate, identify and type microorganisms for laboratory analysis.",
+    question: "Have you isolated, purified, verified and manipulated biomolecules and their products? This includes close attention to working with small volumes.",
     elements: ["Isolate microorganisms", "Identify and type microorganisms", "Report findings"],
   },
   {
@@ -993,7 +1007,7 @@ export const UNITS = [
     title: "Contribute to environmental surveys and assessments",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Contribute to environmental surveys and assessments in a scientific environment.",
+    question: "Have you contributed to the culture, isolation and identification of microorganisms, such as bacteria, fungi, viruses, protozoans, algae and parasites?",
     elements: ["Prepare for surveys", "Contribute to survey activities", "Report contributions"],
   },
   {
@@ -1001,7 +1015,7 @@ export const UNITS = [
     title: "Determine structural features of organic compounds",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Determine structural features of organic compounds using spectroscopic analysis.",
+    question: "Have you determined levels, function, activity and interactions of cellular and plasma components of blood, using tests and procedures identified within haematology?",
     elements: ["Identify analysis requirements", "Conduct spectroscopic analysis", "Interpret and report results"],
   },
   {
@@ -1009,7 +1023,7 @@ export const UNITS = [
     title: "Perform tests on biological materials from pharmaceutical goods",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Perform tests on biological materials from pharmaceutical goods and other products.",
+    question: "Have you performed tests and procedures associated with the detection and monitoring of tissue and bodily fluid responses to normal physiological and pathological states?",
     elements: ["Prepare for testing", "Perform biological tests", "Interpret and report results"],
   },
   {
@@ -1017,7 +1031,7 @@ export const UNITS = [
     title: "Analyse samples for volatile organic compounds",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Analyse samples for volatile and semi-volatile organic compounds.",
+    question: "Have you analysed samples using electrophoretic techniques? This includes establishing client needs for routine and non-routine samples.",
     elements: ["Prepare samples for analysis", "Conduct analysis", "Interpret and report results"],
   },
   {
@@ -1025,7 +1039,7 @@ export const UNITS = [
     title: "Analyse samples for semi-volatile organic compounds",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Analyse samples for semi-volatile organic compounds using appropriate techniques.",
+    question: "Have you analysed samples using routine chromatographic techniques? This includes establishing client needs for routine and non-routine samples.",
     elements: ["Prepare samples", "Conduct analysis", "Report results"],
   },
   {
@@ -1033,7 +1047,7 @@ export const UNITS = [
     title: "Isolate and identify organic compounds by chromatography",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Isolate and identify organic compounds using chromatographic techniques.",
+    question: "Have you isolated analytes from complex matrices and performed multi-staged and multi-component analyses on them? This includes applying detailed knowledge of analytical techniques.",
     elements: ["Prepare for chromatography", "Conduct chromatographic analysis", "Interpret and report results"],
   },
   {
@@ -1041,7 +1055,7 @@ export const UNITS = [
     title: "Analyse samples by atomic absorption spectrometry",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Analyse samples by atomic absorption spectrometry.",
+    question: "Have you analysed samples using specialised analytical instruments that require highly-developed technical skills to operate effectively?",
     elements: ["Prepare for atomic absorption analysis", "Conduct analysis", "Interpret and report results"],
   },
   {
@@ -1049,7 +1063,7 @@ export const UNITS = [
     title: "Analyse samples by inductively coupled plasma spectrometry",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Analyse samples by inductively coupled plasma spectrometry.",
+    question: "Have you analysed samples using routine spectrometric techniques? This includes establishing client needs for routine and non-routine samples.",
     elements: ["Prepare for ICP analysis", "Conduct analysis", "Interpret and report results"],
   },
   {
@@ -1057,7 +1071,7 @@ export const UNITS = [
     title: "Analyse samples by ion chromatography",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Analyse samples by ion chromatography.",
+    question: "Have you analysed samples using routine electrometric techniques? This includes establishing client needs for routine and non-routine samples.",
     elements: ["Prepare for ion chromatography", "Conduct analysis", "Interpret and report results"],
   },
   {
@@ -1065,7 +1079,7 @@ export const UNITS = [
     title: "Analyse samples by thermal analysis",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Analyse samples by thermal analysis techniques.",
+    question: "Have you analysed the nutrient and ingredient composition of foods and the identification and quantification of both chemical and biological contaminants?",
     elements: ["Prepare for thermal analysis", "Conduct analysis", "Interpret and report results"],
   },
   {
@@ -1073,7 +1087,7 @@ export const UNITS = [
     title: "Analyse samples by X-ray diffraction",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Analyse samples by X-ray diffraction techniques.",
+    question: "Have you prepared for and completed surgical cut-up of non-complex specimens as defined by the National Pathology Accreditation Advisory Council (NPAAC)?",
     elements: ["Prepare for X-ray diffraction", "Conduct analysis", "Interpret and report results"],
   },
   {
@@ -1081,7 +1095,7 @@ export const UNITS = [
     title: "Prepare for and conduct immunological tests",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Prepare for and conduct immunological tests in a laboratory environment.",
+    question: "Have you participated in laboratory investigations involving animals, plants and related environmental parameters?",
     elements: ["Prepare for immunological testing", "Conduct tests", "Interpret and report results"],
   },
   {
@@ -1089,7 +1103,7 @@ export const UNITS = [
     title: "Evaluate and validate analytical methods",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Evaluate and validate analytical methods for laboratory use.",
+    question: "Have you evaluated and selected test methods and/or procedures that are relevant to the current and evolving scope of the laboratory's operations?",
     elements: ["Plan method evaluation", "Conduct evaluation", "Report validation findings"],
   },
   {
@@ -1097,7 +1111,7 @@ export const UNITS = [
     title: "Validate test methods",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Validate test methods for laboratory use.",
+    question: "Have you validated test methods following defined protocols to ensure that they are based on sound scientific principles and are fit for purpose?",
     elements: ["Confirm validation requirements", "Conduct validation", "Report validation results"],
   },
   {
@@ -1105,7 +1119,7 @@ export const UNITS = [
     title: "Evaluate a laboratory quality management system",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Evaluate a laboratory quality management system against standards.",
+    question: "Have you evaluated a product or application brief from a technical perspective and contributed to the formulation and development of products or applications?",
     elements: ["Plan evaluation", "Conduct evaluation", "Report findings and recommendations"],
   },
   {
@@ -1113,7 +1127,7 @@ export const UNITS = [
     title: "Apply statistical quality control techniques",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Apply statistical quality control techniques in a laboratory environment.",
+    question: "Have you applied technical, instrumental and equipment knowledge and skills to troubleshoot testing equipment and/or testing issues related to product quality?",
     elements: ["Identify statistical techniques", "Apply statistical techniques", "Interpret and report results"],
   },
   {
@@ -1121,7 +1135,7 @@ export const UNITS = [
     title: "Develop or revise a test method",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    desc: "Develop or revise a test method for laboratory use.",
+    question: "Have you developed or adapted analyses, including methods and procedures, to meet workplace and/or regulatory requirements?",
     elements: ["Plan test method development", "Develop or revise test method", "Validate and document test method"],
   },
 
@@ -1131,7 +1145,7 @@ export const UNITS = [
     title: "Identify and assess environmental and energy impacts",
     industry: "MSM",
     industryName: "Manufacturing",
-    desc: "Identify and assess environmental and energy impacts of manufacturing work activities.",
+    question: "Have you complied with environmental regulations, identified environment issues and minimised the risks of negative impact on work and carried out improvements in sustainability?",
     elements: ["Identify environmental impacts", "Assess energy impacts", "Report findings"],
   },
   {
@@ -1139,7 +1153,7 @@ export const UNITS = [
     title: "Investigate energy and environmental impacts and solutions",
     industry: "MSM",
     industryName: "Manufacturing",
-    desc: "Investigate energy and environmental impacts and solutions in a manufacturing environment.",
+    question: "Have you effectively analysed the workplace in relation to environmentally sustainable work practices, and implemented improvements and monitored their effectiveness?",
     elements: ["Investigate energy impacts", "Investigate environmental impacts", "Develop and report on solutions"],
   },
   {
@@ -1147,7 +1161,7 @@ export const UNITS = [
     title: "Develop workplace policies and procedures for environmental sustainability",
     industry: "MSM",
     industryName: "Manufacturing",
-    desc: "Develop workplace policies and procedures for environmental sustainability in a manufacturing environment.",
+    question: "Have you developed and implemented a workplace sustainability policy, including the modification of the policy to suit changed circumstances in the workplace?",
     elements: ["Develop environmental policies", "Develop sustainability procedures", "Implement and review policies"],
   },
   {
@@ -1155,7 +1169,7 @@ export const UNITS = [
     title: "Use HACCP principles",
     industry: "MSM",
     industryName: "Manufacturing",
-    desc: "Apply hazard analysis and critical control point (HACCP) principles to the manufacture of food products.",
+    question: "Have you applied the hazard analysis and critical control point (HACCP) principles to the manufacture of products to be used in contact with food, beverages or pharmaceuticals?",
     elements: ["Prepare to implement HACCP plan", "Implement HACCP plan", "Monitor HACCP plan"],
   },
 
@@ -1165,7 +1179,7 @@ export const UNITS = [
     title: "Supervise a laboratory",
     industry: "RII",
     industryName: "Resources & Infrastructure",
-    desc: "Supervise laboratory operations and staff in a resources and infrastructure environment.",
+    question: "Have you monitored laboratory operations and the quality of results in the extractive industry? This includes establishing resource requirements.",
     elements: ["Prepare to supervise laboratory", "Supervise laboratory activities", "Review and report on laboratory operations"],
   },
 
@@ -1175,7 +1189,7 @@ export const UNITS = [
     title: "Provide work skill instruction",
     industry: "TAE",
     industryName: "Training & Education",
-    desc: "Conduct individual and small group work skill instruction using existing support materials.",
+    question: "Have you conducted individual and small group work skill instruction using existing support materials and demonstration of work skills as a training methodology?",
     elements: ["Prepare for training delivery", "Deliver work skill training", "Review and report on training delivery"],
   },
 ];

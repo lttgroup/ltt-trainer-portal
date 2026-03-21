@@ -39,14 +39,19 @@ function UnitCard({ unit, response, onChange }) {
         </span>
         <p className="text-sm font-medium text-gray-800 flex-1">{unit.title}</p>
         <button onClick={() => setExpanded(!expanded)} className="text-xs text-gray-400 hover:text-gray-600 flex-shrink-0 px-2">
-          {expanded ? "▲ Hide" : "▼ Details"}
+          {expanded ? "▲ Hide" : "▼ Elements"}
         </button>
       </div>
 
-      {/* Expandable details */}
+      {/* Experience question */}
+      <div className="px-5 pb-3">
+        <p className="text-sm text-gray-600 leading-relaxed">{unit.question}</p>
+      </div>
+
+      {/* Expandable elements */}
       {expanded && (
         <div className="px-5 pb-4 border-t border-gray-100 pt-3">
-          <p className="text-sm text-gray-500 mb-3">{unit.desc}</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Unit elements</p>
           <div className="space-y-1">
             {unit.elements.map((el, i) => (
               <div key={i} className="flex gap-2 text-sm text-gray-500">
@@ -60,25 +65,13 @@ function UnitCard({ unit, response, onChange }) {
 
       {/* Response options */}
       <div className="flex gap-2 px-5 py-3 border-t border-gray-100 bg-gray-50">
-        <span className="text-xs text-gray-400 self-center mr-1 flex-shrink-0">Experience:</span>
+        <span className="text-xs text-gray-400 self-center mr-1 flex-shrink-0">Your response:</span>
         {RESPONSE_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             onClick={() => onChange(unit.code, opt.value)}
             className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
-            style={
-              response === opt.value
-                ? {
-                    backgroundColor: opt.bg,
-                    color: opt.color,
-                    borderColor: opt.border,
-                  }
-                : {
-                    backgroundColor: "white",
-                    color: "#6b7280",
-                    borderColor: "#e5e7eb",
-                  }
-            }
+            style={response === opt.value ? { backgroundColor: opt.bg, color: opt.color, borderColor: opt.border } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
           >
             {opt.label}
           </button>
@@ -87,7 +80,6 @@ function UnitCard({ unit, response, onChange }) {
     </div>
   );
 }
-
 export default function Questionnaire({ profile }) {
   const navigate = useNavigate();
   const [trainerId, setTrainerId] = useState(null);
