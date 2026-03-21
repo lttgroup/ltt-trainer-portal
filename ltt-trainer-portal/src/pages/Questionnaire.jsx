@@ -31,7 +31,7 @@ function Step1({ onContinue }) {
         <div className="text-xs font-semibold mb-1" style={{ color: "rgba(255,255,255,0.5)", letterSpacing: "0.08em" }}>
           STEP 1 OF 3
         </div>
-        <h2 className="text-lg font-semibold text-white mb-2">Select your relevant industries</h2>
+        <h2 className="text-lg font-semibold text-white mb-2">Section 5 — Skills Questionnaire</h2>{" "}
         <p className="text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
           Select all industries where you have workplace experience. You will be asked to confirm no experience in the remaining industries, then complete unit-level questions for your selected industries only.
         </p>

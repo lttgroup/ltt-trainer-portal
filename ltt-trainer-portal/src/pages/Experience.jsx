@@ -142,7 +142,7 @@ export default function Experience({ profile }) {
 
       {/* Progress header */}
       <div className="rounded-xl p-6 mb-6" style={{ backgroundColor: "#081a47" }}>
-        <h2 className="text-lg font-semibold text-white mb-1">Section 5 — Industry Experience, Skills and Currency</h2>
+        <h2 className="text-lg font-semibold text-white mb-1">Section 6 — Industry Experience, Skills and Currency</h2>{" "}
         <p className="text-sm mb-3" style={{ color: "rgba(255,255,255,0.65)" }}>
           For each unit you indicated <strong>Yes</strong> in the Skills Questionnaire, describe your workplace experience, skills and knowledge below.
         </p>
