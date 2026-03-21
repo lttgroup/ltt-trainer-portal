@@ -46,9 +46,10 @@ function RadioGroup({ options, value, onChange }) {
   );
 }
 
-// Industry qualifications sub-component (Section 3)
+// Section 3 — Industry qualifications
+// Compliance-only columns (Verified By, Copy Held) removed — completed by compliance officer
 function IndustryQualifications({ trainerId }) {
-  const [rows, setRows] = useState([{ qualification_code: "", qualification_title: "", provider_name: "", provider_id: "", issue_date: "", verified_by: "", copy_held: false }]);
+  const [rows, setRows] = useState([{ qualification_code: "", qualification_title: "", provider_name: "", provider_id: "", issue_date: "" }]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -77,8 +78,6 @@ function IndustryQualifications({ trainerId }) {
         provider_name: "",
         provider_id: "",
         issue_date: "",
-        verified_by: "",
-        copy_held: false,
       },
     ]);
   };
@@ -100,7 +99,7 @@ function IndustryQualifications({ trainerId }) {
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-gray-50">
-              {["Qual Code", "Title", "Provider", "Issue Date", "Verified By", "Copy Held"].map((h) => (
+              {["Qualification Code", "Title", "Provider Name", "Provider ID", "Issue Date"].map((h) => (
                 <th key={h} className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-200">
                   {h}
                 </th>
@@ -130,26 +129,15 @@ function IndustryQualifications({ trainerId }) {
                   <input
                     value={row.provider_name || ""}
                     onChange={(e) => updateRow(i, "provider_name", e.target.value)}
-                    placeholder="TAFE QLD 0275"
+                    placeholder="TAFE QLD"
                     className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-400"
                   />
+                </td>
+                <td className="px-2 py-2">
+                  <input value={row.provider_id || ""} onChange={(e) => updateRow(i, "provider_id", e.target.value)} placeholder="0275" className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-400" />
                 </td>
                 <td className="px-2 py-2">
                   <input type="date" value={row.issue_date || ""} onChange={(e) => updateRow(i, "issue_date", e.target.value)} className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-400" />
-                </td>
-                <td className="px-2 py-2">
-                  <input
-                    value={row.verified_by || ""}
-                    onChange={(e) => updateRow(i, "verified_by", e.target.value)}
-                    placeholder="Initials"
-                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-400"
-                  />
-                </td>
-                <td className="px-2 py-2">
-                  <select value={row.copy_held ? "Yes" : "No"} onChange={(e) => updateRow(i, "copy_held", e.target.value === "Yes")} className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none">
-                    <option>Yes</option>
-                    <option>No</option>
-                  </select>
                 </td>
               </tr>
             ))}
@@ -183,17 +171,17 @@ export default function Profile({ profile }) {
     position: "",
     employment_status: "",
     phone: "",
-    // Section 2
+    // Section 2 — TAE credential
     tae_qualification: "",
     tae_provider: "",
+    tae_provider_id: "",
     tae_issue_date: "",
-    tae_verified_by: "",
-    tae_copy_held: false,
+    // Section 2 — Under direction
     under_direction_qualification: "",
     under_direction_provider: "",
+    under_direction_provider_id: "",
     under_direction_commencement: "",
-    under_direction_verified_by: "",
-    // Section 4
+    // Section 4 — Declaration
     declaration_credentials: false,
     declaration_copies: false,
     declaration_signature: "",
@@ -264,13 +252,12 @@ export default function Profile({ profile }) {
         trainer_id: trainerId,
         tae_qualification: form.tae_qualification,
         tae_provider: form.tae_provider,
+        tae_provider_id: form.tae_provider_id,
         tae_issue_date: form.tae_issue_date || null,
-        tae_verified_by: form.tae_verified_by,
-        tae_copy_held: form.tae_copy_held,
         under_direction_qualification: form.under_direction_qualification,
         under_direction_provider: form.under_direction_provider,
+        under_direction_provider_id: form.under_direction_provider_id,
         under_direction_commencement: form.under_direction_commencement || null,
-        under_direction_verified_by: form.under_direction_verified_by,
         declaration_credentials: form.declaration_credentials,
         declaration_copies: form.declaration_copies,
         declaration_signature: form.declaration_signature,
@@ -354,38 +341,35 @@ export default function Profile({ profile }) {
           <FieldGroup label="Qualification Code and Title">
             <Input value={form.tae_qualification} onChange={(v) => updateForm("tae_qualification", v)} placeholder="e.g. TAE40122 Cert IV Training & Assessment" />
           </FieldGroup>
-          <FieldGroup label="Provider Name and ID">
-            <Input value={form.tae_provider} onChange={(v) => updateForm("tae_provider", v)} placeholder="e.g. TAFE QLD 0275" />
-          </FieldGroup>
-        </div>
-        <div className="grid grid-cols-3 gap-4 mb-4">
           <FieldGroup label="Issue Date">
             <Input type="date" value={form.tae_issue_date} onChange={(v) => updateForm("tae_issue_date", v)} />
           </FieldGroup>
-          <FieldGroup label="Verified By">
-            <Input value={form.tae_verified_by} onChange={(v) => updateForm("tae_verified_by", v)} placeholder="Initials" />
+        </div>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <FieldGroup label="Provider Name">
+            <Input value={form.tae_provider} onChange={(v) => updateForm("tae_provider", v)} placeholder="e.g. TAFE QLD" />
           </FieldGroup>
-          <FieldGroup label="Copy Held">
-            <RadioGroup options={["Yes", "No"]} value={form.tae_copy_held ? "Yes" : "No"} onChange={(v) => updateForm("tae_copy_held", v === "Yes")} />
+          <FieldGroup label="Provider ID">
+            <Input value={form.tae_provider_id} onChange={(v) => updateForm("tae_provider_id", v)} placeholder="e.g. 0275" />
           </FieldGroup>
         </div>
 
-        <div className="border-t border-gray-100 pt-4 mt-4">
+        <div className="border-t border-gray-100 pt-4 mt-2">
           <p className="text-xs text-gray-400 mb-4">If training under direction — credential enrolled in</p>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <FieldGroup label="Qualification Code and Title">
               <Input value={form.under_direction_qualification} onChange={(v) => updateForm("under_direction_qualification", v)} placeholder="Qualification currently enrolled in" />
             </FieldGroup>
-            <FieldGroup label="Provider Name and ID">
-              <Input value={form.under_direction_provider} onChange={(v) => updateForm("under_direction_provider", v)} placeholder="Provider name + ID" />
-            </FieldGroup>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
             <FieldGroup label="Commencement Date">
               <Input type="date" value={form.under_direction_commencement} onChange={(v) => updateForm("under_direction_commencement", v)} />
             </FieldGroup>
-            <FieldGroup label="Verified By">
-              <Input value={form.under_direction_verified_by} onChange={(v) => updateForm("under_direction_verified_by", v)} placeholder="Initials" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <FieldGroup label="Provider Name">
+              <Input value={form.under_direction_provider} onChange={(v) => updateForm("under_direction_provider", v)} placeholder="e.g. TAFE QLD" />
+            </FieldGroup>
+            <FieldGroup label="Provider ID">
+              <Input value={form.under_direction_provider_id} onChange={(v) => updateForm("under_direction_provider_id", v)} placeholder="e.g. 0275" />
             </FieldGroup>
           </div>
         </div>
@@ -429,7 +413,7 @@ export default function Profile({ profile }) {
             {saving ? "Saving..." : saved ? "✓ Saved" : "Save Draft"}
           </button>
           <button onClick={handleSubmit} disabled={saving} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white" style={{ backgroundColor: "#1c5ea8" }}>
-            Save & Continue to Skills Questionnaire →
+            Save & Continue to Section 5 →
           </button>
         </div>
       </div>
