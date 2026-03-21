@@ -9,7 +9,7 @@ const RESPONSE_OPTIONS = [
 ];
 
 // ─── STEP 1: Industry Selection ───
-function IndustryStep({ onContinue }) {
+function Step1({ onContinue }) {
   const [selected, setSelected] = useState(new Set());
 
   const toggle = (code) => {
@@ -21,21 +21,22 @@ function IndustryStep({ onContinue }) {
   };
 
   const unitCount = (code) => UNITS.filter((u) => u.industry === code).length;
-
-  const selectedUnits = [...selected].reduce((a, c) => a + unitCount(c), 0);
-  const remainingUnits = UNITS.length - selectedUnits;
+  const selectedUnitCount = [...selected].reduce((a, c) => a + unitCount(c), 0);
+  const unselectedUnitCount = UNITS.length - selectedUnitCount;
+  const unselectedIndustries = INDUSTRIES.filter((i) => !selected.has(i.code));
 
   return (
     <div>
-      {/* Header card */}
       <div className="rounded-xl p-6 mb-6" style={{ backgroundColor: "#081a47" }}>
-        <h2 className="text-lg font-semibold text-white mb-1">Step 1 — Select your relevant industries</h2>
+        <div className="text-xs font-semibold mb-1" style={{ color: "rgba(255,255,255,0.5)", letterSpacing: "0.08em" }}>
+          STEP 1 OF 3
+        </div>
+        <h2 className="text-lg font-semibold text-white mb-2">Select your relevant industries</h2>
         <p className="text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
-          Select the industries where you have workplace experience. These will appear first in your questionnaire. You must still actively review and respond to every unit — no units will be skipped.
+          Select all industries where you have workplace experience. You will be asked to confirm no experience in the remaining industries, then complete unit-level questions for your selected industries only.
         </p>
       </div>
 
-      {/* Industry grid */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         {INDUSTRIES.map((ind) => {
           const count = unitCount(ind.code);
@@ -44,16 +45,21 @@ function IndustryStep({ onContinue }) {
             <button
               key={ind.code}
               onClick={() => toggle(ind.code)}
-              className="text-left rounded-xl p-4 border transition-all"
+              className="text-left rounded-xl p-4 transition-all"
               style={{
                 backgroundColor: isSelected ? "#e6f0ff" : "#fff",
-                borderColor: isSelected ? "#1c5ea8" : "#e5e7eb",
-                borderWidth: isSelected ? "2px" : "1px",
+                border: isSelected ? "2px solid #1c5ea8" : "1px solid #e5e7eb",
               }}
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded mb-2 inline-block font-mono" style={{ backgroundColor: isSelected ? "#1c5ea8" : "#f0f4f8", color: isSelected ? "#fff" : "#1c5ea8" }}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <span
+                    className="text-xs font-bold px-2 py-0.5 rounded mb-2 inline-block font-mono"
+                    style={{
+                      backgroundColor: isSelected ? "#1c5ea8" : "#f0f4f8",
+                      color: isSelected ? "#fff" : "#1c5ea8",
+                    }}
+                  >
                     {ind.code}
                   </span>
                   <p className="text-sm font-medium text-gray-800 leading-tight">{ind.name}</p>
@@ -81,24 +87,116 @@ function IndustryStep({ onContinue }) {
       </div>
 
       {/* Summary */}
-      <div className="rounded-xl p-4 mb-5 text-sm" style={{ backgroundColor: "#f0f5ff", border: "1px solid #c7d9f5" }}>
-        {selected.size === 0 ? (
-          <p style={{ color: "#1c5ea8" }}>Select at least one industry to continue. You can still answer all units.</p>
-        ) : (
+      {selected.size > 0 && (
+        <div className="rounded-xl p-4 mb-5 text-sm" style={{ backgroundColor: "#f0f5ff", border: "1px solid #c7d9f5" }}>
           <p style={{ color: "#1c5ea8" }}>
             <strong>
               {selected.size} industr{selected.size === 1 ? "y" : "ies"} selected
             </strong>{" "}
-            — {selectedUnits} units will appear first.
-            {remainingUnits > 0 && <span style={{ color: "#4b7dc8" }}> The remaining {remainingUnits} units from other industries will appear below and must also be completed.</span>}
+            — {selectedUnitCount} units to complete actively.
+            {unselectedIndustries.length > 0 && (
+              <span style={{ color: "#4b7dc8" }}>
+                {" "}
+                {unselectedUnitCount} units across {unselectedIndustries.length} other industr{unselectedIndustries.length === 1 ? "y" : "ies"} will be reviewed for confirmation in the next step.
+              </span>
+            )}
           </p>
-        )}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-gray-400">Select at least one industry to continue</p>
+        <button onClick={() => onContinue([...selected])} disabled={selected.size === 0} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: selected.size === 0 ? "#9ca3af" : "#1c5ea8" }}>
+          Continue →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── STEP 2: Confirm No Experience ───
+function Step2({ relevantIndustries, onConfirm, onBack }) {
+  const [confirmed, setConfirmed] = useState(false);
+
+  const unselectedIndustries = INDUSTRIES.filter((i) => !relevantIndustries.includes(i.code));
+
+  const totalUnits = unselectedIndustries.reduce((a, i) => a + UNITS.filter((u) => u.industry === i.code).length, 0);
+
+  if (unselectedIndustries.length === 0) {
+    onConfirm();
+    return null;
+  }
+
+  return (
+    <div>
+      <div className="rounded-xl p-6 mb-6" style={{ backgroundColor: "#081a47" }}>
+        <div className="text-xs font-semibold mb-1" style={{ color: "rgba(255,255,255,0.5)", letterSpacing: "0.08em" }}>
+          STEP 2 OF 3
+        </div>
+        <h2 className="text-lg font-semibold text-white mb-2">Confirm no experience in remaining industries</h2>
+        <p className="text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+          The {totalUnits} units below will be automatically recorded as <strong>No</strong> based on your industry selections. Please review carefully and confirm.
+        </p>
+      </div>
+
+      {/* Unselected industries and their units */}
+      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+        {unselectedIndustries.map((ind, idx) => {
+          const units = UNITS.filter((u) => u.industry === ind.code);
+          return (
+            <div key={ind.code} className={idx < unselectedIndustries.length - 1 ? "mb-6 pb-6 border-b border-gray-100" : ""}>
+              {/* Industry header */}
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-xs font-bold px-2.5 py-1 rounded font-mono" style={{ backgroundColor: "#f0f4f8", color: "#1c5ea8" }}>
+                  {ind.code}
+                </span>
+                <span className="text-sm font-semibold text-gray-800">{ind.name}</span>
+                <span className="text-xs text-gray-400 ml-auto">
+                  {units.length} unit{units.length !== 1 ? "s" : ""} → marked No
+                </span>
+              </div>
+
+              {/* Unit cards grid */}
+              <div className="grid grid-cols-3 gap-2">
+                {units.map((unit) => (
+                  <div
+                    key={unit.code}
+                    className="rounded-lg p-2.5"
+                    style={{
+                      backgroundColor: "#fdeaea",
+                      border: "0.5px solid #fca5a5",
+                    }}
+                  >
+                    <div className="text-xs font-bold font-mono mb-1" style={{ color: "#c93535" }}>
+                      {unit.code}
+                    </div>
+                    <div className="text-xs leading-snug" style={{ color: "#7f1d1d" }}>
+                      {unit.title}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Confirmation checkbox */}
+      <div className="rounded-xl p-4 mb-5" style={{ backgroundColor: "#fff8ed", border: "1px solid #fcd34d" }}>
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="mt-0.5 flex-shrink-0" style={{ accentColor: "#081a47" }} />
+          <span className="text-sm text-gray-700">
+            I confirm that I have <strong>no workplace experience</strong> in the industries listed above. I understand that all {totalUnits} units within these industries will be recorded as <strong>No</strong> on my Skills Questionnaire.
+          </span>
+        </label>
       </div>
 
       <div className="flex items-center justify-between">
-        <p className="text-xs text-gray-400">You must respond to all {UNITS.length} units before submitting</p>
-        <button onClick={() => onContinue([...selected])} disabled={selected.size === 0} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: selected.size === 0 ? "#9ca3af" : "#1c5ea8" }}>
-          Continue to questionnaire →
+        <button onClick={onBack} className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+          ← Back to industry selection
+        </button>
+        <button onClick={onConfirm} disabled={!confirmed} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: confirmed ? "#1c5ea8" : "#9ca3af" }}>
+          Confirm and continue →
         </button>
       </div>
     </div>
@@ -112,7 +210,7 @@ function UnitCard({ unit, response, onChange }) {
   const holds = response?.holds;
 
   return (
-    <div className="bg-white rounded-xl overflow-hidden mb-3 border transition-all" style={{ borderColor: exp ? "#e5e7eb" : "#e5e7eb" }}>
+    <div className="bg-white rounded-xl overflow-hidden mb-3 border border-gray-200">
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-3">
         <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
@@ -121,14 +219,14 @@ function UnitCard({ unit, response, onChange }) {
         <p className="text-sm font-medium text-gray-800 flex-1 leading-snug">{unit.title}</p>
         {exp && (
           <span
-            className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+            className="text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0"
             style={{
               backgroundColor: exp === "yes" ? "#e6f9f4" : "#fdeaea",
               color: exp === "yes" ? "#0f7a5a" : "#c93535",
             }}
           >
             {exp === "yes" ? "✓ Yes" : "✗ No"}
-            {holds ? " + holds" : ""}
+            {holds ? " + holds unit" : ""}
           </span>
         )}
       </div>
@@ -140,7 +238,7 @@ function UnitCard({ unit, response, onChange }) {
 
       {/* Expandable elements */}
       <div className="px-5 pb-2">
-        <button onClick={() => setExpanded(!expanded)} className="text-xs font-medium transition-colors" style={{ color: "#1c5ea8" }}>
+        <button onClick={() => setExpanded(!expanded)} className="text-xs font-medium" style={{ color: "#1c5ea8" }}>
           {expanded ? "▲ Hide unit elements" : "▼ View unit elements"}
         </button>
         {expanded && (
@@ -156,7 +254,7 @@ function UnitCard({ unit, response, onChange }) {
       </div>
 
       {/* Response options */}
-      <div className="px-5 py-3 border-t" style={{ backgroundColor: "#f9fafb", borderColor: "#f0f0f0" }}>
+      <div className="px-5 py-3 border-t border-gray-100" style={{ backgroundColor: "#f9fafb" }}>
         {/* Yes / No */}
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs text-gray-400 mr-1 flex-shrink-0">Workplace experience:</span>
@@ -178,8 +276,8 @@ function UnitCard({ unit, response, onChange }) {
           ))}
         </div>
 
-        {/* I hold this unit — separate row */}
-        <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: "#e9e9e9" }}>
+        {/* I hold this unit */}
+        <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
           <span className="text-xs text-gray-400 mr-1 flex-shrink-0">Qualification held:</span>
           <button
             onClick={() => {
@@ -205,54 +303,31 @@ function UnitCard({ unit, response, onChange }) {
 }
 
 // ─── INDUSTRY SECTION ───
-function IndustrySection({ industry, units, responses, onChange, isRelevant }) {
-  const [collapsed, setCollapsed] = useState(!isRelevant);
-
+function IndustrySection({ industry, units, responses, onChange }) {
   const answered = units.filter((u) => responses[u.code]?.experience).length;
   const total = units.length;
   const allAnswered = answered === total;
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div className="mb-4">
-      {/* Section header */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="w-full flex items-center gap-3 py-3 px-4 rounded-xl border text-left transition-all"
-        style={{
-          backgroundColor: isRelevant ? "#081a47" : "#f9fafb",
-          borderColor: isRelevant ? "#081a47" : "#e5e7eb",
-        }}
-      >
-        <span
-          className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0"
-          style={{
-            backgroundColor: isRelevant ? "rgba(255,255,255,0.15)" : "#e6f0ff",
-            color: isRelevant ? "#fff" : "#1c5ea8",
-          }}
-        >
+      <button onClick={() => setCollapsed(!collapsed)} className="w-full flex items-center gap-3 py-3 px-4 rounded-xl border text-left transition-all" style={{ backgroundColor: "#081a47", borderColor: "#081a47" }}>
+        <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#fff" }}>
           {industry.code}
         </span>
-        <span className="text-sm font-semibold flex-1" style={{ color: isRelevant ? "#fff" : "#1e2535" }}>
-          {industry.name}
-        </span>
-
-        {/* Progress pill */}
+        <span className="text-sm font-semibold text-white flex-1">{industry.name}</span>
         <span
           className="text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0"
           style={{
-            backgroundColor: allAnswered ? "#e6f9f4" : isRelevant ? "rgba(255,255,255,0.15)" : "#f0f4f8",
-            color: allAnswered ? "#0f7a5a" : isRelevant ? "#fff" : "#6b7280",
+            backgroundColor: allAnswered ? "#e6f9f4" : "rgba(255,255,255,0.15)",
+            color: allAnswered ? "#0f7a5a" : "#fff",
           }}
         >
           {answered}/{total} answered
         </span>
-
-        {!isRelevant && <span className="text-xs text-gray-400 flex-shrink-0 mr-1">Other industry</span>}
-
-        <span style={{ color: isRelevant ? "rgba(255,255,255,0.6)" : "#9ca3af", fontSize: "11px" }}>{collapsed ? "▼" : "▲"}</span>
+        <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "11px" }}>{collapsed ? "▼" : "▲"}</span>
       </button>
 
-      {/* Units */}
       {!collapsed && (
         <div className="mt-3">
           {units.map((unit) => (
@@ -264,7 +339,91 @@ function IndustrySection({ industry, units, responses, onChange, isRelevant }) {
   );
 }
 
-// ─── MAIN QUESTIONNAIRE ───
+// ─── STEP 3: Unit Questions ───
+function Step3({ relevantIndustries, responses, onChange, onSave, onSubmit, saving, saved, error }) {
+  const [showIncomplete, setShowIncomplete] = useState(false);
+
+  const relevantUnits = UNITS.filter((u) => relevantIndustries.includes(u.industry));
+  const answeredCount = relevantUnits.filter((u) => responses[u.code]?.experience).length;
+  const totalCount = relevantUnits.length;
+  const pct = Math.round((answeredCount / totalCount) * 100);
+
+  const handleSubmitClick = () => {
+    const unanswered = relevantUnits.filter((u) => !responses[u.code]?.experience);
+    if (unanswered.length > 0) {
+      setShowIncomplete(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    onSubmit();
+  };
+
+  const orderedIndustries = INDUSTRIES.filter((i) => relevantIndustries.includes(i.code));
+
+  return (
+    <div>
+      {/* Progress header */}
+      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Step 3 of 3</div>
+            <h2 className="text-sm font-semibold text-gray-800">Skills Questionnaire — your selected industries</h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {answeredCount} of {totalCount} units completed
+            </p>
+          </div>
+          <span className="text-2xl font-bold" style={{ color: pct === 100 ? "#32ba9a" : "#1c5ea8" }}>
+            {pct}%
+          </span>
+        </div>
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all"
+            style={{
+              width: `${pct}%`,
+              backgroundColor: pct === 100 ? "#32ba9a" : "#1c5ea8",
+            }}
+          />
+        </div>
+        <p className="text-xs text-gray-400 mt-3">
+          Select <strong>Yes</strong> or <strong>No</strong> for each unit. If you have previously been deemed competent, also select <strong>I hold this unit</strong>.
+        </p>
+      </div>
+
+      {/* Incomplete warning */}
+      {showIncomplete && (
+        <div className="rounded-xl px-4 py-3 mb-5" style={{ backgroundColor: "#fff8ed", border: "1px solid #fcd34d" }}>
+          <p className="text-sm font-semibold text-amber-800 mb-1">
+            {totalCount - answeredCount} unit{totalCount - answeredCount !== 1 ? "s" : ""} still need a response
+          </p>
+          <p className="text-xs text-amber-700">Please scroll through each section and complete all remaining units before submitting.</p>
+          <button onClick={() => setShowIncomplete(false)} className="text-xs font-medium mt-2" style={{ color: "#b45309" }}>
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5">{error}</div>}
+
+      {/* Industry sections */}
+      {orderedIndustries.map((industry) => (
+        <IndustrySection key={industry.code} industry={industry} units={UNITS.filter((u) => u.industry === industry.code)} responses={responses} onChange={onChange} />
+      ))}
+
+      {/* Action buttons */}
+      <div className="flex items-center justify-between pt-2 pb-8">
+        <button onClick={onSave} disabled={saving} className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors">
+          {saving ? "Saving..." : saved ? "✓ Saved" : "Save progress"}
+        </button>
+        <button onClick={handleSubmitClick} disabled={saving} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: pct === 100 ? "#32ba9a" : "#1c5ea8" }}>
+          {pct === 100 ? "Submit & continue to profile →" : `Submit & continue → (${totalCount - answeredCount} remaining)`}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── MAIN ───
 export default function Questionnaire({ profile }) {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
@@ -275,7 +434,6 @@ export default function Questionnaire({ profile }) {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showIncomplete, setShowIncomplete] = useState(false);
 
   useEffect(() => {
     fetchTrainerAndResponses();
@@ -305,8 +463,21 @@ export default function Questionnaire({ profile }) {
         };
       });
       setResponses(mapped);
-      // Skip step 1 if already started
-      setStep(2);
+
+      // Work out which industries had yes/hold responses
+      // to pre-populate relevant industries on return visit
+      const answeredIndustries = new Set(
+        existing
+          .filter((r) => r.response === "yes")
+          .map((r) => UNITS.find((u) => u.code === r.unit_code)?.industry)
+          .filter(Boolean),
+      );
+      if (answeredIndustries.size > 0) {
+        setRelevantIndustries([...answeredIndustries]);
+        setStep(3);
+      } else {
+        setStep(1);
+      }
     }
 
     setLoading(false);
@@ -346,23 +517,36 @@ export default function Questionnaire({ profile }) {
     setSaving(false);
   };
 
+  const handleConfirmStep2 = async () => {
+    if (!trainerId) return;
+
+    // Auto-save No for all unselected industry units
+    const unselectedUnits = UNITS.filter((u) => !relevantIndustries.includes(u.industry));
+
+    const upserts = unselectedUnits.map((unit) => ({
+      trainer_id: trainerId,
+      unit_code: unit.code,
+      unit_title: unit.title,
+      industry: unit.industry,
+      response: "no",
+      holds_unit: false,
+    }));
+
+    await supabase.from("questionnaire_responses").upsert(upserts, { onConflict: "trainer_id,unit_code" });
+
+    // Update local state
+    const updated = { ...responses };
+    unselectedUnits.forEach((unit) => {
+      updated[unit.code] = { experience: "no", holds: false };
+    });
+    setResponses(updated);
+    setStep(3);
+  };
+
   const handleSubmit = async () => {
-    // Check all units answered
-    const unanswered = UNITS.filter((u) => !responses[u.code]?.experience);
-    if (unanswered.length > 0) {
-      setShowIncomplete(true);
-      return;
-    }
     await handleSave();
     navigate("/profile");
   };
-
-  const answeredCount = UNITS.filter((u) => responses[u.code]?.experience).length;
-  const totalCount = UNITS.length;
-  const pct = Math.round((answeredCount / totalCount) * 100);
-
-  // Sort industries — relevant ones first
-  const orderedIndustries = [...INDUSTRIES.filter((i) => relevantIndustries.includes(i.code)), ...INDUSTRIES.filter((i) => !relevantIndustries.includes(i.code))];
 
   if (loading) {
     return (
@@ -372,82 +556,20 @@ export default function Questionnaire({ profile }) {
     );
   }
 
-  // ── Step 1: Industry selection ──
-  if (step === 1) {
-    return (
-      <IndustryStep
-        onContinue={(selected) => {
-          setRelevantIndustries(selected);
-          setStep(2);
-        }}
-      />
-    );
-  }
-
-  // ── Step 2: Unit questions ──
   return (
     <div>
-      {/* Progress header */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-sm font-semibold text-gray-800">Step 2 — Skills Questionnaire</h2>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {answeredCount} of {totalCount} units completed
-              {relevantIndustries.length > 0 && (
-                <button onClick={() => setStep(1)} className="ml-3 underline" style={{ color: "#1c5ea8" }}>
-                  ← Change industries
-                </button>
-              )}
-            </p>
-          </div>
-          <span className="text-lg font-bold" style={{ color: pct === 100 ? "#32ba9a" : "#1c5ea8" }}>
-            {pct}%
-          </span>
-        </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all"
-            style={{
-              width: `${pct}%`,
-              backgroundColor: pct === 100 ? "#32ba9a" : "#1c5ea8",
-            }}
-          />
-        </div>
-        <p className="text-xs text-gray-400 mt-3">
-          For each unit select <strong>Yes</strong> or <strong>No</strong> for workplace experience. If you have previously been deemed competent in the unit, also select <strong>I hold this unit</strong>. You must respond to every unit before
-          submitting.
-        </p>
-      </div>
-
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5">{error}</div>}
-
-      {/* Incomplete warning */}
-      {showIncomplete && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
-          <p className="text-sm font-semibold text-amber-800 mb-1">{totalCount - answeredCount} units still need a response</p>
-          <p className="text-xs text-amber-700">Every unit requires a Yes or No response before you can submit. Please scroll through all sections — including the collapsed industries below — and complete any remaining units.</p>
-          <button onClick={() => setShowIncomplete(false)} className="text-xs font-medium mt-2" style={{ color: "#b45309" }}>
-            Dismiss
-          </button>
-        </div>
+      {step === 1 && (
+        <Step1
+          onContinue={(selected) => {
+            setRelevantIndustries(selected);
+            setStep(2);
+          }}
+        />
       )}
 
-      {/* Industries and units */}
-      {orderedIndustries.map((industry) => {
-        const units = UNITS.filter((u) => u.industry === industry.code);
-        return <IndustrySection key={industry.code} industry={industry} units={units} responses={responses} onChange={handleResponse} isRelevant={relevantIndustries.includes(industry.code)} />;
-      })}
+      {step === 2 && <Step2 relevantIndustries={relevantIndustries} onConfirm={handleConfirmStep2} onBack={() => setStep(1)} />}
 
-      {/* Action buttons */}
-      <div className="flex items-center justify-between pt-2 pb-8">
-        <button onClick={handleSave} disabled={saving} className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors">
-          {saving ? "Saving..." : saved ? "✓ Saved" : "Save Progress"}
-        </button>
-        <button onClick={handleSubmit} disabled={saving} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: pct === 100 ? "#32ba9a" : "#1c5ea8" }}>
-          {pct === 100 ? "Submit & continue to profile →" : `Continue to profile → (${totalCount - answeredCount} remaining)`}
-        </button>
-      </div>
+      {step === 3 && <Step3 relevantIndustries={relevantIndustries} responses={responses} onChange={handleResponse} onSave={handleSave} onSubmit={handleSubmit} saving={saving} saved={saved} error={error} />}
     </div>
   );
 }
