@@ -106,9 +106,17 @@ function Step1({ onContinue }) {
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-gray-400">Select at least one industry to continue</p>
-        <button onClick={() => onContinue([...selected])} disabled={selected.size === 0} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: selected.size === 0 ? "#9ca3af" : "#1c5ea8" }}>
+        <button
+          onClick={() => {
+            onContinue([...selected]);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          disabled={selected.size === 0}
+          className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors"
+          style={{ backgroundColor: selected.size === 0 ? "#9ca3af" : "#1c5ea8" }}
+        >
           Continue →
-        </button>
+        </button>{" "}
       </div>
     </div>
   );
@@ -529,7 +537,6 @@ export default function Questionnaire({ profile }) {
   const handleConfirmStep2 = async () => {
     if (!trainerId) return;
 
-    // Auto-save No for all unselected industry units
     const unselectedUnits = UNITS.filter((u) => !relevantIndustries.includes(u.industry));
 
     const upserts = unselectedUnits.map((unit) => ({
@@ -543,15 +550,14 @@ export default function Questionnaire({ profile }) {
 
     await supabase.from("questionnaire_responses").upsert(upserts, { onConflict: "trainer_id,unit_code" });
 
-    // Update local state
     const updated = { ...responses };
     unselectedUnits.forEach((unit) => {
       updated[unit.code] = { experience: "no", holds: false };
     });
     setResponses(updated);
     setStep(3);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
   const handleSubmit = async () => {
     await handleSave();
     navigate("/profile");
