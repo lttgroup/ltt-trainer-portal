@@ -4,48 +4,78 @@ import { supabase } from "../lib/supabase";
 import { UNITS } from "../lib/units";
 
 // ── Single unit card ──────────────────────────────────────────────────────────
-function UnitExperienceCard({ unit, exp, onUpdateElement, onUpdatePD, onUpdateHasPD }) {
-  const topRef = useRef(null);
+function UnitExperienceCard({ unit, exp, onUpdateElement, onUpdatePD, onUpdateHasPD, onComplete, isFirst }) {
+  const [openElement, setOpenElement] = useState(isFirst ? 0 : null);
+  const [collapsed, setCollapsed] = useState(false);
 
-  // A unit is complete when all elements have text AND pd choice has been made
   const elementsComplete = unit.elements.length > 0 ? unit.elements.every((_, i) => exp.element_descriptions?.[i]?.trim()) : !!exp.element_descriptions?.[0]?.trim();
 
   const pdComplete = exp.has_pd === false || (exp.has_pd === true && exp.professional_development?.trim());
   const unitComplete = elementsComplete && pdComplete;
 
-  // Track which element is "open" - auto-close when text entered
-  const [openElement, setOpenElement] = useState(
-    // Open first incomplete element by default
-    unit.elements.findIndex((_, i) => !exp.element_descriptions?.[i]?.trim()),
-  );
+  // When unit becomes complete, collapse after a short delay
+  useEffect(() => {
+    if (unitComplete && !collapsed) {
+      const timer = setTimeout(() => {
+        setCollapsed(true);
+        onComplete();
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [unitComplete]);
 
   const handleElementChange = (idx, value) => {
     onUpdateElement(unit.code, idx, value);
   };
 
   const handleElementBlur = (idx) => {
-    const val = exp.element_descriptions?.[idx]?.trim();
-    if (val) {
-      // Move to next incomplete element
+    if (exp.element_descriptions?.[idx]?.trim()) {
       const nextIncomplete = unit.elements.findIndex((_, i) => i > idx && !exp.element_descriptions?.[i]?.trim());
-      if (nextIncomplete !== -1) {
-        setOpenElement(nextIncomplete);
-      } else {
-        // All elements done — collapse
-        setOpenElement(null);
-      }
+      setOpenElement(nextIncomplete !== -1 ? nextIncomplete : null);
     }
   };
 
+  const handleHasPD = (value) => {
+    onUpdateHasPD(unit.code, value);
+    if (!value) {
+      // No PD — collapse unit immediately
+      setTimeout(() => {
+        setCollapsed(true);
+        onComplete();
+      }, 300);
+    }
+  };
+
+  const handlePDBlur = () => {
+    if (exp.professional_development?.trim()) {
+      // Has text — collapse unit
+      setTimeout(() => {
+        setCollapsed(true);
+        onComplete();
+      }, 400);
+    }
+  };
+
+  // Collapsed view
+  if (collapsed) {
+    return (
+      <div className="bg-white border rounded-xl overflow-hidden cursor-pointer transition-all hover:border-blue-200" style={{ borderColor: "#bbf7d0", backgroundColor: "#f0fdf4" }} onClick={() => setCollapsed(false)}>
+        <div className="flex items-center gap-3 px-5 py-3">
+          <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
+            {unit.code}
+          </span>
+          <span className="text-sm font-medium text-gray-700 flex-1">{unit.title}</span>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>
+            ✓ Complete
+          </span>
+          <span className="text-xs text-gray-400 ml-1">▼ expand</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      ref={topRef}
-      className="bg-white border rounded-xl overflow-hidden transition-all"
-      style={{
-        borderColor: unitComplete ? "#bbf7d0" : "#e5e7eb",
-        backgroundColor: unitComplete ? "#f0fdf4" : "#fff",
-      }}
-    >
+    <div className="bg-white border rounded-xl overflow-hidden transition-all" style={{ borderColor: unitComplete ? "#bbf7d0" : "#e5e7eb" }}>
       {/* Unit header */}
       <div
         className="flex items-center gap-3 px-5 py-3 border-b"
@@ -58,14 +88,14 @@ function UnitExperienceCard({ unit, exp, onUpdateElement, onUpdatePD, onUpdateHa
           {unit.code}
         </span>
         <span className="text-sm font-medium text-gray-800 flex-1">{unit.title}</span>
+        {!elementsComplete && (
+          <span className="text-xs text-gray-400 flex-shrink-0">
+            {unit.elements.filter((_, i) => exp.element_descriptions?.[i]?.trim()).length}/{unit.elements.length} elements
+          </span>
+        )}
         {unitComplete && (
           <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>
             ✓ Complete
-          </span>
-        )}
-        {!unitComplete && (
-          <span className="text-xs text-gray-400 flex-shrink-0">
-            {unit.elements.filter((_, i) => exp.element_descriptions?.[i]?.trim()).length}/{unit.elements.length} elements
           </span>
         )}
       </div>
@@ -89,7 +119,6 @@ function UnitExperienceCard({ unit, exp, onUpdateElement, onUpdatePD, onUpdateHa
                     backgroundColor: isDone && !isOpen ? "#f0fdf4" : "#fff",
                   }}
                 >
-                  {/* Element header — always visible, click to expand */}
                   <button className="w-full flex items-center gap-2 px-3 py-2.5 text-left" onClick={() => setOpenElement(isOpen ? null : idx)}>
                     <span className="text-xs font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ backgroundColor: "#f0f4ff", color: "#1c5ea8" }}>
                       {idx + 1}
@@ -104,18 +133,15 @@ function UnitExperienceCard({ unit, exp, onUpdateElement, onUpdatePD, onUpdateHa
                     )}
                   </button>
 
-                  {/* Collapsed preview when done */}
                   {isDone && !isOpen && (
                     <div className="px-3 pb-2.5">
                       <p className="text-xs text-gray-500 line-clamp-2 italic">{value}</p>
                     </div>
                   )}
 
-                  {/* Textarea when open */}
                   {isOpen && (
                     <div className="px-3 pb-3">
                       <textarea
-                        autoFocus
                         value={value}
                         onChange={(e) => handleElementChange(idx, e.target.value)}
                         onBlur={() => handleElementBlur(idx)}
@@ -148,14 +174,14 @@ function UnitExperienceCard({ unit, exp, onUpdateElement, onUpdatePD, onUpdateHa
             <p className="text-sm font-semibold text-gray-700 mb-3">Have you completed relevant training or professional development for this unit?</p>
             <div className="flex gap-3 mb-3">
               <button
-                onClick={() => onUpdateHasPD(unit.code, true)}
+                onClick={() => handleHasPD(true)}
                 className="px-5 py-2 rounded-lg text-sm font-semibold border transition-all"
                 style={exp.has_pd === true ? { backgroundColor: "#dbeafe", color: "#1c5ea8", borderColor: "#93c5fd" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
               >
                 Yes
               </button>
               <button
-                onClick={() => onUpdateHasPD(unit.code, false)}
+                onClick={() => handleHasPD(false)}
                 className="px-5 py-2 rounded-lg text-sm font-semibold border transition-all"
                 style={exp.has_pd === false ? { backgroundColor: "#f1f5f9", color: "#475569", borderColor: "#cbd5e1" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
               >
@@ -163,12 +189,11 @@ function UnitExperienceCard({ unit, exp, onUpdateElement, onUpdatePD, onUpdateHa
               </button>
             </div>
 
-            {/* PD text box — only if yes */}
             {exp.has_pd === true && (
               <textarea
-                autoFocus
                 value={exp.professional_development || ""}
                 onChange={(e) => onUpdatePD(unit.code, e.target.value)}
+                onBlur={handlePDBlur}
                 placeholder="List any relevant qualifications, units or CPD activities..."
                 className="w-full px-3 py-2.5 border border-blue-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400 resize-none"
                 rows={3}
@@ -184,7 +209,6 @@ function UnitExperienceCard({ unit, exp, onUpdateElement, onUpdatePD, onUpdateHa
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Experience({ profile }) {
   const navigate = useNavigate();
-  const topRef = useRef(null);
   const unitRefs = useRef({});
   const [trainerId, setTrainerId] = useState(null);
   const [assignedUnits, setAssignedUnits] = useState(null);
@@ -233,10 +257,11 @@ export default function Experience({ profile }) {
     if (expData) {
       const mapped = {};
       expData.forEach((e) => {
+        const hasPd = e.professional_development?.trim() ? true : e.element_descriptions && Object.keys(e.element_descriptions).length > 0 ? false : null;
         mapped[e.unit_code] = {
           professional_development: e.professional_development || "",
           element_descriptions: e.element_descriptions || {},
-          has_pd: e.professional_development ? true : e.element_descriptions && Object.keys(e.element_descriptions).length > 0 ? false : null,
+          has_pd: hasPd,
         };
       });
       setExperience(mapped);
@@ -250,10 +275,7 @@ export default function Experience({ profile }) {
       ...prev,
       [unitCode]: {
         ...prev[unitCode],
-        element_descriptions: {
-          ...(prev[unitCode]?.element_descriptions || {}),
-          [idx]: value,
-        },
+        element_descriptions: { ...(prev[unitCode]?.element_descriptions || {}), [idx]: value },
       },
     }));
     setSaved(false);
@@ -273,22 +295,21 @@ export default function Experience({ profile }) {
       [unitCode]: {
         ...prev[unitCode],
         has_pd: value,
-        // Clear PD text if switching to No
         professional_development: value ? prev[unitCode]?.professional_development || "" : "",
       },
     }));
     setSaved(false);
+  };
 
-    // If No — scroll to top of next unit
-    if (!value) {
-      const units = unitsToShow;
-      const currentIdx = units.findIndex((u) => u.code === unitCode);
-      const nextUnit = units[currentIdx + 1];
-      if (nextUnit && unitRefs.current[nextUnit.code]) {
-        setTimeout(() => {
-          unitRefs.current[nextUnit.code].scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 200);
-      }
+  // Called when a unit completes and collapses — scroll to next incomplete
+  const handleUnitComplete = (unitCode) => {
+    const units = unitsToShow;
+    const currentIdx = units.findIndex((u) => u.code === unitCode);
+    const nextUnit = units[currentIdx + 1];
+    if (nextUnit && unitRefs.current[nextUnit.code]) {
+      setTimeout(() => {
+        unitRefs.current[nextUnit.code].scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 350);
     }
   };
 
@@ -358,9 +379,7 @@ export default function Experience({ profile }) {
 
   return (
     <div>
-      <div ref={topRef} />
-
-      {/* Section 6 header */}
+      {/* Section header */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
         <div className="flex items-center gap-3 px-6 py-4" style={{ backgroundColor: "#081a47" }}>
           <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#fff" }}>
@@ -384,12 +403,10 @@ export default function Experience({ profile }) {
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#32ba9a" : "#1c5ea8" }} />
               </div>
-              <p className="text-xs text-gray-400 mt-3">
-                Work through each unit — describe your experience for every element, then indicate whether you have completed relevant professional development. Completed elements collapse automatically to help you track progress.
-              </p>
+              <p className="text-xs text-gray-400 mt-3">Work through each unit — describe your experience for every element, then indicate whether you have completed relevant professional development. Completed units collapse automatically.</p>
             </>
           ) : (
-            <p className="text-xs text-gray-400">Your Skills Questionnaire has been submitted. Your compliance officer is reviewing your responses and will assign units for this section. You will be notified when Section 6 is ready.</p>
+            <p className="text-xs text-gray-400">Your Skills Questionnaire has been submitted. Your compliance officer is reviewing your responses and will assign units for this section.</p>
           )}
         </div>
       </div>
@@ -411,15 +428,15 @@ export default function Experience({ profile }) {
             ⏳
           </div>
           <p className="text-sm font-semibold text-gray-800 mb-2">Awaiting unit assignment</p>
-          <p className="text-sm text-gray-400 max-w-md mx-auto">Your compliance officer is reviewing your responses and will assign the units required for Section 6. You will be notified when this section is ready.</p>
+          <p className="text-sm text-gray-400 max-w-md mx-auto">Your compliance officer is reviewing your responses and will assign the units required for Section 6.</p>
         </div>
       )}
 
       {questionnaireSubmitted && assignedUnits && assignedUnits.length > 0 && (
-        <div className="space-y-4">
-          {unitsToShow.map((unit) => (
+        <div className="space-y-3">
+          {unitsToShow.map((unit, idx) => (
             <div key={unit.code} ref={(el) => (unitRefs.current[unit.code] = el)}>
-              <UnitExperienceCard unit={unit} exp={experience[unit.code] || {}} onUpdateElement={updateElement} onUpdatePD={updatePD} onUpdateHasPD={updateHasPD} />
+              <UnitExperienceCard unit={unit} exp={experience[unit.code] || {}} onUpdateElement={updateElement} onUpdatePD={updatePD} onUpdateHasPD={updateHasPD} onComplete={() => handleUnitComplete(unit.code)} isFirst={idx === 0} />
             </div>
           ))}
         </div>
@@ -434,7 +451,7 @@ export default function Experience({ profile }) {
             <button onClick={handleSave} disabled={saving} className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors">
               {saving ? "Saving..." : saved ? "✓ Saved" : "Save Draft"}
             </button>
-            <button onClick={handleSubmit} disabled={submitting || unitsToShow.length === 0} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: submitting ? "#9ca3af" : "#32ba9a" }}>
+            <button onClick={handleSubmit} disabled={submitting} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: submitting ? "#9ca3af" : "#32ba9a" }}>
               {submitting ? "Submitting..." : "Submit Profile for Review ✓"}
             </button>
           </div>
