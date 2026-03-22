@@ -12,6 +12,7 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
 
   useEffect(() => {
     const mapped = {};
+    const initialCollapsed = {};
     experienceData.forEach((e) => {
       mapped[e.unit_code] = {
         competency_confirmed: e.competency_confirmed,
@@ -20,8 +21,14 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
         professional_development: e.professional_development || "",
         element_descriptions: e.element_descriptions || {},
       };
+      // Auto-collapse units that have already been assessed
+      if (e.competency_confirmed !== null && e.competency_confirmed !== undefined) {
+        initialCollapsed[e.unit_code] = true;
+      }
     });
     setLocalExp(mapped);
+    // Merge with existing collapsed state (don't override manual expand/collapse choices)
+    setCollapsed((prev) => ({ ...initialCollapsed, ...prev }));
   }, [experienceData]);
 
   const unitsToShow = assignedUnits
@@ -371,11 +378,12 @@ function calcQuestionnairePct(responses) {
   return Math.round((responses.filter((r) => r.response).length / UNITS.length) * 100);
 }
 
-function calcExperiencePct(responses, experienceData) {
-  const yesUnits = responses.filter((r) => r.response === "yes");
-  if (yesUnits.length === 0) return null;
-  const completed = yesUnits.filter((r) => experienceData.find((e) => e.unit_code === r.unit_code && e.experience_description?.trim())).length;
-  return Math.round((completed / yesUnits.length) * 100);
+function calcExperiencePct(responses, experienceData, assignedUnits) {
+  // If no units assigned yet, return null (awaiting assignment)
+  if (!assignedUnits || assignedUnits.length === 0) return null;
+  // Progress = % of assigned units that have been assessed by admin (competency_confirmed is not null)
+  const assessed = assignedUnits.filter((a) => experienceData.find((e) => e.unit_code === a.unit_code && e.competency_confirmed !== null)).length;
+  return Math.round((assessed / assignedUnits.length) * 100);
 }
 
 // ── Streams Tab ───────────────────────────────────────────────────────────────
@@ -712,17 +720,17 @@ export default function TrainerDetail({ profile: adminProfile }) {
 
   const profilePct = calcProfilePct(trainer, trainerProfile);
   const questPct = calcQuestionnairePct(questionnaireResponses);
-  const expPct = calcExperiencePct(questionnaireResponses, experienceData);
+  const expPct = calcExperiencePct(questionnaireResponses, experienceData, assignedUnits);
   const yesCount = questionnaireResponses.filter((r) => r.response === "yes").length;
   const answeredCount = questionnaireResponses.filter((r) => r.response).length;
   const overallPct = Math.round((profilePct + questPct + (expPct ?? 0)) / 3);
 
   const TABS = [
-    { id: "profile", label: "Profile & Credentials" },
-    { id: "questionnaire", label: "Skills Questionnaire" },
-    { id: "streams", label: "Stream Assignment" },
-    { id: "experience", label: "Industry Experience" },
-    { id: "evidence", label: "Evidence" },
+    { id: "profile", label: "Profile & Credentials", done: profilePct === 100 },
+    { id: "questionnaire", label: "Skills Questionnaire", done: questPct === 100 },
+    { id: "streams", label: "Stream Assignment", done: assignedUnits.length > 0 },
+    { id: "experience", label: "Industry Experience", done: expPct === 100 },
+    { id: "evidence", label: "Evidence", done: evidenceFiles.length > 0 },
   ];
 
   if (loading)
@@ -817,7 +825,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
         <CompletionCard
           title="Section 6 — Experience"
           value={expPct ?? 0}
-          sub={expPct === null ? "Awaiting assignment" : expPct === 100 ? `All ${yesCount} units complete` : `${experienceData.filter((e) => e.experience_description?.trim()).length} of ${assignedUnits.length} units complete`}
+          sub={expPct === null ? "Awaiting stream assignment" : expPct === 100 ? `All ${assignedUnits.length} units assessed` : `${experienceData.filter((e) => e.competency_confirmed !== null).length} of ${assignedUnits.length} units assessed`}
           icon="🔬"
         />
       </div>
@@ -831,12 +839,19 @@ export default function TrainerDetail({ profile: adminProfile }) {
             className="flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all"
             style={activeTab === tab.id ? { backgroundColor: "#fff", color: "#081a47", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" } : { backgroundColor: "transparent", color: "#6b7280" }}
           >
-            {tab.label}
-            {tab.id === "streams" && assignedUnits.length > 0 && (
-              <span className="ml-1.5 text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
-                {assignedUnits.length}
-              </span>
-            )}
+            <span className="flex items-center justify-center gap-1.5">
+              {tab.done && (
+                <span className="text-xs font-bold" style={{ color: activeTab === tab.id ? "#32ba9a" : "#32ba9a" }}>
+                  ✓
+                </span>
+              )}
+              {tab.label}
+              {tab.id === "streams" && assignedUnits.length > 0 && !tab.done && (
+                <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
+                  {assignedUnits.length}
+                </span>
+              )}
+            </span>
           </button>
         ))}
       </div>
