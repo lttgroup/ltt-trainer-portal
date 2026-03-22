@@ -380,7 +380,7 @@ export default function Profile({ profile }) {
   const [loading, setLoading] = useState(true);
   const [profileStatus, setProfileStatus] = useState(null); // from trainer_profiles
   const [experienceApproval, setExperienceApproval] = useState([]); // from industry_experience
-  const [taeFile, setTaeFile] = useState(null); // uploaded TAE credential file
+  const [taeFiles, setTaeFiles] = useState([]); // supports multiple TAE files
   const [industryFiles, setIndustryFiles] = useState([]); // uploaded industry qual files
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -456,9 +456,8 @@ export default function Profile({ profile }) {
     const { data: files } = await supabase.from("evidence_files").select("*").eq("trainer_id", trainer.id).in("document_type", ["TAE Credential", "TAE Enrolment Evidence", "Industry Qualification"]);
     if (files) {
       const tae = files.find((f) => f.document_type === "TAE Credential" || f.document_type === "TAE Enrolment Evidence");
-      setTaeFile(tae || null);
-      setIndustryFiles(files.filter((f) => f.document_type === "Industry Qualification"));
-    }
+      setTaeFiles(files.filter((f) => f.document_type === "TAE Credential" || f.document_type === "TAE Enrolment Evidence"));
+      setIndustryFiles(files.filter((f) => f.document_type === "Industry Qualification"));    }
 
     setLoading(false);
   };
@@ -709,70 +708,69 @@ export default function Profile({ profile }) {
           </button>
         </div>
 
-        {/* Option 1 — Holds credential */}
-        {credentialChoice === "holds" && (
-          <div className="rounded-xl p-5 border" style={{ backgroundColor: "#f9fafb", borderColor: "#e5e7eb" }}>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Approved credential held for Training and/or Assessment</p>
-            <div className="grid grid-cols-1 gap-4 mb-4">
-              <FieldGroup label="Qualification or Skill Set">
-                <QualificationDropdown value={form.tae_qualification} onChange={(v) => updateForm("tae_qualification", v)} placeholder="Select qualification or skill set" />
-              </FieldGroup>
-            </div>
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <FieldGroup label="Provider Name">
-                <Input value={form.tae_provider} onChange={(v) => updateForm("tae_provider", v)} placeholder="e.g. TAFE QLD" />
-              </FieldGroup>
-              <FieldGroup label="Provider ID">
-                <Input value={form.tae_provider_id} onChange={(v) => updateForm("tae_provider_id", v)} placeholder="e.g. 0275" />
-              </FieldGroup>
-              <FieldGroup label="Issue Date">
-                <Input type="date" value={form.tae_issue_date} onChange={(v) => updateForm("tae_issue_date", v)} />
-              </FieldGroup>
-            </div>
-            {trainerId && (
-              <div className="mt-2">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Upload a copy of your TAE qualification certificate *</p>
-                <FileUploadBox trainerId={trainerId} documentType="TAE Credential" label="Upload TAE certificate or Statement of Attainment" hint="This will be verified by the quality team" existingFile={taeFile} onUploaded={setTaeFile} />
-              </div>
-            )}
-          </div>
-        )}
+{/* Inside credentialChoice === "holds" block, replace the single FileUploadBox with: */}
+{trainerId && (
+  <div className="mt-2">
+    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+      Upload a copy of your TAE qualification certificate *
+    </p>
+    <div className="space-y-2">
+      {taeFiles.map((f) => (
+        <FileUploadBox
+          key={f.id}
+          trainerId={trainerId}
+          documentType="TAE Credential"
+          label={f.file_name}
+          existingFile={f}
+          onUploaded={(updated) => {
+            if (!updated) setTaeFiles((prev) => prev.filter((x) => x.id !== f.id));
+            else setTaeFiles((prev) => prev.map((x) => (x.id === f.id ? updated : x)));
+          }}
+        />
+      ))}
+      <FileUploadBox
+        trainerId={trainerId}
+        documentType="TAE Credential"
+        label="Upload TAE certificate or Statement of Attainment"
+        hint="This will be verified by the quality team"
+        existingFile={null}
+        onUploaded={(f) => { if (f) setTaeFiles((prev) => [...prev, f]); }}
+      />
+    </div>
+  </div>
+)}
 
-        {/* Option 2 — Under direction / enrolled */}
-        {credentialChoice === "no_holds" && (
-          <div className="rounded-xl p-5 border" style={{ backgroundColor: "#f9fafb", borderColor: "#e5e7eb" }}>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Credential currently enrolled in or working towards</p>
-            <div className="grid grid-cols-1 gap-4 mb-4">
-              <FieldGroup label="Qualification or Skill Set">
-                <QualificationDropdown value={form.under_direction_qualification} onChange={(v) => updateForm("under_direction_qualification", v)} placeholder="Select qualification or skill set" />
-              </FieldGroup>
-            </div>
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <FieldGroup label="Provider Name">
-                <Input value={form.under_direction_provider} onChange={(v) => updateForm("under_direction_provider", v)} placeholder="e.g. TAFE QLD" />
-              </FieldGroup>
-              <FieldGroup label="Provider ID">
-                <Input value={form.under_direction_provider_id} onChange={(v) => updateForm("under_direction_provider_id", v)} placeholder="e.g. 0275" />
-              </FieldGroup>
-              <FieldGroup label="Commencement Date">
-                <Input type="date" value={form.under_direction_commencement} onChange={(v) => updateForm("under_direction_commencement", v)} />
-              </FieldGroup>
-            </div>
-            {trainerId && (
-              <div className="mt-2">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Upload evidence of enrolment *</p>
-                <FileUploadBox
-                  trainerId={trainerId}
-                  documentType="TAE Enrolment Evidence"
-                  label="Upload confirmation of enrolment or letter from provider"
-                  hint="e.g. enrolment confirmation email, letter from TAFE"
-                  existingFile={taeFile}
-                  onUploaded={setTaeFile}
-                />
-              </div>
-            )}
-          </div>
-        )}
+{/* Inside credentialChoice === "no_holds" block, replace with: */}
+{trainerId && (
+  <div className="mt-2">
+    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+      Upload evidence of enrolment *
+    </p>
+    <div className="space-y-2">
+      {taeFiles.map((f) => (
+        <FileUploadBox
+          key={f.id}
+          trainerId={trainerId}
+          documentType="TAE Enrolment Evidence"
+          label={f.file_name}
+          existingFile={f}
+          onUploaded={(updated) => {
+            if (!updated) setTaeFiles((prev) => prev.filter((x) => x.id !== f.id));
+            else setTaeFiles((prev) => prev.map((x) => (x.id === f.id ? updated : x)));
+          }}
+        />
+      ))}
+      <FileUploadBox
+        trainerId={trainerId}
+        documentType="TAE Enrolment Evidence"
+        label="Upload confirmation of enrolment or letter from provider"
+        hint="e.g. enrolment confirmation email, letter from TAFE"
+        existingFile={null}
+        onUploaded={(f) => { if (f) setTaeFiles((prev) => [...prev, f]); }}
+      />
+    </div>
+  </div>
+)}
 
         {/* Prompt if not yet chosen */}
         {credentialChoice === null && (

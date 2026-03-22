@@ -280,10 +280,11 @@ export default function Dashboard({ profile }) {
   const [stats, setStats] = useState({ total: 0, compliant: 0, pending: 0, incomplete: 0 });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+useEffect(() => {
+  if (profile !== null && profile !== undefined) {
     fetchData();
-  }, []);
-
+  }
+}, [profile]); // ← was []. Now re-runs when profile loads
   // Trainer-specific data
   const [trainerData, setTrainerData] = useState(null);
   const [trainerProfile, setTrainerProfile] = useState(null);
