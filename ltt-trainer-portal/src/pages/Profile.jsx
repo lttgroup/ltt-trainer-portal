@@ -17,14 +17,13 @@ const TAE_SKILLSETS = [
   { code: "TAESS00015", title: "Enterprise Trainer — Presenting Skill Set" },
 ];
 
-// ── File upload component for credentials ─────────────────────────────────────
+// ── File upload component ──────────────────────────────────────────────────────
 function FileUploadBox({ trainerId, documentType, label, hint, existingFile, onUploaded }) {
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
-  const [dragging, setDragging] = useState(false);
+  const [dragging, setDragging] = useState(false); // ← must be at top, not after early return
 
-  // Sync when existingFile loads asynchronously
   useEffect(() => {
     setFile(existingFile || null);
   }, [existingFile?.id]);
@@ -40,19 +39,16 @@ function FileUploadBox({ trainerId, documentType, label, hint, existingFile, onU
     setError("");
 
     const ext = selected.name.split(".").pop();
-    // Sanitise documentType for path — no spaces or special chars
     const safeType = documentType.replace(/[^a-zA-Z0-9]/g, "_");
     const path = `${trainerId}/${safeType}_${Date.now()}.${ext}`;
 
     const { error: uploadErr } = await supabase.storage.from("evidence-files").upload(path, selected);
-
     if (uploadErr) {
       setError("Upload failed: " + uploadErr.message);
       setUploading(false);
       return;
     }
 
-    // Record in evidence_files table
     const { data: record, error: insertErr } = await supabase
       .from("evidence_files")
       .insert({
@@ -70,6 +66,7 @@ function FileUploadBox({ trainerId, documentType, label, hint, existingFile, onU
       setUploading(false);
       return;
     }
+
     setFile(record);
     onUploaded?.(record);
     setUploading(false);
@@ -83,6 +80,13 @@ function FileUploadBox({ trainerId, documentType, label, hint, existingFile, onU
     onUploaded?.(null);
   };
 
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    const dropped = e.dataTransfer.files?.[0];
+    if (dropped) handleFile({ target: { files: [dropped] } });
+  };
+
   if (file) {
     return (
       <div className="flex items-center gap-3 p-3 rounded-lg border" style={{ backgroundColor: "#f0fdf4", borderColor: "#86efac" }}>
@@ -91,9 +95,7 @@ function FileUploadBox({ trainerId, documentType, label, hint, existingFile, onU
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold text-gray-800 truncate">{file.file_name}</p>
-          <p className="text-xs" style={{ color: "#16a34a" }}>
-            ✓ Uploaded
-          </p>
+          <p className="text-xs" style={{ color: "#16a34a" }}>✓ Uploaded</p>
         </div>
         <button onClick={handleRemove} className="text-xs text-gray-400 hover:text-red-500 transition-colors flex-shrink-0">
           Remove
@@ -102,25 +104,12 @@ function FileUploadBox({ trainerId, documentType, label, hint, existingFile, onU
     );
   }
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDragging(false);
-    const dropped = e.dataTransfer.files?.[0];
-    if (dropped) handleFile({ target: { files: [dropped] } });
-  };
-
   return (
     <div>
       <label
         className="flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-dashed cursor-pointer transition-all"
-        style={{
-          borderColor: dragging ? "#1c5ea8" : "#d1d5db",
-          backgroundColor: dragging ? "#eff6ff" : "#fafafa",
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
+        style={{ borderColor: dragging ? "#1c5ea8" : "#d1d5db", backgroundColor: dragging ? "#eff6ff" : "#fafafa" }}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
       >
@@ -131,7 +120,9 @@ function FileUploadBox({ trainerId, documentType, label, hint, existingFile, onU
           </svg>
         </div>
         <div className="text-center">
-          <p className="text-sm font-semibold text-gray-700">{uploading ? "Uploading..." : dragging ? "Drop to upload" : "Click to select or drag and drop"}</p>
+          <p className="text-sm font-semibold text-gray-700">
+            {uploading ? "Uploading..." : dragging ? "Drop to upload" : "Click to select or drag and drop"}
+          </p>
           {hint && <p className="text-xs text-gray-400 mt-0.5">{hint}</p>}
           <p className="text-xs text-gray-400 mt-1">PDF, DOCX, JPG, PNG — max 10MB</p>
         </div>
@@ -142,11 +133,15 @@ function FileUploadBox({ trainerId, documentType, label, hint, existingFile, onU
   );
 }
 
+// ── Section wrapper ────────────────────────────────────────────────────────────
 function Section({ number, title, children, done }) {
   return (
     <div className="bg-white rounded-xl overflow-hidden mb-5" style={{ border: done ? "1px solid #86efac" : "1px solid #e5e7eb" }}>
       <div className="flex items-center gap-3 px-6 py-4" style={{ backgroundColor: done ? "#166534" : "#081a47" }}>
-        <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: done ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.15)", color: "#fff" }}>
+        <div
+          className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+          style={{ backgroundColor: done ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.15)", color: "#fff" }}
+        >
           {done ? "✓" : number}
         </div>
         <h3 className="text-sm font-semibold text-white flex-1">{title}</h3>
@@ -191,7 +186,11 @@ function RadioGroup({ options, value, onChange }) {
           key={opt}
           onClick={() => onChange(opt)}
           className="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
-          style={value === opt ? { backgroundColor: "#e6f0ff", color: "#1c5ea8", borderColor: "#1c5ea8" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
+          style={
+            value === opt
+              ? { backgroundColor: "#e6f0ff", color: "#1c5ea8", borderColor: "#1c5ea8" }
+              : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }
+          }
         >
           {opt}
         </button>
@@ -202,13 +201,10 @@ function RadioGroup({ options, value, onChange }) {
 
 function QualificationDropdown({ value, onChange, placeholder }) {
   const [custom, setCustom] = useState(false);
-
   const allOptions = [
     { group: "Qualifications", items: TAE_QUALIFICATIONS },
     { group: "Skill Sets", items: TAE_SKILLSETS },
   ];
-
-  // Check if current value matches a known option
   const isKnown = [...TAE_QUALIFICATIONS, ...TAE_SKILLSETS].some((q) => `${q.code} ${q.title}` === value);
 
   useEffect(() => {
@@ -226,10 +222,7 @@ function QualificationDropdown({ value, onChange, placeholder }) {
           className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400"
         />
         <button
-          onClick={() => {
-            setCustom(false);
-            onChange("");
-          }}
+          onClick={() => { setCustom(false); onChange(""); }}
           className="px-3 py-2.5 text-xs text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50"
         >
           ← List
@@ -243,12 +236,8 @@ function QualificationDropdown({ value, onChange, placeholder }) {
       <select
         value={value || ""}
         onChange={(e) => {
-          if (e.target.value === "__custom__") {
-            setCustom(true);
-            onChange("");
-          } else {
-            onChange(e.target.value);
-          }
+          if (e.target.value === "__custom__") { setCustom(true); onChange(""); }
+          else onChange(e.target.value);
         }}
         className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400"
       >
@@ -268,51 +257,34 @@ function QualificationDropdown({ value, onChange, placeholder }) {
   );
 }
 
-// Section 3 — Industry qualifications
-// saveQuals is called by the parent via ref when the main Save/Continue is clicked
+// ── Section 3 — Industry qualifications table ──────────────────────────────────
 function IndustryQualifications({ trainerId, saveRef }) {
   const [rows, setRows] = useState([{ qualification_code: "", qualification_title: "", provider_name: "", provider_id: "", issue_date: "" }]);
 
   useEffect(() => {
     if (!trainerId) return;
-    supabase
-      .from("industry_qualifications")
-      .select("*")
-      .eq("trainer_id", trainerId)
-      .then(({ data }) => {
-        if (data && data.length > 0) setRows(data);
-      });
+    supabase.from("industry_qualifications").select("*").eq("trainer_id", trainerId).then(({ data }) => {
+      if (data && data.length > 0) setRows(data);
+    });
   }, [trainerId]);
 
-  // Expose save function to parent
   useEffect(() => {
     if (saveRef) {
       saveRef.current = async () => {
         if (!trainerId) return;
-        const upserts = rows.filter((r) => r.qualification_code || r.qualification_title).map((r) => ({ ...r, trainer_id: trainerId }));
-        if (upserts.length > 0) {
-          await supabase.from("industry_qualifications").upsert(upserts);
-        }
+        const upserts = rows
+          .filter((r) => r.qualification_code || r.qualification_title)
+          .map((r) => ({ ...r, trainer_id: trainerId }));
+        if (upserts.length > 0) await supabase.from("industry_qualifications").upsert(upserts);
       };
     }
   }, [rows, trainerId, saveRef]);
 
-  const updateRow = (i, field, value) => {
+  const updateRow = (i, field, value) =>
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
-  };
 
-  const addRow = () => {
-    setRows((prev) => [
-      ...prev,
-      {
-        qualification_code: "",
-        qualification_title: "",
-        provider_name: "",
-        provider_id: "",
-        issue_date: "",
-      },
-    ]);
-  };
+  const addRow = () =>
+    setRows((prev) => [...prev, { qualification_code: "", qualification_title: "", provider_name: "", provider_id: "", issue_date: "" }]);
 
   return (
     <div>
@@ -331,28 +303,13 @@ function IndustryQualifications({ trainerId, saveRef }) {
             {rows.map((row, i) => (
               <tr key={i} className="border-b border-gray-100">
                 <td className="px-2 py-2">
-                  <input
-                    value={row.qualification_code || ""}
-                    onChange={(e) => updateRow(i, "qualification_code", e.target.value)}
-                    placeholder="MSL40122"
-                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-400"
-                  />
+                  <input value={row.qualification_code || ""} onChange={(e) => updateRow(i, "qualification_code", e.target.value)} placeholder="MSL40122" className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-400" />
                 </td>
                 <td className="px-2 py-2">
-                  <input
-                    value={row.qualification_title || ""}
-                    onChange={(e) => updateRow(i, "qualification_title", e.target.value)}
-                    placeholder="Cert IV Laboratory Techniques"
-                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-400"
-                  />
+                  <input value={row.qualification_title || ""} onChange={(e) => updateRow(i, "qualification_title", e.target.value)} placeholder="Cert IV Laboratory Techniques" className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-400" />
                 </td>
                 <td className="px-2 py-2">
-                  <input
-                    value={row.provider_name || ""}
-                    onChange={(e) => updateRow(i, "provider_name", e.target.value)}
-                    placeholder="TAFE QLD"
-                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-400"
-                  />
+                  <input value={row.provider_name || ""} onChange={(e) => updateRow(i, "provider_name", e.target.value)} placeholder="TAFE QLD" className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-400" />
                 </td>
                 <td className="px-2 py-2">
                   <input value={row.provider_id || ""} onChange={(e) => updateRow(i, "provider_id", e.target.value)} placeholder="0275" className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-400" />
@@ -374,22 +331,21 @@ function IndustryQualifications({ trainerId, saveRef }) {
   );
 }
 
+// ── Main Profile component ─────────────────────────────────────────────────────
 export default function Profile({ profile }) {
   const navigate = useNavigate();
   const [trainerId, setTrainerId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [profileStatus, setProfileStatus] = useState(null); // from trainer_profiles
-  const [experienceApproval, setExperienceApproval] = useState([]); // from industry_experience
-  const [taeFiles, setTaeFiles] = useState([]); // supports multiple TAE files
-  const [industryFiles, setIndustryFiles] = useState([]); // uploaded industry qual files
+  const [profileStatus, setProfileStatus] = useState(null);
+  const [experienceApproval, setExperienceApproval] = useState([]);
+  const [taeFiles, setTaeFiles] = useState([]);       // ← array, supports multiple
+  const [industryFiles, setIndustryFiles] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const saveQualsRef = useRef(null);
 
-  // Section 2 credential choice
   const [credentialChoice, setCredentialChoice] = useState(null);
-  // null = not chosen yet, 'holds' = has credential, 'no_holds' = under direction
 
   const [form, setForm] = useState({
     full_name: "",
@@ -419,14 +375,9 @@ export default function Profile({ profile }) {
     if (!profile) return;
 
     const { data: trainer } = await supabase.from("trainers").select("*").eq("email", profile.email).maybeSingle();
-
-    if (!trainer) {
-      setLoading(false);
-      return;
-    }
+    if (!trainer) { setLoading(false); return; }
 
     setTrainerId(trainer.id);
-
     setForm((prev) => ({
       ...prev,
       full_name: trainer.full_name || "",
@@ -437,27 +388,26 @@ export default function Profile({ profile }) {
     }));
 
     const { data: existingProfile } = await supabase.from("trainer_profiles").select("*").eq("trainer_id", trainer.id).maybeSingle();
-
     if (existingProfile) {
       setForm((prev) => ({ ...prev, ...existingProfile }));
       setProfileStatus(existingProfile.profile_status || null);
-      if (existingProfile.tae_qualification) {
-        setCredentialChoice("holds");
-      } else if (existingProfile.under_direction_qualification) {
-        setCredentialChoice("no_holds");
-      }
+      if (existingProfile.tae_qualification) setCredentialChoice("holds");
+      else if (existingProfile.under_direction_qualification) setCredentialChoice("no_holds");
     }
 
-    // Load experience approval status for section badge
     const { data: expData } = await supabase.from("industry_experience").select("unit_code, competency_confirmed").eq("trainer_id", trainer.id);
     setExperienceApproval(expData || []);
 
-    // Load previously uploaded credential files
-    const { data: files } = await supabase.from("evidence_files").select("*").eq("trainer_id", trainer.id).in("document_type", ["TAE Credential", "TAE Enrolment Evidence", "Industry Qualification"]);
+    const { data: files } = await supabase
+      .from("evidence_files")
+      .select("*")
+      .eq("trainer_id", trainer.id)
+      .in("document_type", ["TAE Credential", "TAE Enrolment Evidence", "Industry Qualification"]);
+
     if (files) {
-      const tae = files.find((f) => f.document_type === "TAE Credential" || f.document_type === "TAE Enrolment Evidence");
       setTaeFiles(files.filter((f) => f.document_type === "TAE Credential" || f.document_type === "TAE Enrolment Evidence"));
-      setIndustryFiles(files.filter((f) => f.document_type === "Industry Qualification"));    }
+      setIndustryFiles(files.filter((f) => f.document_type === "Industry Qualification"));
+    }
 
     setLoading(false);
   };
@@ -469,7 +419,6 @@ export default function Profile({ profile }) {
 
   const handleCredentialChoice = (choice) => {
     setCredentialChoice(choice);
-    // Clear the other section's fields when switching
     if (choice === "holds") {
       updateForm("under_direction_qualification", "");
       updateForm("under_direction_provider", "");
@@ -485,27 +434,19 @@ export default function Profile({ profile }) {
   };
 
   const handleSave = async () => {
-    if (!trainerId) {
-      setError("No trainer record found.");
-      return;
-    }
-
+    if (!trainerId) { setError("No trainer record found."); return; }
     setSaving(true);
     setError("");
 
-    // Save Section 3 qualifications
     if (saveQualsRef.current) await saveQualsRef.current();
 
-    await supabase
-      .from("trainers")
-      .update({
-        full_name: form.full_name,
-        state: form.state,
-        position: form.position,
-        employment_status: form.employment_status,
-        phone: form.phone,
-      })
-      .eq("id", trainerId);
+    await supabase.from("trainers").update({
+      full_name: form.full_name,
+      state: form.state,
+      position: form.position,
+      employment_status: form.employment_status,
+      phone: form.phone,
+    }).eq("id", trainerId);
 
     const { error: profileError } = await supabase.from("trainer_profiles").upsert(
       {
@@ -524,15 +465,10 @@ export default function Profile({ profile }) {
         declaration_date: form.declaration_date || null,
         profile_status: "Draft",
       },
-      { onConflict: "trainer_id" },
+      { onConflict: "trainer_id" }
     );
 
-    if (profileError) {
-      setError("Failed to save profile: " + profileError.message);
-      setSaving(false);
-      return;
-    }
-
+    if (profileError) { setError("Failed to save profile: " + profileError.message); setSaving(false); return; }
     setSaved(true);
     setSaving(false);
   };
@@ -550,9 +486,9 @@ export default function Profile({ profile }) {
     );
   }
 
-  // Section completion checks
+  // ── Section completion checks ──────────────────────────────────────────────
   const s1Done = !!(form.full_name && form.state && form.position && form.employment_status && form.phone);
-  const s2Done = !!(form.tae_qualification || form.under_direction_qualification) && !!taeFile;
+  const s2Done = !!(form.tae_qualification || form.under_direction_qualification) && taeFiles.length > 0; // ← fixed
   const s4Done = !!(form.declaration_credentials && form.declaration_copies && form.declaration_signature && form.declaration_date);
   const s6Total = experienceApproval.length;
   const s6AllApproved = s6Total > 0 && experienceApproval.every((e) => e.competency_confirmed === true);
@@ -560,7 +496,9 @@ export default function Profile({ profile }) {
 
   return (
     <div>
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5">{error}</div>}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5">{error}</div>
+      )}
 
       {/* Approval status banner */}
       {profileApproved && (
@@ -571,12 +509,8 @@ export default function Profile({ profile }) {
             </svg>
           </div>
           <div className="flex-1">
-            <p className="text-sm font-semibold" style={{ color: "#166534" }}>
-              Profile Approved
-            </p>
-            <p className="text-xs" style={{ color: "#15803d" }}>
-              Sections 1–4 have been verified and approved by the quality team.
-            </p>
+            <p className="text-sm font-semibold" style={{ color: "#166534" }}>Profile Approved</p>
+            <p className="text-xs" style={{ color: "#15803d" }}>Sections 1–4 have been verified and approved by the quality team.</p>
           </div>
           {s6AllApproved && (
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>
@@ -593,47 +527,53 @@ export default function Profile({ profile }) {
             <span className="text-white font-bold text-sm">!</span>
           </div>
           <div>
-            <p className="text-sm font-semibold" style={{ color: "#c93535" }}>
-              Some units require attention
-            </p>
+            <p className="text-sm font-semibold" style={{ color: "#c93535" }}>Some units require attention</p>
             <p className="text-xs text-gray-500">
-              {experienceApproval.filter((e) => e.competency_confirmed === false).length} unit{experienceApproval.filter((e) => e.competency_confirmed === false).length !== 1 ? "s" : ""} in Section 6 were not approved. Please check your Industry
-              Experience page for details and contact your compliance officer.
+              {experienceApproval.filter((e) => e.competency_confirmed === false).length} unit
+              {experienceApproval.filter((e) => e.competency_confirmed === false).length !== 1 ? "s" : ""} in Section 6 were not approved.
+              Please check your Industry Experience page for details.
             </p>
           </div>
         </div>
       )}
 
-      {/* Section 1 */}
+      {/* ── Section 1 ── */}
       <Section number="1" title="Section 1 — Trainer Assessor Details" done={s1Done}>
         <div className="grid grid-cols-2 gap-4 mb-4">
           <FieldGroup label="Full Name">
             <Input value={form.full_name} onChange={(v) => updateForm("full_name", v)} placeholder="As per official ID" />
           </FieldGroup>
           <FieldGroup label="State">
-            <select value={form.state || ""} onChange={(e) => updateForm("state", e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400">
+            <select
+              value={form.state || ""}
+              onChange={(e) => updateForm("state", e.target.value)}
+              className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400"
+            >
               <option value="">Select state</option>
               {["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"].map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
+                <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </FieldGroup>
         </div>
-
         <div className="mb-4">
           <FieldGroup label="Position">
-            <RadioGroup options={["Trainer Assessor", "Trainer", "Assessor", "Industry Expert", "Qualified Secondary School Teacher"]} value={form.position} onChange={(v) => updateForm("position", v)} />
+            <RadioGroup
+              options={["Trainer Assessor", "Trainer", "Assessor", "Industry Expert", "Qualified Secondary School Teacher"]}
+              value={form.position}
+              onChange={(v) => updateForm("position", v)}
+            />
           </FieldGroup>
         </div>
-
         <div className="mb-4">
           <FieldGroup label="Employment Status">
-            <RadioGroup options={["Full-time", "Part-time", "Casual", "Third-Party", "Under Direction"]} value={form.employment_status} onChange={(v) => updateForm("employment_status", v)} />
+            <RadioGroup
+              options={["Full-time", "Part-time", "Casual", "Third-Party", "Under Direction"]}
+              value={form.employment_status}
+              onChange={(v) => updateForm("employment_status", v)}
+            />
           </FieldGroup>
         </div>
-
         <div className="grid grid-cols-2 gap-4">
           <FieldGroup label="Phone">
             <Input value={form.phone} onChange={(v) => updateForm("phone", v)} placeholder="04XX XXX XXX" />
@@ -644,26 +584,20 @@ export default function Profile({ profile }) {
         </div>
       </Section>
 
-      {/* Section 2 */}
+      {/* ── Section 2 ── */}
       <Section number="2" title="Section 2 — Training Credentials" done={s2Done && profileApproved}>
-        {/* Credential choice */}
         <p className="text-xs text-gray-500 mb-3">Select the option that applies to you:</p>
         <div className="grid grid-cols-2 gap-3 mb-6">
+          {/* Option A — holds credential */}
           <button
             onClick={() => handleCredentialChoice("holds")}
             className="text-left p-4 rounded-xl border-2 transition-all"
-            style={{
-              borderColor: credentialChoice === "holds" ? "#1c5ea8" : "#e5e7eb",
-              backgroundColor: credentialChoice === "holds" ? "#e6f0ff" : "#fff",
-            }}
+            style={{ borderColor: credentialChoice === "holds" ? "#1c5ea8" : "#e5e7eb", backgroundColor: credentialChoice === "holds" ? "#e6f0ff" : "#fff" }}
           >
             <div className="flex items-start gap-3">
               <div
                 className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5"
-                style={{
-                  borderColor: credentialChoice === "holds" ? "#1c5ea8" : "#d1d5db",
-                  backgroundColor: credentialChoice === "holds" ? "#1c5ea8" : "transparent",
-                }}
+                style={{ borderColor: credentialChoice === "holds" ? "#1c5ea8" : "#d1d5db", backgroundColor: credentialChoice === "holds" ? "#1c5ea8" : "transparent" }}
               >
                 {credentialChoice === "holds" && (
                   <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
@@ -678,21 +612,16 @@ export default function Profile({ profile }) {
             </div>
           </button>
 
+          {/* Option B — under direction */}
           <button
             onClick={() => handleCredentialChoice("no_holds")}
             className="text-left p-4 rounded-xl border-2 transition-all"
-            style={{
-              borderColor: credentialChoice === "no_holds" ? "#1c5ea8" : "#e5e7eb",
-              backgroundColor: credentialChoice === "no_holds" ? "#e6f0ff" : "#fff",
-            }}
+            style={{ borderColor: credentialChoice === "no_holds" ? "#1c5ea8" : "#e5e7eb", backgroundColor: credentialChoice === "no_holds" ? "#e6f0ff" : "#fff" }}
           >
             <div className="flex items-start gap-3">
               <div
                 className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5"
-                style={{
-                  borderColor: credentialChoice === "no_holds" ? "#1c5ea8" : "#d1d5db",
-                  backgroundColor: credentialChoice === "no_holds" ? "#1c5ea8" : "transparent",
-                }}
+                style={{ borderColor: credentialChoice === "no_holds" ? "#1c5ea8" : "#d1d5db", backgroundColor: credentialChoice === "no_holds" ? "#1c5ea8" : "transparent" }}
               >
                 {credentialChoice === "no_holds" && (
                   <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
@@ -708,71 +637,109 @@ export default function Profile({ profile }) {
           </button>
         </div>
 
-{/* Inside credentialChoice === "holds" block, replace the single FileUploadBox with: */}
-{trainerId && (
-  <div className="mt-2">
-    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-      Upload a copy of your TAE qualification certificate *
-    </p>
-    <div className="space-y-2">
-      {taeFiles.map((f) => (
-        <FileUploadBox
-          key={f.id}
-          trainerId={trainerId}
-          documentType="TAE Credential"
-          label={f.file_name}
-          existingFile={f}
-          onUploaded={(updated) => {
-            if (!updated) setTaeFiles((prev) => prev.filter((x) => x.id !== f.id));
-            else setTaeFiles((prev) => prev.map((x) => (x.id === f.id ? updated : x)));
-          }}
-        />
-      ))}
-      <FileUploadBox
-        trainerId={trainerId}
-        documentType="TAE Credential"
-        label="Upload TAE certificate or Statement of Attainment"
-        hint="This will be verified by the quality team"
-        existingFile={null}
-        onUploaded={(f) => { if (f) setTaeFiles((prev) => [...prev, f]); }}
-      />
-    </div>
-  </div>
-)}
+        {/* Holds credential — form + uploads */}
+        {credentialChoice === "holds" && (
+          <div className="rounded-xl p-5 border" style={{ backgroundColor: "#f9fafb", borderColor: "#e5e7eb" }}>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Approved credential held for Training and/or Assessment</p>
+            <div className="grid grid-cols-1 gap-4 mb-4">
+              <FieldGroup label="Qualification or Skill Set">
+                <QualificationDropdown value={form.tae_qualification} onChange={(v) => updateForm("tae_qualification", v)} placeholder="Select qualification or skill set" />
+              </FieldGroup>
+            </div>
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <FieldGroup label="Provider Name">
+                <Input value={form.tae_provider} onChange={(v) => updateForm("tae_provider", v)} placeholder="e.g. TAFE QLD" />
+              </FieldGroup>
+              <FieldGroup label="Provider ID">
+                <Input value={form.tae_provider_id} onChange={(v) => updateForm("tae_provider_id", v)} placeholder="e.g. 0275" />
+              </FieldGroup>
+              <FieldGroup label="Issue Date">
+                <Input type="date" value={form.tae_issue_date} onChange={(v) => updateForm("tae_issue_date", v)} />
+              </FieldGroup>
+            </div>
+            {trainerId && (
+              <div className="mt-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Upload a copy of your TAE qualification certificate *</p>
+                <div className="space-y-2">
+                  {taeFiles.map((f) => (
+                    <FileUploadBox
+                      key={f.id}
+                      trainerId={trainerId}
+                      documentType="TAE Credential"
+                      label={f.file_name}
+                      existingFile={f}
+                      onUploaded={(updated) => {
+                        if (!updated) setTaeFiles((prev) => prev.filter((x) => x.id !== f.id));
+                        else setTaeFiles((prev) => prev.map((x) => (x.id === f.id ? updated : x)));
+                      }}
+                    />
+                  ))}
+                  <FileUploadBox
+                    trainerId={trainerId}
+                    documentType="TAE Credential"
+                    label="Upload TAE certificate or Statement of Attainment"
+                    hint="This will be verified by the quality team"
+                    existingFile={null}
+                    onUploaded={(f) => { if (f) setTaeFiles((prev) => [...prev, f]); }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
-{/* Inside credentialChoice === "no_holds" block, replace with: */}
-{trainerId && (
-  <div className="mt-2">
-    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-      Upload evidence of enrolment *
-    </p>
-    <div className="space-y-2">
-      {taeFiles.map((f) => (
-        <FileUploadBox
-          key={f.id}
-          trainerId={trainerId}
-          documentType="TAE Enrolment Evidence"
-          label={f.file_name}
-          existingFile={f}
-          onUploaded={(updated) => {
-            if (!updated) setTaeFiles((prev) => prev.filter((x) => x.id !== f.id));
-            else setTaeFiles((prev) => prev.map((x) => (x.id === f.id ? updated : x)));
-          }}
-        />
-      ))}
-      <FileUploadBox
-        trainerId={trainerId}
-        documentType="TAE Enrolment Evidence"
-        label="Upload confirmation of enrolment or letter from provider"
-        hint="e.g. enrolment confirmation email, letter from TAFE"
-        existingFile={null}
-        onUploaded={(f) => { if (f) setTaeFiles((prev) => [...prev, f]); }}
-      />
-    </div>
-  </div>
-)}
+        {/* Under direction — form + uploads */}
+        {credentialChoice === "no_holds" && (
+          <div className="rounded-xl p-5 border" style={{ backgroundColor: "#f9fafb", borderColor: "#e5e7eb" }}>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Credential currently enrolled in or working towards</p>
+            <div className="grid grid-cols-1 gap-4 mb-4">
+              <FieldGroup label="Qualification or Skill Set">
+                <QualificationDropdown value={form.under_direction_qualification} onChange={(v) => updateForm("under_direction_qualification", v)} placeholder="Select qualification or skill set" />
+              </FieldGroup>
+            </div>
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <FieldGroup label="Provider Name">
+                <Input value={form.under_direction_provider} onChange={(v) => updateForm("under_direction_provider", v)} placeholder="e.g. TAFE QLD" />
+              </FieldGroup>
+              <FieldGroup label="Provider ID">
+                <Input value={form.under_direction_provider_id} onChange={(v) => updateForm("under_direction_provider_id", v)} placeholder="e.g. 0275" />
+              </FieldGroup>
+              <FieldGroup label="Commencement Date">
+                <Input type="date" value={form.under_direction_commencement} onChange={(v) => updateForm("under_direction_commencement", v)} />
+              </FieldGroup>
+            </div>
+            {trainerId && (
+              <div className="mt-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Upload evidence of enrolment *</p>
+                <div className="space-y-2">
+                  {taeFiles.map((f) => (
+                    <FileUploadBox
+                      key={f.id}
+                      trainerId={trainerId}
+                      documentType="TAE Enrolment Evidence"
+                      label={f.file_name}
+                      existingFile={f}
+                      onUploaded={(updated) => {
+                        if (!updated) setTaeFiles((prev) => prev.filter((x) => x.id !== f.id));
+                        else setTaeFiles((prev) => prev.map((x) => (x.id === f.id ? updated : x)));
+                      }}
+                    />
+                  ))}
+                  <FileUploadBox
+                    trainerId={trainerId}
+                    documentType="TAE Enrolment Evidence"
+                    label="Upload confirmation of enrolment or letter from provider"
+                    hint="e.g. enrolment confirmation email, letter from TAFE"
+                    existingFile={null}
+                    onUploaded={(f) => { if (f) setTaeFiles((prev) => [...prev, f]); }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Prompt if not yet chosen */}
+        {/* Not yet chosen */}
         {credentialChoice === null && (
           <div className="rounded-xl p-4 text-center" style={{ backgroundColor: "#f9fafb", border: "1px dashed #e5e7eb" }}>
             <p className="text-sm text-gray-400">Select an option above to continue</p>
@@ -780,7 +747,7 @@ export default function Profile({ profile }) {
         )}
       </Section>
 
-      {/* Section 3 */}
+      {/* ── Section 3 ── */}
       <Section number="3" title="Section 3 — Industry Competencies" done={profileApproved}>
         <p className="text-xs text-gray-400 mb-4">List all current industry-related qualifications you hold, and upload a copy of each certificate.</p>
         <IndustryQualifications trainerId={trainerId} saveRef={saveQualsRef} />
@@ -789,7 +756,7 @@ export default function Profile({ profile }) {
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Upload copies of your industry qualification certificates *</p>
             <p className="text-xs text-gray-400 mb-3">Upload a separate file for each qualification. You can upload multiple files.</p>
             <div className="space-y-2">
-              {industryFiles.map((f, i) => (
+              {industryFiles.map((f) => (
                 <FileUploadBox
                   key={f.id}
                   trainerId={trainerId}
@@ -808,25 +775,37 @@ export default function Profile({ profile }) {
                 label="Upload industry qualification certificate"
                 hint="PDF, DOCX, JPG or PNG"
                 existingFile={null}
-                onUploaded={(f) => {
-                  if (f) setIndustryFiles((prev) => [...prev, f]);
-                }}
+                onUploaded={(f) => { if (f) setIndustryFiles((prev) => [...prev, f]); }}
               />
             </div>
           </div>
         )}
       </Section>
 
-      {/* Section 4 */}
+      {/* ── Section 4 ── */}
       <Section number="4" title="Section 4 — Credentials Declaration" done={s4Done}>
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4 space-y-3">
           <label className="flex gap-3 cursor-pointer">
-            <input type="checkbox" checked={form.declaration_credentials} onChange={(e) => updateForm("declaration_credentials", e.target.checked)} className="mt-0.5 flex-shrink-0" />
-            <span className="text-sm text-gray-700">I declare the information provided above regarding my training and industry credentials is true and correct.</span>
+            <input
+              type="checkbox"
+              checked={form.declaration_credentials}
+              onChange={(e) => updateForm("declaration_credentials", e.target.checked)}
+              className="mt-0.5 flex-shrink-0"
+            />
+            <span className="text-sm text-gray-700">
+              I declare the information provided above regarding my training and industry credentials is true and correct.
+            </span>
           </label>
           <label className="flex gap-3 cursor-pointer">
-            <input type="checkbox" checked={form.declaration_copies} onChange={(e) => updateForm("declaration_copies", e.target.checked)} className="mt-0.5 flex-shrink-0" />
-            <span className="text-sm text-gray-700">I have copies of all qualifications, records of results, statements of attainment and a verifiable USI transcript which I will upload as part of this process.</span>
+            <input
+              type="checkbox"
+              checked={form.declaration_copies}
+              onChange={(e) => updateForm("declaration_copies", e.target.checked)}
+              className="mt-0.5 flex-shrink-0"
+            />
+            <span className="text-sm text-gray-700">
+              I have copies of all qualifications, records of results, statements of attainment and a verifiable USI transcript which I will upload as part of this process.
+            </span>
           </label>
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -839,16 +818,28 @@ export default function Profile({ profile }) {
         </div>
       </Section>
 
-      {/* Action buttons */}
+      {/* ── Action buttons ── */}
       <div className="flex items-center justify-between pt-2 pb-8">
-        <button onClick={() => navigate("/dashboard")} className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50">
+        <button
+          onClick={() => navigate("/dashboard")}
+          className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50"
+        >
           ← Back to Dashboard
         </button>
         <div className="flex gap-3">
-          <button onClick={handleSave} disabled={saving} className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50"
+          >
             {saving ? "Saving..." : saved ? "✓ Saved" : "Save Draft"}
           </button>
-          <button onClick={handleSubmit} disabled={saving} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white" style={{ backgroundColor: "#1c5ea8" }}>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white"
+            style={{ backgroundColor: "#1c5ea8" }}
+          >
             Save & Continue to Section 5 →
           </button>
         </div>
