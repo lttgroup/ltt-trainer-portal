@@ -113,8 +113,7 @@ export default function Trainers() {
   }, []);
 
   const fetchTrainers = async () => {
-    const { data, error } = await supabase.from("trainers").select("*").order("created_at", { ascending: false });
-
+    const { data, error } = await supabase.from("trainers").select("*").order("full_name", { ascending: true });
     if (!error && data) setTrainers(data);
     setLoading(false);
   };

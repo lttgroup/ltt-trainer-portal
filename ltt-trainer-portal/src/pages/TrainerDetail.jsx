@@ -259,15 +259,16 @@ function StreamsTab({ trainerId, responses, assignedUnits, onAssignmentChange })
             <div className="flex-1 h-px bg-gray-200" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {qualStreams.map((stream) => {
               const cov = getStreamCoverage(stream.id);
               const isSelected = selected.has(stream.id);
               const isAssigned = [...(streamUnits[stream.id] || [])].every((u) => assignedSet.has(u)) && (streamUnits[stream.id] || []).length > 0;
 
               let statusColor = "#c93535"; // red — low coverage
-              if (cov.pct === 100) statusColor = "#32ba9a";
-              else if (cov.pct >= 60) statusColor = "#e8a020";
+              if (cov.pct === 100)
+                statusColor = "#1c5ea8"; // blue — full experience
+              else if (cov.pct >= 60) statusColor = "#e8a020"; // amber — partial
 
               return (
                 <button
@@ -275,8 +276,8 @@ function StreamsTab({ trainerId, responses, assignedUnits, onAssignmentChange })
                   onClick={() => toggleStream(stream.id)}
                   className="text-left rounded-xl p-4 transition-all border-2"
                   style={{
-                    borderColor: isSelected ? "#1c5ea8" : "#e5e7eb",
-                    backgroundColor: isSelected ? "#e6f0ff" : "#fff",
+                    borderColor: isSelected ? "#1c5ea8" : cov.pct === 100 ? "#bfdbfe" : "#e5e7eb",
+                    backgroundColor: isSelected ? "#eff6ff" : cov.pct === 100 ? "#f8faff" : "#fff",
                   }}
                 >
                   <div className="flex items-start justify-between gap-2 mb-3">
@@ -315,7 +316,7 @@ function StreamsTab({ trainerId, responses, assignedUnits, onAssignmentChange })
                   {/* Status badges */}
                   <div className="flex gap-1.5 mt-2 flex-wrap">
                     {cov.pct === 100 && (
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#dbeafe", color: "#1c5ea8" }}>
                         ✓ Full experience
                       </span>
                     )}
@@ -654,21 +655,22 @@ export default function TrainerDetail({ profile: adminProfile }) {
           {questionnaireResponses.length === 0 ? (
             <p className="text-sm text-gray-400">Trainer has not completed the questionnaire yet</p>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="grid grid-cols-4 gap-2">
               {questionnaireResponses.map((r) => (
-                <div key={r.id} className="flex items-center justify-between py-2.5">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800 font-mono">{r.unit_code}</p>
-                    <p className="text-xs text-gray-400">{r.unit_title}</p>
-                  </div>
-                  <span
-                    className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                    style={{
-                      backgroundColor: r.response === "yes" ? "#e6f9f4" : "#fdeaea",
-                      color: r.response === "yes" ? "#0f7a5a" : "#c93535",
-                    }}
-                  >
-                    {r.response === "yes" ? "Yes — Experience" : "No experience"}
+                <div
+                  key={r.id}
+                  className="rounded-lg p-3 border"
+                  style={{
+                    backgroundColor: r.response === "yes" ? "#eff6ff" : "#fafafa",
+                    borderColor: r.response === "yes" ? "#bfdbfe" : "#e5e7eb",
+                  }}
+                >
+                  <p className="text-xs font-bold font-mono mb-1" style={{ color: r.response === "yes" ? "#1c5ea8" : "#9ca3af" }}>
+                    {r.unit_code}
+                  </p>
+                  <p className="text-xs text-gray-600 leading-snug mb-2 line-clamp-2">{r.unit_title}</p>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full inline-block" style={r.response === "yes" ? { backgroundColor: "#dbeafe", color: "#1c5ea8" } : { backgroundColor: "#fdeaea", color: "#c93535" }}>
+                    {r.response === "yes" ? "Experience" : "No experience"}
                   </span>
                 </div>
               ))}
