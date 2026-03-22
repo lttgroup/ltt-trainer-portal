@@ -662,24 +662,26 @@ export default function TrainerDetail({ profile: adminProfile }) {
             <p className="text-sm text-gray-400">Trainer has not completed the questionnaire yet</p>
           ) : (
             <div className="grid grid-cols-5 gap-2">
-              {questionnaireResponses.map((r) => (
-                <div
-                  key={r.id}
-                  className="rounded-lg p-3 border"
-                  style={{
-                    backgroundColor: r.response === "yes" ? "#eff6ff" : "#fafafa",
-                    borderColor: r.response === "yes" ? "#bfdbfe" : "#e5e7eb",
-                  }}
-                >
-                  <p className="text-xs font-bold font-mono mb-1" style={{ color: r.response === "yes" ? "#1c5ea8" : "#9ca3af" }}>
-                    {r.unit_code}
-                  </p>
-                  <p className="text-xs text-gray-600 leading-snug mb-2 line-clamp-2">{r.unit_title}</p>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full inline-block" style={r.response === "yes" ? { backgroundColor: "#dbeafe", color: "#1c5ea8" } : { backgroundColor: "#fdeaea", color: "#c93535" }}>
-                    {r.response === "yes" ? "Experience" : "No experience"}
-                  </span>
-                </div>
-              ))}
+              {[...questionnaireResponses]
+                .sort((a, b) => a.unit_code.localeCompare(b.unit_code))
+                .map((r) => (
+                  <div
+                    key={r.id}
+                    className="rounded-lg p-3 border"
+                    style={{
+                      backgroundColor: r.response === "yes" ? "#eff6ff" : "#fafafa",
+                      borderColor: r.response === "yes" ? "#bfdbfe" : "#e5e7eb",
+                    }}
+                  >
+                    <p className="text-xs font-bold font-mono mb-1" style={{ color: r.response === "yes" ? "#1c5ea8" : "#9ca3af" }}>
+                      {r.unit_code}
+                    </p>
+                    <p className="text-xs text-gray-600 leading-snug mb-2 line-clamp-2">{r.unit_title}</p>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full inline-block" style={r.response === "yes" ? { backgroundColor: "#dbeafe", color: "#1c5ea8" } : { backgroundColor: "#fdeaea", color: "#c93535" }}>
+                      {r.response === "yes" ? "Experience" : "No experience"}
+                    </span>
+                  </div>
+                ))}
             </div>
           )}
         </Section>
