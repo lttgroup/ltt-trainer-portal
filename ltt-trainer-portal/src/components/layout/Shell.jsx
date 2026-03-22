@@ -13,14 +13,33 @@ export default function Shell({ user, profile, children, title }) {
   useEffect(() => {
     if (!isAdmin) return;
     fetchPendingCount();
-    // Poll every 60s for new submissions
-    const interval = setInterval(fetchPendingCount, 60000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchPendingCount, 30000);
+    // Refresh immediately when admin saves an assessment in TrainerDetail
+    const onAssessmentSaved = () => fetchPendingCount();
+    window.addEventListener("ltt:assessment-saved", onAssessmentSaved);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("ltt:assessment-saved", onAssessmentSaved);
+    };
   }, [isAdmin]);
 
   const fetchPendingCount = async () => {
-    const { count } = await supabase.from("trainers").select("*", { count: "exact", head: true }).eq("compliance_status", "Pending");
-    setPendingCount(count || 0);
+    // Count trainers who are Pending AND have at least one unreviewed experience entry
+    const { data } = await supabase.from("industry_experience").select("trainer_id").is("competency_confirmed", null).limit(200);
+
+    if (data) {
+      // Get unique trainer IDs with unreviewed entries
+      const unreviewed = [...new Set(data.map((r) => r.trainer_id))];
+      if (unreviewed.length === 0) {
+        setPendingCount(0);
+        return;
+      }
+      // Cross-check that those trainers are actually Pending
+      const { count } = await supabase.from("trainers").select("*", { count: "exact", head: true }).eq("compliance_status", "Pending").in("id", unreviewed);
+      setPendingCount(count || 0);
+    } else {
+      setPendingCount(0);
+    }
   };
 
   const handleSignOut = async () => {
