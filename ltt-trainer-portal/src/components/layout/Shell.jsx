@@ -59,10 +59,7 @@ export default function Shell({ user, profile, children, title }) {
   const navItems = [
     {
       section: "Overview",
-      items: [
-        { to: "/dashboard", label: "Dashboard", icon: "⬡" },
-        { to: "/trainers", label: "Trainers", icon: "👤", badge: isAdmin && pendingCount > 0 ? pendingCount : null },
-      ],
+      items: [{ to: "/dashboard", label: "Dashboard", icon: "⬡" }, ...(isAdmin ? [{ to: "/trainers", label: "Trainers", icon: "👤", badge: pendingCount > 0 ? pendingCount : null }] : [])],
     },
     ...(isAdmin
       ? []
@@ -70,19 +67,24 @@ export default function Shell({ user, profile, children, title }) {
           {
             section: "Onboarding",
             items: [
+              { to: "/profile", label: "Trainer Profile", icon: "📄" },
               { to: "/questionnaire", label: "Skills Questionnaire", icon: "📋" },
-              { to: "/profile", label: "Trainer Profile (AF3.21)", icon: "📄" },
               { to: "/experience", label: "Industry Experience", icon: "🏭" },
             ],
           },
         ]),
-    {
-      section: "Compliance",
-      items: [
-        { to: "/register", label: "Credential Register", icon: "📑" },
-        { to: "/evidence", label: "Evidence Vault", icon: "🗂️" },
-      ],
-    },
+    // Trainers do not see Credential Register or Evidence Vault in nav
+    ...(isAdmin
+      ? [
+          {
+            section: "Compliance",
+            items: [
+              { to: "/register", label: "Credential Register", icon: "📑" },
+              { to: "/evidence", label: "Evidence Vault", icon: "🗂️" },
+            ],
+          },
+        ]
+      : []),
   ];
 
   return (

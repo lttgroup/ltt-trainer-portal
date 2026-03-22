@@ -17,6 +17,102 @@ const TAE_SKILLSETS = [
   { code: "TAESS00015", title: "Enterprise Trainer — Presenting Skill Set" },
 ];
 
+// ── File upload component for credentials ─────────────────────────────────────
+function FileUploadBox({ trainerId, documentType, label, hint, existingFile, onUploaded }) {
+  const [uploading, setUploading] = useState(false);
+  const [file, setFile] = useState(null);
+  const [error, setError] = useState("");
+
+  // Sync when existingFile loads asynchronously
+  useEffect(() => {
+    setFile(existingFile || null);
+  }, [existingFile?.id]);
+
+  const handleFile = async (e) => {
+    const selected = e.target.files?.[0];
+    if (!selected) return;
+    if (selected.size > 10 * 1024 * 1024) {
+      setError("File must be under 10MB");
+      return;
+    }
+    setUploading(true);
+    setError("");
+
+    const ext = selected.name.split(".").pop();
+    // Sanitise documentType for path — no spaces or special chars
+    const safeType = documentType.replace(/[^a-zA-Z0-9]/g, "_");
+    const path = `${trainerId}/${safeType}_${Date.now()}.${ext}`;
+
+    const { error: uploadErr } = await supabase.storage.from("evidence-files").upload(path, selected);
+
+    if (uploadErr) {
+      setError("Upload failed: " + uploadErr.message);
+      setUploading(false);
+      return;
+    }
+
+    // Record in evidence_files table
+    const { data: record } = await supabase
+      .from("evidence_files")
+      .insert({
+        trainer_id: trainerId,
+        file_name: selected.name,
+        file_path: path,
+        file_size: selected.size,
+        document_type: documentType,
+      })
+      .select()
+      .single();
+
+    setFile(record);
+    onUploaded?.(record);
+    setUploading(false);
+  };
+
+  const handleRemove = async () => {
+    if (!file) return;
+    await supabase.storage.from("evidence-files").remove([file.file_path]);
+    await supabase.from("evidence_files").delete().eq("id", file.id);
+    setFile(null);
+    onUploaded?.(null);
+  };
+
+  if (file) {
+    return (
+      <div className="flex items-center gap-3 p-3 rounded-lg border" style={{ backgroundColor: "#f0fdf4", borderColor: "#86efac" }}>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#dcfce7" }}>
+          <span className="text-sm">📎</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-gray-800 truncate">{file.file_name}</p>
+          <p className="text-xs" style={{ color: "#16a34a" }}>
+            ✓ Uploaded
+          </p>
+        </div>
+        <button onClick={handleRemove} className="text-xs text-gray-400 hover:text-red-500 transition-colors flex-shrink-0">
+          Remove
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <label className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed cursor-pointer transition-all hover:border-blue-400 hover:bg-blue-50" style={{ borderColor: "#e5e7eb" }}>
+        <span className="text-xl">📎</span>
+        <div className="text-center">
+          <p className="text-xs font-semibold text-gray-700">{label}</p>
+          {hint && <p className="text-xs text-gray-400 mt-0.5">{hint}</p>}
+          <p className="text-xs text-gray-300 mt-1">PDF, DOCX, JPG, PNG — max 10MB</p>
+        </div>
+        {uploading && <p className="text-xs text-blue-500">Uploading...</p>}
+        <input type="file" className="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={handleFile} disabled={uploading} />
+      </label>
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+    </div>
+  );
+}
+
 function Section({ number, title, children, done }) {
   return (
     <div className="bg-white rounded-xl overflow-hidden mb-5" style={{ border: done ? "1px solid #86efac" : "1px solid #e5e7eb" }}>
@@ -255,6 +351,8 @@ export default function Profile({ profile }) {
   const [loading, setLoading] = useState(true);
   const [profileStatus, setProfileStatus] = useState(null); // from trainer_profiles
   const [experienceApproval, setExperienceApproval] = useState([]); // from industry_experience
+  const [taeFile, setTaeFile] = useState(null); // uploaded TAE credential file
+  const [industryFiles, setIndustryFiles] = useState([]); // uploaded industry qual files
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -324,6 +422,14 @@ export default function Profile({ profile }) {
     // Load experience approval status for section badge
     const { data: expData } = await supabase.from("industry_experience").select("unit_code, competency_confirmed").eq("trainer_id", trainer.id);
     setExperienceApproval(expData || []);
+
+    // Load previously uploaded credential files
+    const { data: files } = await supabase.from("evidence_files").select("*").eq("trainer_id", trainer.id).in("document_type", ["TAE Credential", "TAE Enrolment Evidence", "Industry Qualification"]);
+    if (files) {
+      const tae = files.find((f) => f.document_type === "TAE Credential" || f.document_type === "TAE Enrolment Evidence");
+      setTaeFile(tae || null);
+      setIndustryFiles(files.filter((f) => f.document_type === "Industry Qualification"));
+    }
 
     setLoading(false);
   };
@@ -418,7 +524,7 @@ export default function Profile({ profile }) {
 
   // Section completion checks
   const s1Done = !!(form.full_name && form.state && form.position && form.employment_status && form.phone);
-  const s2Done = !!(form.tae_qualification || form.under_direction_qualification);
+  const s2Done = !!(form.tae_qualification || form.under_direction_qualification) && !!taeFile;
   const s4Done = !!(form.declaration_credentials && form.declaration_copies && form.declaration_signature && form.declaration_date);
   const s6Total = experienceApproval.length;
   const s6AllApproved = s6Total > 0 && experienceApproval.every((e) => e.competency_confirmed === true);
@@ -583,7 +689,7 @@ export default function Profile({ profile }) {
                 <QualificationDropdown value={form.tae_qualification} onChange={(v) => updateForm("tae_qualification", v)} placeholder="Select qualification or skill set" />
               </FieldGroup>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4 mb-4">
               <FieldGroup label="Provider Name">
                 <Input value={form.tae_provider} onChange={(v) => updateForm("tae_provider", v)} placeholder="e.g. TAFE QLD" />
               </FieldGroup>
@@ -594,6 +700,12 @@ export default function Profile({ profile }) {
                 <Input type="date" value={form.tae_issue_date} onChange={(v) => updateForm("tae_issue_date", v)} />
               </FieldGroup>
             </div>
+            {trainerId && (
+              <div className="mt-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Upload a copy of your TAE qualification certificate *</p>
+                <FileUploadBox trainerId={trainerId} documentType="TAE Credential" label="Upload TAE certificate or Statement of Attainment" hint="This will be verified by the quality team" existingFile={taeFile} onUploaded={setTaeFile} />
+              </div>
+            )}
           </div>
         )}
 
@@ -606,7 +718,7 @@ export default function Profile({ profile }) {
                 <QualificationDropdown value={form.under_direction_qualification} onChange={(v) => updateForm("under_direction_qualification", v)} placeholder="Select qualification or skill set" />
               </FieldGroup>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4 mb-4">
               <FieldGroup label="Provider Name">
                 <Input value={form.under_direction_provider} onChange={(v) => updateForm("under_direction_provider", v)} placeholder="e.g. TAFE QLD" />
               </FieldGroup>
@@ -617,6 +729,19 @@ export default function Profile({ profile }) {
                 <Input type="date" value={form.under_direction_commencement} onChange={(v) => updateForm("under_direction_commencement", v)} />
               </FieldGroup>
             </div>
+            {trainerId && (
+              <div className="mt-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Upload evidence of enrolment *</p>
+                <FileUploadBox
+                  trainerId={trainerId}
+                  documentType="TAE Enrolment Evidence"
+                  label="Upload confirmation of enrolment or letter from provider"
+                  hint="e.g. enrolment confirmation email, letter from TAFE"
+                  existingFile={taeFile}
+                  onUploaded={setTaeFile}
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -630,8 +755,39 @@ export default function Profile({ profile }) {
 
       {/* Section 3 */}
       <Section number="3" title="Section 3 — Industry Competencies" done={profileApproved}>
-        <p className="text-xs text-gray-400 mb-4">List all current industry-related qualifications you hold</p>
+        <p className="text-xs text-gray-400 mb-4">List all current industry-related qualifications you hold, and upload a copy of each certificate.</p>
         <IndustryQualifications trainerId={trainerId} saveRef={saveQualsRef} />
+        {trainerId && (
+          <div className="mt-5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Upload copies of your industry qualification certificates *</p>
+            <p className="text-xs text-gray-400 mb-3">Upload a separate file for each qualification. You can upload multiple files.</p>
+            <div className="space-y-2">
+              {industryFiles.map((f, i) => (
+                <FileUploadBox
+                  key={f.id}
+                  trainerId={trainerId}
+                  documentType="Industry Qualification"
+                  label={f.file_name}
+                  existingFile={f}
+                  onUploaded={(updated) => {
+                    if (!updated) setIndustryFiles((prev) => prev.filter((x) => x.id !== f.id));
+                    else setIndustryFiles((prev) => prev.map((x) => (x.id === f.id ? updated : x)));
+                  }}
+                />
+              ))}
+              <FileUploadBox
+                trainerId={trainerId}
+                documentType="Industry Qualification"
+                label="Upload industry qualification certificate"
+                hint="PDF, DOCX, JPG or PNG"
+                existingFile={null}
+                onUploaded={(f) => {
+                  if (f) setIndustryFiles((prev) => [...prev, f]);
+                }}
+              />
+            </div>
+          </div>
+        )}
       </Section>
 
       {/* Section 4 */}

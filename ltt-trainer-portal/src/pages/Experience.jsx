@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import { UNITS } from "../lib/units";
 
 // ── Single unit card ──────────────────────────────────────────────────────────
-function UnitExperienceCard({ unit, exp, approvalStatus, onUpdateElement, onUpdatePD, onUpdateHasPD, onComplete, isFirst }) {
+function UnitExperienceCard({ unit, exp, approvalStatus, qualityNotes, onUpdateElement, onUpdatePD, onUpdateHasPD, onComplete, isFirst }) {
   const [openElement, setOpenElement] = useState(isFirst ? 0 : null);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -99,30 +99,87 @@ function UnitExperienceCard({ unit, exp, approvalStatus, onUpdateElement, onUpda
   return (
     <div className="bg-white border rounded-xl overflow-hidden transition-all" style={{ borderColor: unitComplete ? "#bbf7d0" : "#e5e7eb" }}>
       {/* Unit header */}
-      <div
-        className="flex items-center gap-3 px-5 py-3 border-b"
-        style={{
-          backgroundColor: unitComplete ? "#dcfce7" : "#f9fafb",
-          borderColor: unitComplete ? "#bbf7d0" : "#f3f4f6",
-        }}
-      >
-        <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
-          {unit.code}
-        </span>
-        <span className="text-sm font-medium text-gray-800 flex-1">{unit.title}</span>
-        {!elementsComplete && (
-          <span className="text-xs text-gray-400 flex-shrink-0">
-            {unit.elements.filter((_, i) => exp.element_descriptions?.[i]?.trim()).length}/{unit.elements.length} elements
-          </span>
-        )}
-        {unitComplete && (
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>
-            ✓ Complete
-          </span>
-        )}
-      </div>
+      {(() => {
+        let hBg = unitComplete ? "#dcfce7" : "#f9fafb";
+        let hBorder = unitComplete ? "#bbf7d0" : "#f3f4f6";
+        if (approvalStatus === true) {
+          hBg = "#dcfce7";
+          hBorder = "#86efac";
+        }
+        if (approvalStatus === false) {
+          hBg = "#fef2f2";
+          hBorder = "#fca5a5";
+        }
+        return (
+          <div className="flex items-center gap-3 px-5 py-3 border-b" style={{ backgroundColor: hBg, borderColor: hBorder }}>
+            <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
+              {unit.code}
+            </span>
+            <span className="text-sm font-medium text-gray-800 flex-1">{unit.title}</span>
+            {approvalStatus === true && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>
+                ✓ Approved
+              </span>
+            )}
+            {approvalStatus === false && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>
+                ✗ Not Approved
+              </span>
+            )}
+            {approvalStatus == null && !elementsComplete && (
+              <span className="text-xs text-gray-400 flex-shrink-0">
+                {unit.elements.filter((_, i) => exp.element_descriptions?.[i]?.trim()).length}/{unit.elements.length} elements
+              </span>
+            )}
+            {approvalStatus == null && unitComplete && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>
+                ✓ Complete
+              </span>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="p-5">
+        {/* Quality feedback panel for not-approved units */}
+        {approvalStatus === false && (
+          <div className="rounded-xl p-4 mb-5 border" style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5" }}>
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#c93535" }}>
+                <span className="text-white font-bold text-xs">!</span>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold mb-1" style={{ color: "#c93535" }}>
+                  Not Approved — Additional evidence required
+                </p>
+                {qualityNotes ? (
+                  <>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Quality team feedback:</p>
+                    <p className="text-sm text-gray-700 leading-relaxed italic">"{qualityNotes}"</p>
+                  </>
+                ) : (
+                  <p className="text-xs text-gray-500">Please review your experience descriptions below and contact your compliance officer if you can provide additional evidence.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Approved read-only notice */}
+        {approvalStatus === true && (
+          <div className="rounded-xl p-4 mb-5 border" style={{ backgroundColor: "#f0fdf4", borderColor: "#86efac" }}>
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#16a34a" }}>
+                <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                  <path d="M1 4.5l3 3L11 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold" style={{ color: "#166534" }}>
+                Approved by quality team — your experience evidence has been verified.
+              </p>
+            </div>
+          </div>
+        )}
         {/* Element descriptions */}
         {unit.elements.length > 0 ? (
           <div className="space-y-2 mb-5">
@@ -236,6 +293,7 @@ export default function Experience({ profile }) {
   const [assignedUnits, setAssignedUnits] = useState(null);
   const [experience, setExperience] = useState({});
   const [approval, setApproval] = useState({}); // unit_code -> competency_confirmed (null|true|false)
+  const [qualityNotes, setQualityNotes] = useState({}); // unit_code -> quality_notes
   const [questionnaireSubmitted, setQuestionnaireSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -289,8 +347,13 @@ export default function Experience({ profile }) {
         };
         approvalMapped[e.unit_code] = e.competency_confirmed; // null | true | false
       });
+      const notesMapped = {};
+      expData.forEach((e) => {
+        if (e.quality_notes) notesMapped[e.unit_code] = e.quality_notes;
+      });
       setExperience(mapped);
       setApproval(approvalMapped);
+      setQualityNotes(notesMapped);
     }
 
     setLoading(false);
@@ -509,6 +572,7 @@ export default function Experience({ profile }) {
                 unit={unit}
                 exp={experience[unit.code] || {}}
                 approvalStatus={approval[unit.code]}
+                qualityNotes={qualityNotes[unit.code] || ""}
                 onUpdateElement={updateElement}
                 onUpdatePD={updatePD}
                 onUpdateHasPD={updateHasPD}

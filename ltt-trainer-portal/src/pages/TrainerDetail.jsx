@@ -699,6 +699,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
   const [experienceData, setExperienceData] = useState([]);
   const [industryQuals, setIndustryQuals] = useState([]);
   const [evidenceFiles, setEvidenceFiles] = useState([]);
+  const [savingCredApproval, setSavingCredApproval] = useState(false);
   const [assignedUnits, setAssignedUnits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -729,6 +730,22 @@ export default function TrainerDetail({ profile: adminProfile }) {
     setEvidenceFiles(files || []);
     setAssignedUnits(assigned || []);
     setLoading(false);
+  };
+
+  // Approve/reject credential sections 2 & 3
+  const updateCredentialApproval = async (approved) => {
+    setSavingCredApproval(true);
+    const newStatus = approved ? "Approved" : "Rejected";
+    await supabase
+      .from("trainer_profiles")
+      .update({
+        profile_status: newStatus,
+        reviewed_by: adminProfile?.full_name,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("trainer_id", id);
+    await fetchAll();
+    setSavingCredApproval(false);
   };
 
   const updateStatus = async (status) => {
@@ -906,8 +923,26 @@ export default function TrainerDetail({ profile: adminProfile }) {
             </div>
           </Section>
 
-          <Section title="Section 2 — Training Credentials" action={<span className="text-xs text-gray-400">{trainerProfile?.tae_qualification ? "Submitted" : "Not submitted"}</span>}>
-            {trainerProfile?.tae_qualification ? (
+          <Section
+            title="Section 2 — Training Credentials"
+            action={(() => {
+              const st = trainerProfile?.profile_status;
+              if (st === "Approved")
+                return (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>
+                    ✓ Approved
+                  </span>
+                );
+              if (st === "Rejected")
+                return (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>
+                    ✗ Not Approved
+                  </span>
+                );
+              return <span className="text-xs text-gray-400">{trainerProfile?.tae_qualification || trainerProfile?.under_direction_qualification ? "Submitted" : "Not submitted"}</span>;
+            })()}
+          >
+            {trainerProfile?.tae_qualification || trainerProfile?.under_direction_qualification ? (
               <>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-0 mb-2">
                   <DetailRow label="TAE Qualification" value={trainerProfile.tae_qualification} />
@@ -926,6 +961,53 @@ export default function TrainerDetail({ profile: adminProfile }) {
                     </div>
                   </>
                 )}
+                {/* Uploaded credential files */}
+                {evidenceFiles.filter((f) => f.document_type === "TAE Credential" || f.document_type === "TAE Enrolment Evidence").length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Uploaded Evidence</p>
+                    {evidenceFiles
+                      .filter((f) => f.document_type === "TAE Credential" || f.document_type === "TAE Enrolment Evidence")
+                      .map((f) => (
+                        <div key={f.id} className="flex items-center gap-3 p-2.5 rounded-lg border mb-1.5" style={{ backgroundColor: "#f9fafb", borderColor: "#e5e7eb" }}>
+                          <span className="text-sm">📎</span>
+                          <span className="text-sm text-gray-700 flex-1">{f.file_name}</span>
+                          <button
+                            onClick={async () => {
+                              const { data } = await supabase.storage.from("evidence-files").createSignedUrl(f.file_path, 120);
+                              if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+                            }}
+                            className="text-xs font-medium px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-100"
+                          >
+                            View
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                )}
+                {evidenceFiles.filter((f) => f.document_type === "TAE Credential" || f.document_type === "TAE Enrolment Evidence").length === 0 && (
+                  <p className="text-xs text-amber-600 mt-3 p-2 rounded" style={{ backgroundColor: "#fdf3e0" }}>
+                    ⚠ No credential file uploaded yet
+                  </p>
+                )}
+                {/* Approve / Not Approve buttons */}
+                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+                  <button
+                    onClick={() => updateCredentialApproval(true)}
+                    disabled={savingCredApproval}
+                    className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
+                    style={{ backgroundColor: trainerProfile?.profile_status === "Approved" ? "#16a34a" : "#1c5ea8" }}
+                  >
+                    {trainerProfile?.profile_status === "Approved" ? "✓ Approved" : "Approve Credentials"}
+                  </button>
+                  <button
+                    onClick={() => updateCredentialApproval(false)}
+                    disabled={savingCredApproval}
+                    className="px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all"
+                    style={trainerProfile?.profile_status === "Rejected" ? { backgroundColor: "#fdeaea", color: "#c93535", borderColor: "#fca5a5" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
+                  >
+                    {trainerProfile?.profile_status === "Rejected" ? "✗ Not Approved" : "Not Approved"}
+                  </button>
+                </div>
               </>
             ) : (
               <p className="text-sm text-gray-400">Trainer has not submitted their profile yet</p>
@@ -943,30 +1025,59 @@ export default function TrainerDetail({ profile: adminProfile }) {
             {industryQuals.length === 0 ? (
               <p className="text-sm text-gray-400">No industry qualifications submitted yet</p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      {["Code", "Title", "Provider Name", "Provider ID", "Issue Date"].map((h) => (
-                        <th key={h} className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-200">
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {industryQuals.map((q, i) => (
-                      <tr key={i} className="border-b border-gray-100 last:border-0">
-                        <td className="px-3 py-2.5 font-mono text-xs text-gray-700">{q.qualification_code || "—"}</td>
-                        <td className="px-3 py-2.5 text-sm text-gray-800">{q.qualification_title || "—"}</td>
-                        <td className="px-3 py-2.5 text-sm text-gray-600">{q.provider_name || "—"}</td>
-                        <td className="px-3 py-2.5 text-sm text-gray-600">{q.provider_id || "—"}</td>
-                        <td className="px-3 py-2.5 text-sm text-gray-600">{q.issue_date || "—"}</td>
+              <>
+                <div className="overflow-x-auto mb-4">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        {["Code", "Title", "Provider Name", "Provider ID", "Issue Date"].map((h) => (
+                          <th key={h} className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-200">
+                            {h}
+                          </th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {industryQuals.map((q, i) => (
+                        <tr key={i} className="border-b border-gray-100 last:border-0">
+                          <td className="px-3 py-2.5 font-mono text-xs text-gray-700">{q.qualification_code || "—"}</td>
+                          <td className="px-3 py-2.5 text-sm text-gray-800">{q.qualification_title || "—"}</td>
+                          <td className="px-3 py-2.5 text-sm text-gray-600">{q.provider_name || "—"}</td>
+                          <td className="px-3 py-2.5 text-sm text-gray-600">{q.provider_id || "—"}</td>
+                          <td className="px-3 py-2.5 text-sm text-gray-600">{q.issue_date || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {/* Industry qual uploaded files */}
+                {evidenceFiles.filter((f) => f.document_type === "Industry Qualification").length > 0 ? (
+                  <div className="pt-3 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Uploaded Certificates</p>
+                    {evidenceFiles
+                      .filter((f) => f.document_type === "Industry Qualification")
+                      .map((f) => (
+                        <div key={f.id} className="flex items-center gap-3 p-2.5 rounded-lg border mb-1.5" style={{ backgroundColor: "#f9fafb", borderColor: "#e5e7eb" }}>
+                          <span className="text-sm">📎</span>
+                          <span className="text-sm text-gray-700 flex-1">{f.file_name}</span>
+                          <button
+                            onClick={async () => {
+                              const { data } = await supabase.storage.from("evidence-files").createSignedUrl(f.file_path, 120);
+                              if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+                            }}
+                            className="text-xs font-medium px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-100"
+                          >
+                            View
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-amber-600 p-2 rounded" style={{ backgroundColor: "#fdf3e0" }}>
+                    ⚠ No certificate files uploaded yet
+                  </p>
+                )}
+              </>
             )}
           </Section>
 
