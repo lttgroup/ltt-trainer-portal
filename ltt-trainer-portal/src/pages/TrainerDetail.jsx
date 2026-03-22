@@ -396,6 +396,7 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
   const [saved, setSaved] = useState(false);
   const [filterQual, setFilterQual] = useState("All");
   const [loading, setLoading] = useState(true);
+  const [expandedStream, setExpandedStream] = useState(null);
 
   const yesSet = new Set(responses.filter((r) => r.response === "yes").map((r) => r.unit_code));
   const assignedSet = new Set(assignedUnits.map((a) => a.unit_code));
@@ -559,12 +560,12 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
               const isSelected = selected.has(stream.id);
               const isAssigned = [...(streamUnits[stream.id] || [])].every((u) => assignedSet.has(u)) && (streamUnits[stream.id] || []).length > 0;
 
-              // Approval: all assigned units in this stream are approved
+              // Approval: based on ALL units in the stream (not just assigned)
               const streamUnitCodes = streamUnits[stream.id] || [];
+              const allApproved = streamUnitCodes.length > 0 && streamUnitCodes.every((u) => experienceData.find((e) => e.unit_code === u && e.competency_confirmed === true));
+              const anyNotApproved = streamUnitCodes.some((u) => experienceData.find((e) => e.unit_code === u && e.competency_confirmed === false));
+              const approvedCount = streamUnitCodes.filter((u) => experienceData.find((e) => e.unit_code === u && e.competency_confirmed === true)).length;
               const assignedInStream = streamUnitCodes.filter((u) => assignedSet.has(u));
-              const allApproved = assignedInStream.length > 0 && assignedInStream.every((u) => experienceData.find((e) => e.unit_code === u && e.competency_confirmed === true));
-              const anyNotApproved = assignedInStream.some((u) => experienceData.find((e) => e.unit_code === u && e.competency_confirmed === false));
-              const approvedCount = assignedInStream.filter((u) => experienceData.find((e) => e.unit_code === u && e.competency_confirmed === true)).length;
 
               // Card colour: green=all approved, red=any not approved, blue=full experience, amber=partial
               let cardBg = "#fff",
@@ -624,16 +625,16 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
                   </div>
 
                   {/* Approval bar (only shown when units assigned) */}
-                  {assignedInStream.length > 0 && (
+                  {streamUnitCodes.length > 0 && (
                     <div className="mb-1.5">
                       <div className="flex justify-between mb-1">
                         <span className="text-xs text-gray-400">Quality approved</span>
                         <span className="text-xs font-semibold" style={{ color: allApproved ? "#16a34a" : "#6b7280" }}>
-                          {approvedCount}/{assignedInStream.length} units
+                          {approvedCount}/{streamUnitCodes.length} units
                         </span>
                       </div>
                       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${Math.round((approvedCount / assignedInStream.length) * 100)}%`, backgroundColor: allApproved ? "#16a34a" : "#32ba9a" }} />
+                        <div className="h-full rounded-full transition-all" style={{ width: `${Math.round((approvedCount / streamUnitCodes.length) * 100)}%`, backgroundColor: allApproved ? "#16a34a" : "#32ba9a" }} />
                       </div>
                     </div>
                   )}
@@ -666,6 +667,47 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
                       </span>
                     )}
                   </div>
+
+                  {/* Expand button */}
+                  <button
+                    className="w-full mt-2 py-1 text-xs text-gray-400 hover:text-gray-600 transition-colors text-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpandedStream(expandedStream === stream.id ? null : stream.id);
+                    }}
+                  >
+                    {expandedStream === stream.id ? "▲ Hide units" : "▼ Show units"}
+                  </button>
+
+                  {/* Unit breakdown */}
+                  {expandedStream === stream.id && (
+                    <div className="mt-2 pt-2 border-t border-gray-200 space-y-1" onClick={(e) => e.stopPropagation()}>
+                      {streamUnitCodes.map((code) => {
+                        const unit = UNITS.find((u) => u.code === code);
+                        const exp = experienceData.find((e) => e.unit_code === code);
+                        const isApproved = exp?.competency_confirmed === true;
+                        const isNotApproved = exp?.competency_confirmed === false;
+                        const hasExp = yesSet.has(code);
+                        return (
+                          <div key={code} className="flex items-center gap-2 px-1 py-1 rounded" style={{ backgroundColor: isApproved ? "#f0fdf4" : isNotApproved ? "#fef2f2" : "#f9fafb" }}>
+                            <span className="text-xs font-bold font-mono flex-shrink-0" style={{ color: isApproved ? "#166534" : isNotApproved ? "#c93535" : hasExp ? "#1c5ea8" : "#9ca3af" }}>
+                              {code}
+                            </span>
+                            <span className="text-xs text-gray-500 flex-1 truncate">{unit?.title}</span>
+                            <span className="text-xs font-semibold flex-shrink-0" style={{ color: isApproved ? "#166534" : isNotApproved ? "#c93535" : hasExp ? "#1c5ea8" : "#9ca3af" }}>
+                              {isApproved ? "✓" : isNotApproved ? "✗" : hasExp ? "~" : "—"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      <div className="flex gap-3 pt-1 text-xs text-gray-400">
+                        <span style={{ color: "#166534" }}>✓ Approved</span>
+                        <span style={{ color: "#c93535" }}>✗ Not approved</span>
+                        <span style={{ color: "#1c5ea8" }}>~ Experience</span>
+                        <span>— None</span>
+                      </div>
+                    </div>
+                  )}
                 </button>
               );
             })}
@@ -700,6 +742,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
   const [industryQuals, setIndustryQuals] = useState([]);
   const [evidenceFiles, setEvidenceFiles] = useState([]);
   const [savingCredApproval, setSavingCredApproval] = useState(false);
+  const [savingQualsApproval, setSavingQualsApproval] = useState(false);
   const [assignedUnits, setAssignedUnits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -730,6 +773,22 @@ export default function TrainerDetail({ profile: adminProfile }) {
     setEvidenceFiles(files || []);
     setAssignedUnits(assigned || []);
     setLoading(false);
+  };
+
+  // Approve/reject Section 3 industry qualifications (stored on industry_qualifications table via a flag on trainer_profiles)
+  const updateQualsApproval = async (approved) => {
+    setSavingQualsApproval(true);
+    await supabase.from("trainer_profiles").upsert(
+      {
+        trainer_id: id,
+        industry_quals_approved: approved,
+        reviewed_by: adminProfile?.full_name,
+        reviewed_at: new Date().toISOString(),
+      },
+      { onConflict: "trainer_id" },
+    );
+    await fetchAll();
+    setSavingQualsApproval(false);
   };
 
   // Approve/reject credential sections 2 & 3
@@ -1051,10 +1110,43 @@ export default function TrainerDetail({ profile: adminProfile }) {
                   </table>
                 </div>
                 {/* Industry qual uploaded files */}
-                {evidenceFiles.filter((f) => f.document_type === "Industry Qualification").length > 0 ? (
-                  <div className="pt-3 border-t border-gray-100">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Uploaded Certificates</p>
-                    {evidenceFiles
+                {/* Uploaded certificates */}
+                <div className="pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Certificates</p>
+                    {/* Admin upload for Section 3 */}
+                    <label className="flex items-center gap-1.5 cursor-pointer text-xs font-medium px-2.5 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M6 9V2M6 2L3.5 4.5M6 2l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M1 9.5v.5a1 1 0 001 1h8a1 1 0 001-1v-.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                      Upload
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        onChange={async (e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          const ext = f.name.split(".").pop();
+                          const path = `${id}/Industry_Qualification_admin_${Date.now()}.${ext}`;
+                          const { error: upErr } = await supabase.storage.from("evidence-files").upload(path, f);
+                          if (!upErr) {
+                            await supabase.from("evidence_files").insert({
+                              trainer_id: id,
+                              file_name: f.name,
+                              file_path: path,
+                              file_size: f.size,
+                              document_type: "Industry Qualification",
+                            });
+                            await fetchAll();
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {evidenceFiles.filter((f) => f.document_type === "Industry Qualification").length > 0 ? (
+                    evidenceFiles
                       .filter((f) => f.document_type === "Industry Qualification")
                       .map((f) => (
                         <div key={f.id} className="flex items-center gap-3 p-2.5 rounded-lg border mb-1.5" style={{ backgroundColor: "#f9fafb", borderColor: "#e5e7eb" }}>
@@ -1070,13 +1162,32 @@ export default function TrainerDetail({ profile: adminProfile }) {
                             View
                           </button>
                         </div>
-                      ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-amber-600 p-2 rounded" style={{ backgroundColor: "#fdf3e0" }}>
-                    ⚠ No certificate files uploaded yet
-                  </p>
-                )}
+                      ))
+                  ) : (
+                    <p className="text-xs text-amber-600 p-2 rounded" style={{ backgroundColor: "#fdf3e0" }}>
+                      ⚠ No certificates uploaded yet
+                    </p>
+                  )}
+                </div>
+                {/* Approve / Not Approve industry qualifications */}
+                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+                  <button
+                    onClick={() => updateQualsApproval(true)}
+                    disabled={savingQualsApproval}
+                    className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
+                    style={{ backgroundColor: trainerProfile?.industry_quals_approved === true ? "#16a34a" : "#1c5ea8" }}
+                  >
+                    {trainerProfile?.industry_quals_approved === true ? "✓ Approved" : "Approve Industry Quals"}
+                  </button>
+                  <button
+                    onClick={() => updateQualsApproval(false)}
+                    disabled={savingQualsApproval}
+                    className="px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all"
+                    style={trainerProfile?.industry_quals_approved === false ? { backgroundColor: "#fdeaea", color: "#c93535", borderColor: "#fca5a5" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
+                  >
+                    {trainerProfile?.industry_quals_approved === false ? "✗ Not Approved" : "Not Approved"}
+                  </button>
+                </div>
               </>
             )}
           </Section>
@@ -1146,7 +1257,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
                     codeColor = "#9ca3af";
                     pillBg = "#f3f4f6";
                     pillColor = "#9ca3af";
-                    pillLabel = "No";
+                    pillLabel = "No Experience";
                   }
 
                   return (

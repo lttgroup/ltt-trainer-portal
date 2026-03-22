@@ -262,7 +262,7 @@ export default function Dashboard({ profile }) {
                     navigate(`/trainers/${n.trainer_id}`);
                   }}
                 >
-                  <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: n.read ? "#d1d5db" : "#e8a020" }} />
+                  <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: n.read ? "#d1d5db" : n.type === "experience_updated" ? "#7c3aed" : "#e8a020" }} />
                   <div>
                     <p className="text-xs text-gray-700 font-medium">{n.trainer_name}</p>
                     <p className="text-xs text-gray-500">{n.message}</p>

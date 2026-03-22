@@ -427,6 +427,32 @@ export default function Experience({ profile }) {
 
     setSaved(true);
     setSaving(false);
+
+    // If trainer has already submitted once, notify admin of the update
+    // Check compliance_status — if Pending or beyond, this is an update not initial save
+    const { data: trainerRow } = await supabase.from("trainers").select("compliance_status").eq("id", trainerId).single();
+    if (trainerRow && ["Pending", "Under Review", "Compliant"].includes(trainerRow.compliance_status)) {
+      // Upsert notification (update existing unread one if present, else insert new)
+      const { data: existing } = await supabase.from("notifications").select("id").eq("trainer_id", trainerId).eq("type", "experience_updated").eq("read", false).maybeSingle();
+      if (existing) {
+        await supabase
+          .from("notifications")
+          .update({
+            message: `${profile?.full_name || "A trainer"} has updated their industry experience — please re-review.`,
+            created_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+      } else {
+        await supabase.from("notifications").insert({
+          trainer_id: trainerId,
+          trainer_name: profile?.full_name || "A trainer",
+          type: "experience_updated",
+          message: `${profile?.full_name || "A trainer"} has updated their industry experience — please re-review.`,
+          read: false,
+        });
+      }
+      window.dispatchEvent(new Event("ltt:assessment-saved"));
+    }
   };
 
   const handleSubmit = async () => {

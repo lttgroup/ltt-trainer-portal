@@ -96,16 +96,41 @@ function FileUploadBox({ trainerId, documentType, label, hint, existingFile, onU
     );
   }
 
+  const [dragging, setDragging] = useState(false);
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    const dropped = e.dataTransfer.files?.[0];
+    if (dropped) handleFile({ target: { files: [dropped] } });
+  };
+
   return (
     <div>
-      <label className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed cursor-pointer transition-all hover:border-blue-400 hover:bg-blue-50" style={{ borderColor: "#e5e7eb" }}>
-        <span className="text-xl">📎</span>
-        <div className="text-center">
-          <p className="text-xs font-semibold text-gray-700">{label}</p>
-          {hint && <p className="text-xs text-gray-400 mt-0.5">{hint}</p>}
-          <p className="text-xs text-gray-300 mt-1">PDF, DOCX, JPG, PNG — max 10MB</p>
+      <label
+        className="flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-dashed cursor-pointer transition-all"
+        style={{
+          borderColor: dragging ? "#1c5ea8" : "#d1d5db",
+          backgroundColor: dragging ? "#eff6ff" : "#fafafa",
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
+      >
+        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: dragging ? "#dbeafe" : "#f3f4f6" }}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 13V4M10 4L7 7M10 4l3 3" stroke={dragging ? "#1c5ea8" : "#9ca3af"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M3 14v1a2 2 0 002 2h10a2 2 0 002-2v-1" stroke={dragging ? "#1c5ea8" : "#9ca3af"} strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
         </div>
-        {uploading && <p className="text-xs text-blue-500">Uploading...</p>}
+        <div className="text-center">
+          <p className="text-sm font-semibold text-gray-700">{uploading ? "Uploading..." : dragging ? "Drop to upload" : "Click to select or drag and drop"}</p>
+          {hint && <p className="text-xs text-gray-400 mt-0.5">{hint}</p>}
+          <p className="text-xs text-gray-400 mt-1">PDF, DOCX, JPG, PNG — max 10MB</p>
+        </div>
         <input type="file" className="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={handleFile} disabled={uploading} />
       </label>
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
