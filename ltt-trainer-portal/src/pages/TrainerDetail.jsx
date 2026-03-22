@@ -559,28 +559,34 @@ export default function TrainerDetail({ profile: adminProfile }) {
       {activeTab === "profile" && (
         <>
           <Section title="Section 1 — Personal Details">
-            <DetailRow label="Full Name" value={trainer.full_name} />
-            <DetailRow label="Email" value={trainer.email} />
-            <DetailRow label="Phone" value={trainer.phone} />
-            <DetailRow label="State" value={trainer.state} />
-            <DetailRow label="Position" value={trainer.position} />
-            <DetailRow label="Employment Status" value={trainer.employment_status} />
+            <div className="grid grid-cols-2 gap-x-8 gap-y-0">
+              <DetailRow label="Full Name" value={trainer.full_name} />
+              <DetailRow label="Email" value={trainer.email} />
+              <DetailRow label="Position" value={trainer.position} />
+              <DetailRow label="Employment Status" value={trainer.employment_status} />
+              <DetailRow label="Phone" value={trainer.phone} />
+              <DetailRow label="State" value={trainer.state} />
+            </div>
           </Section>
 
           <Section title="Section 2 — Training Credentials" action={<span className="text-xs text-gray-400">{trainerProfile?.tae_qualification ? "Submitted" : "Not submitted"}</span>}>
             {trainerProfile?.tae_qualification ? (
               <>
-                <DetailRow label="TAE Qualification" value={trainerProfile.tae_qualification} />
-                <DetailRow label="Provider Name" value={trainerProfile.tae_provider} />
-                <DetailRow label="Provider ID" value={trainerProfile.tae_provider_id} />
-                <DetailRow label="Issue Date" value={trainerProfile.tae_issue_date} />
+                <div className="grid grid-cols-2 gap-x-8 gap-y-0 mb-2">
+                  <DetailRow label="TAE Qualification" value={trainerProfile.tae_qualification} />
+                  <DetailRow label="Issue Date" value={trainerProfile.tae_issue_date} />
+                  <DetailRow label="Provider Name" value={trainerProfile.tae_provider} />
+                  <DetailRow label="Provider ID" value={trainerProfile.tae_provider_id} />
+                </div>
                 {trainerProfile.under_direction_qualification && (
                   <>
                     <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide pt-3 pb-1 border-t border-gray-100 mt-2">Under Direction</div>
-                    <DetailRow label="Qualification" value={trainerProfile.under_direction_qualification} />
-                    <DetailRow label="Provider Name" value={trainerProfile.under_direction_provider} />
-                    <DetailRow label="Provider ID" value={trainerProfile.under_direction_provider_id} />
-                    <DetailRow label="Commencement" value={trainerProfile.under_direction_commencement} />
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-0">
+                      <DetailRow label="Qualification" value={trainerProfile.under_direction_qualification} />
+                      <DetailRow label="Commencement" value={trainerProfile.under_direction_commencement} />
+                      <DetailRow label="Provider Name" value={trainerProfile.under_direction_provider} />
+                      <DetailRow label="Provider ID" value={trainerProfile.under_direction_provider_id} />
+                    </div>
                   </>
                 )}
               </>
@@ -629,12 +635,12 @@ export default function TrainerDetail({ profile: adminProfile }) {
 
           <Section title="Section 4 — Credentials Declaration">
             {trainerProfile ? (
-              <>
-                <DetailRow label="Declaration — credentials true and correct" value={trainerProfile.declaration_credentials ? "✓ Confirmed" : "Not confirmed"} />
-                <DetailRow label="Declaration — copies provided" value={trainerProfile.declaration_copies ? "✓ Confirmed" : "Not confirmed"} />
+              <div className="grid grid-cols-2 gap-x-8 gap-y-0">
+                <DetailRow label="Credentials declared true and correct" value={trainerProfile.declaration_credentials ? "✓ Confirmed" : "Not confirmed"} />
+                <DetailRow label="Copies provided" value={trainerProfile.declaration_copies ? "✓ Confirmed" : "Not confirmed"} />
                 <DetailRow label="Signature" value={trainerProfile.declaration_signature} />
                 <DetailRow label="Date" value={trainerProfile.declaration_date} />
-              </>
+              </div>
             ) : (
               <p className="text-sm text-gray-400">Trainer has not submitted their declaration yet</p>
             )}
@@ -655,7 +661,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
           {questionnaireResponses.length === 0 ? (
             <p className="text-sm text-gray-400">Trainer has not completed the questionnaire yet</p>
           ) : (
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-5 gap-2">
               {questionnaireResponses.map((r) => (
                 <div
                   key={r.id}

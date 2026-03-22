@@ -283,7 +283,8 @@ export default function Questionnaire({ profile }) {
     navigate("/experience");
   };
 
-  const answeredCount = Object.keys(responses).length;
+  const validCodes = new Set(UNITS.map((u) => u.code));
+  const answeredCount = Object.keys(responses).filter((code) => validCodes.has(code)).length;
   const totalCount = UNITS.length;
   const pct = Math.round((answeredCount / totalCount) * 100);
 
