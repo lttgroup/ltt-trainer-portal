@@ -661,7 +661,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
           {questionnaireResponses.length === 0 ? (
             <p className="text-sm text-gray-400">Trainer has not completed the questionnaire yet</p>
           ) : (
-            <div className="grid grid-cols-5 gap-1.5">
+            <div className="grid grid-cols-6 gap-1.5">
               {[...questionnaireResponses]
                 .sort((a, b) => a.unit_code.localeCompare(b.unit_code))
                 .map((r) => (
