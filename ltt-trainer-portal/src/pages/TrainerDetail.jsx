@@ -259,7 +259,7 @@ function StreamsTab({ trainerId, responses, assignedUnits, onAssignmentChange })
             <div className="flex-1 h-px bg-gray-200" />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             {qualStreams.map((stream) => {
               const cov = getStreamCoverage(stream.id);
               const isSelected = selected.has(stream.id);
@@ -661,24 +661,23 @@ export default function TrainerDetail({ profile: adminProfile }) {
           {questionnaireResponses.length === 0 ? (
             <p className="text-sm text-gray-400">Trainer has not completed the questionnaire yet</p>
           ) : (
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-3 gap-1.5">
               {[...questionnaireResponses]
                 .sort((a, b) => a.unit_code.localeCompare(b.unit_code))
                 .map((r) => (
                   <div
                     key={r.id}
-                    className="rounded-lg p-3 border"
+                    className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 border"
                     style={{
                       backgroundColor: r.response === "yes" ? "#eff6ff" : "#fafafa",
                       borderColor: r.response === "yes" ? "#bfdbfe" : "#e5e7eb",
                     }}
                   >
-                    <p className="text-xs font-bold font-mono mb-1" style={{ color: r.response === "yes" ? "#1c5ea8" : "#9ca3af" }}>
+                    <span className="text-xs font-bold font-mono flex-shrink-0" style={{ color: r.response === "yes" ? "#1c5ea8" : "#9ca3af" }}>
                       {r.unit_code}
-                    </p>
-                    <p className="text-xs text-gray-600 leading-snug mb-2 line-clamp-2">{r.unit_title}</p>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full inline-block" style={r.response === "yes" ? { backgroundColor: "#dbeafe", color: "#1c5ea8" } : { backgroundColor: "#fdeaea", color: "#c93535" }}>
-                      {r.response === "yes" ? "Experience" : "No experience"}
+                    </span>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={r.response === "yes" ? { backgroundColor: "#dbeafe", color: "#1c5ea8" } : { backgroundColor: "#fdeaea", color: "#c93535" }}>
+                      {r.response === "yes" ? "Experience" : "No"}
                     </span>
                   </div>
                 ))}
