@@ -284,8 +284,9 @@ export default function Profile({ profile }) {
   const fetchData = async () => {
     if (!profile) return;
 
-    const { data: trainer } = await supabase.from("trainers").select("*").eq("email", profile.email).maybeSingle();
+    const { data: trainers } = await supabase.from("trainers").select("*").eq("email", profile.email).order("created_at", { ascending: false }).limit(1);
 
+    const trainer = trainers?.[0] || null;
     if (!trainer) {
       setLoading(false);
       return;

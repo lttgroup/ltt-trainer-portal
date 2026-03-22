@@ -171,8 +171,9 @@ export default function Questionnaire({ profile }) {
   const fetchTrainerAndResponses = async () => {
     if (!profile) return;
 
-    const { data: trainer } = await supabase.from("trainers").select("id").eq("email", profile.email).maybeSingle();
+    const { data: trainers } = await supabase.from("trainers").select("id").eq("email", profile.email).order("created_at", { ascending: false }).limit(1);
 
+    const trainer = trainers?.[0] || null;
     if (!trainer) {
       setError("No trainer record found. Please contact your compliance officer.");
       setLoading(false);

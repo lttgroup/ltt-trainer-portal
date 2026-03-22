@@ -68,8 +68,9 @@ export default function EvidenceVault({ profile }) {
       setTrainers(trainerData || []);
     } else {
       // Trainer — load only their own files
-      const { data: trainerData } = await supabase.from("trainers").select("id").eq("email", profile.email).maybeSingle();
+      const { data: trainers } = await supabase.from("trainers").select("id").eq("email", profile.email).order("created_at", { ascending: false }).limit(1);
 
+      const trainer = trainers?.[0] || null;
       if (trainerData) {
         setTrainerId(trainerData.id);
         setSelectedTrainer(trainerData.id);
