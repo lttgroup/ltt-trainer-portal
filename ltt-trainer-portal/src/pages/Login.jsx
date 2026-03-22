@@ -15,7 +15,7 @@ export default function Login() {
     setLoading(true);
     setError("");
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -24,10 +24,13 @@ export default function Login() {
       setError("Invalid email or password. Please try again.");
       setLoading(false);
     } else {
+      // Fetch role then redirect correctly
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", authData.user.id).single();
+
+      // Both roles go to dashboard — dashboard itself handles the view difference
       navigate("/dashboard");
     }
   };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md">

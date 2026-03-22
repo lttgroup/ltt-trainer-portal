@@ -40,17 +40,16 @@ function AppShell({ session, profile, title, children }) {
   );
 }
 
-// Admin-only route — redirects trainers to their profile
+// Admins see full dashboard; trainers see their own progress dashboard
 function AdminRoute({ session, profile, title, children }) {
   if (!session) return <Navigate to="/login" replace />;
-  if (profile && profile.role === "trainer") return <Navigate to="/profile" replace />;
+  // ❌ REMOVE the trainer redirect — trainers CAN access /dashboard now
   return (
     <Shell user={session?.user} profile={profile} title={title}>
       {children}
     </Shell>
   );
 }
-
 export default function App() {
   const [session, setSession] = useState(undefined);
   const [profile, setProfile] = useState(null);
@@ -80,8 +79,8 @@ export default function App() {
   if (session === undefined) return <LoadingScreen />;
 
   // Once profile is loaded, decide where to send the user on login
-  const defaultRoute = profile?.role === "trainer" ? "/profile" : "/dashboard";
-
+  // Both roles land on dashboard; dashboard component handles the split view
+  const defaultRoute = "/dashboard";
   return (
     <BrowserRouter>
       <Routes>

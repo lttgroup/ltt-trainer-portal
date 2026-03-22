@@ -22,6 +22,7 @@ function FileUploadBox({ trainerId, documentType, label, hint, existingFile, onU
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
+  const [dragging, setDragging] = useState(false);
 
   // Sync when existingFile loads asynchronously
   useEffect(() => {
@@ -52,7 +53,7 @@ function FileUploadBox({ trainerId, documentType, label, hint, existingFile, onU
     }
 
     // Record in evidence_files table
-    const { data: record } = await supabase
+    const { data: record, error: insertErr } = await supabase
       .from("evidence_files")
       .insert({
         trainer_id: trainerId,
@@ -64,6 +65,11 @@ function FileUploadBox({ trainerId, documentType, label, hint, existingFile, onU
       .select()
       .single();
 
+    if (insertErr) {
+      setError("Upload failed: " + insertErr.message);
+      setUploading(false);
+      return;
+    }
     setFile(record);
     onUploaded?.(record);
     setUploading(false);
@@ -95,8 +101,6 @@ function FileUploadBox({ trainerId, documentType, label, hint, existingFile, onU
       </div>
     );
   }
-
-  const [dragging, setDragging] = useState(false);
 
   const handleDrop = (e) => {
     e.preventDefault();
