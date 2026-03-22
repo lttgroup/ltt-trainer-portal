@@ -2,6 +2,21 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
+const TAE_QUALIFICATIONS = [
+  { code: "TAE40122", title: "Certificate IV in Training and Assessment" },
+  { code: "TAE40116", title: "Certificate IV in Training and Assessment" },
+  { code: "TAE50122", title: "Diploma of Vocational Education and Training" },
+  { code: "TAE50216", title: "Diploma of Vocational Education and Training" },
+  { code: "TAE80122", title: "Graduate Certificate in Adult Language, Literacy and Numeracy Practice" },
+];
+
+const TAE_SKILLSETS = [
+  { code: "TAESS00001", title: "Assessor Skill Set" },
+  { code: "TAESS00011", title: "Assessor Skill Set" },
+  { code: "TAESS00014", title: "Enterprise Trainer and Assessor Skill Set" },
+  { code: "TAESS00015", title: "Enterprise Trainer — Presenting Skill Set" },
+];
+
 function Section({ number, title, children }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
@@ -25,8 +40,17 @@ function FieldGroup({ label, children }) {
   );
 }
 
-function Input({ value, onChange, placeholder, type = "text" }) {
-  return <input type={type} value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400" />;
+function Input({ value, onChange, placeholder, type = "text", disabled = false }) {
+  return (
+    <input
+      type={type}
+      value={value || ""}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      disabled={disabled}
+      className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-400"
+    />
+  );
 }
 
 function RadioGroup({ options, value, onChange }) {
@@ -46,8 +70,75 @@ function RadioGroup({ options, value, onChange }) {
   );
 }
 
+function QualificationDropdown({ value, onChange, placeholder }) {
+  const [custom, setCustom] = useState(false);
+
+  const allOptions = [
+    { group: "Qualifications", items: TAE_QUALIFICATIONS },
+    { group: "Skill Sets", items: TAE_SKILLSETS },
+  ];
+
+  // Check if current value matches a known option
+  const isKnown = [...TAE_QUALIFICATIONS, ...TAE_SKILLSETS].some((q) => `${q.code} ${q.title}` === value);
+
+  useEffect(() => {
+    if (value && !isKnown) setCustom(true);
+  }, []);
+
+  if (custom) {
+    return (
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Enter qualification code and title"
+          className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400"
+        />
+        <button
+          onClick={() => {
+            setCustom(false);
+            onChange("");
+          }}
+          className="px-3 py-2.5 text-xs text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50"
+        >
+          ← List
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex gap-2">
+      <select
+        value={value || ""}
+        onChange={(e) => {
+          if (e.target.value === "__custom__") {
+            setCustom(true);
+            onChange("");
+          } else {
+            onChange(e.target.value);
+          }
+        }}
+        className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400"
+      >
+        <option value="">{placeholder || "Select qualification or skill set"}</option>
+        {allOptions.map((group) => (
+          <optgroup key={group.group} label={group.group}>
+            {group.items.map((q) => (
+              <option key={q.code} value={`${q.code} ${q.title}`}>
+                {q.code} — {q.title}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+        <option value="__custom__">Other — enter manually</option>
+      </select>
+    </div>
+  );
+}
+
 // Section 3 — Industry qualifications
-// Compliance-only columns (Verified By, Copy Held) removed — completed by compliance officer
 function IndustryQualifications({ trainerId }) {
   const [rows, setRows] = useState([{ qualification_code: "", qualification_title: "", provider_name: "", provider_id: "", issue_date: "" }]);
   const [saving, setSaving] = useState(false);
@@ -86,9 +177,7 @@ function IndustryQualifications({ trainerId }) {
     if (!trainerId) return;
     setSaving(true);
     const upserts = rows.filter((r) => r.qualification_code || r.qualification_title).map((r) => ({ ...r, trainer_id: trainerId }));
-
     await supabase.from("industry_qualifications").upsert(upserts);
-
     setSaved(true);
     setSaving(false);
   };
@@ -164,24 +253,24 @@ export default function Profile({ profile }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
+  // Section 2 credential choice
+  const [credentialChoice, setCredentialChoice] = useState(null);
+  // null = not chosen yet, 'holds' = has credential, 'no_holds' = under direction
+
   const [form, setForm] = useState({
-    // Section 1
     full_name: "",
     state: "",
     position: "",
     employment_status: "",
     phone: "",
-    // Section 2 — TAE credential
     tae_qualification: "",
     tae_provider: "",
     tae_provider_id: "",
     tae_issue_date: "",
-    // Section 2 — Under direction
     under_direction_qualification: "",
     under_direction_provider: "",
     under_direction_provider_id: "",
     under_direction_commencement: "",
-    // Section 4 — Declaration
     declaration_credentials: false,
     declaration_copies: false,
     declaration_signature: "",
@@ -217,6 +306,12 @@ export default function Profile({ profile }) {
 
     if (existingProfile) {
       setForm((prev) => ({ ...prev, ...existingProfile }));
+      // Restore credential choice from saved data
+      if (existingProfile.tae_qualification) {
+        setCredentialChoice("holds");
+      } else if (existingProfile.under_direction_qualification) {
+        setCredentialChoice("no_holds");
+      }
     }
 
     setLoading(false);
@@ -224,6 +319,23 @@ export default function Profile({ profile }) {
 
   const updateForm = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    setSaved(false);
+  };
+
+  const handleCredentialChoice = (choice) => {
+    setCredentialChoice(choice);
+    // Clear the other section's fields when switching
+    if (choice === "holds") {
+      updateForm("under_direction_qualification", "");
+      updateForm("under_direction_provider", "");
+      updateForm("under_direction_provider_id", "");
+      updateForm("under_direction_commencement", "");
+    } else {
+      updateForm("tae_qualification", "");
+      updateForm("tae_provider", "");
+      updateForm("tae_provider_id", "");
+      updateForm("tae_issue_date", "");
+    }
     setSaved(false);
   };
 
@@ -329,50 +441,127 @@ export default function Profile({ profile }) {
             <Input value={form.phone} onChange={(v) => updateForm("phone", v)} placeholder="04XX XXX XXX" />
           </FieldGroup>
           <FieldGroup label="LTT Email">
-            <Input value={profile?.email || ""} onChange={() => {}} placeholder="name@ltt.edu.au" />
+            <Input value={profile?.email || ""} onChange={() => {}} placeholder="name@ltt.edu.au" disabled />
           </FieldGroup>
         </div>
       </Section>
 
       {/* Section 2 */}
       <Section number="2" title="Section 2 — Training Credentials">
-        <p className="text-xs text-gray-400 mb-4">Approved credential held for Training and/or Assessment</p>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <FieldGroup label="Qualification Code and Title">
-            <Input value={form.tae_qualification} onChange={(v) => updateForm("tae_qualification", v)} placeholder="e.g. TAE40122 Cert IV Training & Assessment" />
-          </FieldGroup>
-          <FieldGroup label="Issue Date">
-            <Input type="date" value={form.tae_issue_date} onChange={(v) => updateForm("tae_issue_date", v)} />
-          </FieldGroup>
-        </div>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <FieldGroup label="Provider Name">
-            <Input value={form.tae_provider} onChange={(v) => updateForm("tae_provider", v)} placeholder="e.g. TAFE QLD" />
-          </FieldGroup>
-          <FieldGroup label="Provider ID">
-            <Input value={form.tae_provider_id} onChange={(v) => updateForm("tae_provider_id", v)} placeholder="e.g. 0275" />
-          </FieldGroup>
+        {/* Credential choice */}
+        <p className="text-xs text-gray-500 mb-3">Select the option that applies to you:</p>
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <button
+            onClick={() => handleCredentialChoice("holds")}
+            className="text-left p-4 rounded-xl border-2 transition-all"
+            style={{
+              borderColor: credentialChoice === "holds" ? "#1c5ea8" : "#e5e7eb",
+              backgroundColor: credentialChoice === "holds" ? "#e6f0ff" : "#fff",
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5"
+                style={{
+                  borderColor: credentialChoice === "holds" ? "#1c5ea8" : "#d1d5db",
+                  backgroundColor: credentialChoice === "holds" ? "#1c5ea8" : "transparent",
+                }}
+              >
+                {credentialChoice === "holds" && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-800">I hold an approved Training and Assessment credential</p>
+                <p className="text-xs text-gray-400 mt-1">You currently hold a TAE qualification or approved skill set</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => handleCredentialChoice("no_holds")}
+            className="text-left p-4 rounded-xl border-2 transition-all"
+            style={{
+              borderColor: credentialChoice === "no_holds" ? "#1c5ea8" : "#e5e7eb",
+              backgroundColor: credentialChoice === "no_holds" ? "#e6f0ff" : "#fff",
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5"
+                style={{
+                  borderColor: credentialChoice === "no_holds" ? "#1c5ea8" : "#d1d5db",
+                  backgroundColor: credentialChoice === "no_holds" ? "#1c5ea8" : "transparent",
+                }}
+              >
+                {credentialChoice === "no_holds" && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-800">I do not hold an approved Training and Assessment credential</p>
+                <p className="text-xs text-gray-400 mt-1">You are currently enrolled in or working towards a TAE qualification</p>
+              </div>
+            </div>
+          </button>
         </div>
 
-        <div className="border-t border-gray-100 pt-4 mt-2">
-          <p className="text-xs text-gray-400 mb-4">If training under direction — credential enrolled in</p>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <FieldGroup label="Qualification Code and Title">
-              <Input value={form.under_direction_qualification} onChange={(v) => updateForm("under_direction_qualification", v)} placeholder="Qualification currently enrolled in" />
-            </FieldGroup>
-            <FieldGroup label="Commencement Date">
-              <Input type="date" value={form.under_direction_commencement} onChange={(v) => updateForm("under_direction_commencement", v)} />
-            </FieldGroup>
+        {/* Option 1 — Holds credential */}
+        {credentialChoice === "holds" && (
+          <div className="rounded-xl p-5 border" style={{ backgroundColor: "#f9fafb", borderColor: "#e5e7eb" }}>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Approved credential held for Training and/or Assessment</p>
+            <div className="grid grid-cols-1 gap-4 mb-4">
+              <FieldGroup label="Qualification or Skill Set">
+                <QualificationDropdown value={form.tae_qualification} onChange={(v) => updateForm("tae_qualification", v)} placeholder="Select qualification or skill set" />
+              </FieldGroup>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <FieldGroup label="Provider Name">
+                <Input value={form.tae_provider} onChange={(v) => updateForm("tae_provider", v)} placeholder="e.g. TAFE QLD" />
+              </FieldGroup>
+              <FieldGroup label="Provider ID">
+                <Input value={form.tae_provider_id} onChange={(v) => updateForm("tae_provider_id", v)} placeholder="e.g. 0275" />
+              </FieldGroup>
+              <FieldGroup label="Issue Date">
+                <Input type="date" value={form.tae_issue_date} onChange={(v) => updateForm("tae_issue_date", v)} />
+              </FieldGroup>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <FieldGroup label="Provider Name">
-              <Input value={form.under_direction_provider} onChange={(v) => updateForm("under_direction_provider", v)} placeholder="e.g. TAFE QLD" />
-            </FieldGroup>
-            <FieldGroup label="Provider ID">
-              <Input value={form.under_direction_provider_id} onChange={(v) => updateForm("under_direction_provider_id", v)} placeholder="e.g. 0275" />
-            </FieldGroup>
+        )}
+
+        {/* Option 2 — Under direction / enrolled */}
+        {credentialChoice === "no_holds" && (
+          <div className="rounded-xl p-5 border" style={{ backgroundColor: "#f9fafb", borderColor: "#e5e7eb" }}>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Credential currently enrolled in or working towards</p>
+            <div className="grid grid-cols-1 gap-4 mb-4">
+              <FieldGroup label="Qualification or Skill Set">
+                <QualificationDropdown value={form.under_direction_qualification} onChange={(v) => updateForm("under_direction_qualification", v)} placeholder="Select qualification or skill set" />
+              </FieldGroup>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <FieldGroup label="Provider Name">
+                <Input value={form.under_direction_provider} onChange={(v) => updateForm("under_direction_provider", v)} placeholder="e.g. TAFE QLD" />
+              </FieldGroup>
+              <FieldGroup label="Provider ID">
+                <Input value={form.under_direction_provider_id} onChange={(v) => updateForm("under_direction_provider_id", v)} placeholder="e.g. 0275" />
+              </FieldGroup>
+              <FieldGroup label="Commencement Date">
+                <Input type="date" value={form.under_direction_commencement} onChange={(v) => updateForm("under_direction_commencement", v)} />
+              </FieldGroup>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Prompt if not yet chosen */}
+        {credentialChoice === null && (
+          <div className="rounded-xl p-4 text-center" style={{ backgroundColor: "#f9fafb", border: "1px dashed #e5e7eb" }}>
+            <p className="text-sm text-gray-400">Select an option above to continue</p>
+          </div>
+        )}
       </Section>
 
       {/* Section 3 */}
