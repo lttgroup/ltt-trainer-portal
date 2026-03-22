@@ -299,6 +299,7 @@ export default function Experience({ profile }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -318,6 +319,10 @@ export default function Experience({ profile }) {
     }
 
     setTrainerId(trainer.id);
+    // Check if already submitted
+    if (["Pending", "Under Review", "Compliant"].includes(trainer.compliance_status)) {
+      setAlreadySubmitted(true);
+    }
 
     const { data: responses } = await supabase.from("questionnaire_responses").select("unit_code, response").eq("trainer_id", trainer.id);
 
@@ -413,6 +418,8 @@ export default function Experience({ profile }) {
       unit_title: UNITS.find((u) => u.code === unitCode)?.title || "",
       professional_development: data.has_pd ? data.professional_development : "",
       element_descriptions: data.element_descriptions || {},
+      // Reset approval when trainer edits — forces admin to re-review
+      competency_confirmed: null,
     }));
 
     if (upserts.length > 0) {
@@ -423,6 +430,9 @@ export default function Experience({ profile }) {
         setSaving(false);
         return;
       }
+
+      // Also update approval state locally so UI reflects the reset
+      setApproval({});
     }
 
     setSaved(true);
@@ -619,9 +629,15 @@ export default function Experience({ profile }) {
             <button onClick={handleSave} disabled={saving} className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors">
               {saving ? "Saving..." : saved ? "✓ Saved" : "Save Draft"}
             </button>
-            <button onClick={handleSubmit} disabled={submitting} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: submitting ? "#9ca3af" : "#32ba9a" }}>
-              {submitting ? "Submitting..." : "Submit Profile for Review ✓"}
-            </button>
+            {alreadySubmitted ? (
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold" style={{ backgroundColor: "#fdf3e0", color: "#92500a", border: "1px solid #f5d78a" }}>
+                <span>⏳</span> Awaiting Quality Review
+              </div>
+            ) : (
+              <button onClick={handleSubmit} disabled={submitting} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: submitting ? "#9ca3af" : "#32ba9a" }}>
+                {submitting ? "Submitting..." : "Submit for Quality Review ✓"}
+              </button>
+            )}
           </div>
         </div>
       )}

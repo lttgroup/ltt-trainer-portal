@@ -914,18 +914,32 @@ export default function TrainerDetail({ profile: adminProfile }) {
               setShowStatusModal(true);
             }}
             className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
-            style={{ backgroundColor: "#32ba9a" }}
+            style={{
+              backgroundColor: trainer.compliance_status === "Compliant" ? "#16a34a" : "#6b7280",
+              cursor: "pointer",
+            }}
           >
-            ✓ Mark Compliant
+            {trainer.compliance_status === "Compliant" ? "✓ Compliant" : "Mark Compliant"}
           </button>
           <button
             onClick={() => {
               setNewStatus("Under Review");
               setShowStatusModal(true);
             }}
-            className="px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50"
+            className="px-4 py-2 rounded-lg text-sm font-semibold border transition-all"
+            style={trainer.compliance_status === "Under Review" ? { backgroundColor: "#e6f0ff", color: "#1c5ea8", borderColor: "#93c5fd" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
           >
-            Under Review
+            {trainer.compliance_status === "Under Review" ? "🔍 Under Review" : "Under Review"}
+          </button>
+          <button
+            onClick={() => {
+              setNewStatus("Incomplete");
+              setShowStatusModal(true);
+            }}
+            className="px-4 py-2 rounded-lg text-sm font-semibold border transition-all"
+            style={trainer.compliance_status === "Incomplete" ? { backgroundColor: "#fdeaea", color: "#c93535", borderColor: "#fca5a5" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
+          >
+            Incomplete
           </button>
         </div>
       </div>
