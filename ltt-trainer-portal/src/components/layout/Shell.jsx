@@ -1,40 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import logo2 from "../../assets/logo2.png";
 
-const adminNavItems = [
-  {
-    section: "Overview",
-    items: [
-      { to: "/dashboard", label: "Dashboard", icon: "◧" },
-      { to: "/trainers", label: "Trainers", icon: "👤" },
-    ],
-  },
-  {
-    section: "Compliance",
-    items: [
-      { to: "/register", label: "Credential Register", icon: "📑" },
-      { to: "/evidence", label: "Evidence Vault", icon: "🗂️" },
-    ],
-  },
-];
-
-const trainerNavItems = [
-  {
-    section: "My Onboarding",
-    items: [
-      { to: "/profile", label: "Trainer Profile", icon: "📄" },
-      { to: "/questionnaire", label: "Skills Questionnaire", icon: "📋" },
-      { to: "/experience", label: "Industry Experience", icon: "🔬" },
-      { to: "/evidence", label: "Evidence Vault", icon: "🗂️" },
-    ],
-  },
-];
 export default function Shell({ user, profile, children, title }) {
-  const navItems = profile?.role === "trainer" ? trainerNavItems : adminNavItems;
   const navigate = useNavigate();
   const [signingOut, setSigningOut] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  const isAdmin = profile?.role === "admin" || profile?.role === "compliance_officer";
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchPendingCount();
+    // Poll every 60s for new submissions
+    const interval = setInterval(fetchPendingCount, 60000);
+    return () => clearInterval(interval);
+  }, [isAdmin]);
+
+  const fetchPendingCount = async () => {
+    const { count } = await supabase.from("trainers").select("*", { count: "exact", head: true }).eq("compliance_status", "Pending");
+    setPendingCount(count || 0);
+  };
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -49,6 +36,35 @@ export default function Shell({ user, profile, children, title }) {
         .join("")
         .toUpperCase()
     : "?";
+
+  const navItems = [
+    {
+      section: "Overview",
+      items: [
+        { to: "/dashboard", label: "Dashboard", icon: "⬡" },
+        { to: "/trainers", label: "Trainers", icon: "👤", badge: isAdmin && pendingCount > 0 ? pendingCount : null },
+      ],
+    },
+    ...(isAdmin
+      ? []
+      : [
+          {
+            section: "Onboarding",
+            items: [
+              { to: "/questionnaire", label: "Skills Questionnaire", icon: "📋" },
+              { to: "/profile", label: "Trainer Profile (AF3.21)", icon: "📄" },
+              { to: "/experience", label: "Industry Experience", icon: "🏭" },
+            ],
+          },
+        ]),
+    {
+      section: "Compliance",
+      items: [
+        { to: "/register", label: "Credential Register", icon: "📑" },
+        { to: "/evidence", label: "Evidence Vault", icon: "🗂️" },
+      ],
+    },
+  ];
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -80,7 +96,12 @@ export default function Shell({ user, profile, children, title }) {
                   })}
                 >
                   <span className="text-base">{item.icon}</span>
-                  {item.label}
+                  <span className="flex-1">{item.label}</span>
+                  {item.badge && (
+                    <span className="text-xs font-bold px-1.5 py-0.5 rounded-full min-w-5 text-center" style={{ backgroundColor: "#e8a020", color: "#081a47" }}>
+                      {item.badge}
+                    </span>
+                  )}
                 </NavLink>
               ))}
             </div>
@@ -112,11 +133,17 @@ export default function Shell({ user, profile, children, title }) {
         <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-7 flex-shrink-0">
           <h1 className="text-base font-semibold text-gray-800">{title}</h1>
           <div className="flex items-center gap-3">
-            {profile?.role !== "trainer" && (
+            {isAdmin && pendingCount > 0 && (
+              <button onClick={() => navigate("/trainers?status=Pending")} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium" style={{ backgroundColor: "#fdf3e0", color: "#b8711a", border: "1px solid #f5d78a" }}>
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse inline-block" />
+                {pendingCount} pending review
+              </button>
+            )}
+            {isAdmin && (
               <button onClick={() => navigate("/trainers/invite")} className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: "#1c5ea8" }}>
                 + Invite Trainer
               </button>
-            )}{" "}
+            )}
           </div>
         </header>
 

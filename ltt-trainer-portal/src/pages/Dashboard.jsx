@@ -48,13 +48,73 @@ function TrainerRow({ trainer, onClick }) {
   );
 }
 
-function ActivityItem({ dot, text, time }) {
+// ── Pending Review Panel (admin only) ─────────────────────────────────────────
+function PendingReviewPanel({ pendingTrainers, notifications, onMarkRead, onNavigate }) {
+  if (pendingTrainers.length === 0 && notifications.length === 0) return null;
+
+  const unread = notifications.filter((n) => !n.read);
+
   return (
-    <div className="flex gap-3 py-2 border-b border-gray-100 last:border-0">
-      <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: dot }} />
-      <div>
-        <p className="text-xs text-gray-600">{text}</p>
-        <p className="text-xs text-gray-400 mt-0.5">{time}</p>
+    <div className="rounded-xl mb-6 overflow-hidden" style={{ border: "1px solid #f5d78a", backgroundColor: "#fffdf5" }}>
+      <div className="flex items-center justify-between px-5 py-3" style={{ backgroundColor: "#fdf3e0", borderBottom: "1px solid #f5d78a" }}>
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse inline-block" />
+          <h3 className="text-sm font-semibold" style={{ color: "#92500a" }}>
+            Pending Quality Review
+          </h3>
+          {unread.length > 0 && (
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#e8a020", color: "#fff" }}>
+              {unread.length} new
+            </span>
+          )}
+        </div>
+        <button onClick={() => onNavigate("/trainers")} className="text-xs font-semibold" style={{ color: "#92500a" }}>
+          View all trainers →
+        </button>
+      </div>
+
+      <div className="divide-y" style={{ borderColor: "#f5e7b0" }}>
+        {pendingTrainers.map((trainer) => {
+          const notif = notifications.find((n) => n.trainer_id === trainer.id && !n.read);
+          return (
+            <div
+              key={trainer.id}
+              className="flex items-center gap-4 px-5 py-3 cursor-pointer hover:bg-amber-50 transition-colors"
+              onClick={() => {
+                if (notif) onMarkRead(notif.id);
+                onNavigate(`/trainers/${trainer.id}`);
+              }}
+            >
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "#fde68a", color: "#92500a" }}>
+                {trainer.full_name
+                  ?.split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .toUpperCase() || "?"}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-800">{trainer.full_name}</p>
+                <p className="text-xs text-gray-500">{notif ? notif.message : "Industry experience submitted — awaiting quality review"}</p>
+                {notif && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {new Date(notif.created_at).toLocaleDateString("en-AU", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {notif && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#e8a020" }} />}
+                <button className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white" style={{ backgroundColor: "#16406f" }}>
+                  Review →
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -62,13 +122,12 @@ function ActivityItem({ dot, text, time }) {
 
 export default function Dashboard({ profile }) {
   const navigate = useNavigate();
+  const isAdmin = profile?.role === "admin" || profile?.role === "compliance_officer";
+
   const [trainers, setTrainers] = useState([]);
-  const [stats, setStats] = useState({
-    total: 0,
-    compliant: 0,
-    pending: 0,
-    incomplete: 0,
-  });
+  const [pendingTrainers, setPendingTrainers] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [stats, setStats] = useState({ total: 0, compliant: 0, pending: 0, incomplete: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -76,18 +135,32 @@ export default function Dashboard({ profile }) {
   }, []);
 
   const fetchData = async () => {
-    const { data, error } = await supabase.from("trainers").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("trainers").select("*").order("full_name", { ascending: true });
 
     if (!error && data) {
       setTrainers(data);
+      const pending = data.filter((t) => t.compliance_status === "Pending");
+      setPendingTrainers(pending);
       setStats({
         total: data.length,
         compliant: data.filter((t) => t.compliance_status === "Compliant").length,
-        pending: data.filter((t) => t.compliance_status === "Pending").length,
+        pending: pending.length,
         incomplete: data.filter((t) => !t.compliance_status || t.compliance_status === "Incomplete").length,
       });
     }
+
+    // Load notifications for admins
+    if (isAdmin) {
+      const { data: notifData } = await supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(20);
+      setNotifications(notifData || []);
+    }
+
     setLoading(false);
+  };
+
+  const markNotificationRead = async (notifId) => {
+    await supabase.from("notifications").update({ read: true }).eq("id", notifId);
+    setNotifications((prev) => prev.map((n) => (n.id === notifId ? { ...n, read: true } : n)));
   };
 
   return (
@@ -100,23 +173,35 @@ export default function Dashboard({ profile }) {
             Trainer Competency Portal — Standards for RTOs 2025
           </p>
           <div className="flex gap-3 mt-5">
-            <button onClick={() => navigate("/trainers/invite")} className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors" style={{ backgroundColor: "#32ba9a", color: "#081a47" }}>
-              + Invite Trainer
-            </button>
-            <button
-              onClick={() => navigate("/trainers")}
-              className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors border"
-              style={{
-                borderColor: "rgba(255,255,255,0.25)",
-                color: "rgba(255,255,255,0.75)",
-                backgroundColor: "transparent",
-              }}
-            >
-              View all trainers
-            </button>
+            {isAdmin ? (
+              <>
+                <button onClick={() => navigate("/trainers/invite")} className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors" style={{ backgroundColor: "#32ba9a", color: "#081a47" }}>
+                  + Invite Trainer
+                </button>
+                <button
+                  onClick={() => navigate("/trainers")}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors border"
+                  style={{ borderColor: "rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.75)", backgroundColor: "transparent" }}
+                >
+                  View all trainers
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => navigate("/questionnaire")} className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors" style={{ backgroundColor: "#32ba9a", color: "#081a47" }}>
+                  Skills Questionnaire
+                </button>
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors border"
+                  style={{ borderColor: "rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.75)", backgroundColor: "transparent" }}
+                >
+                  Trainer Profile
+                </button>
+              </>
+            )}
           </div>
         </div>
-        {/* Decorative circles */}
         <div className="absolute right-[-40px] top-[-60px] w-48 h-48 rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.04)" }} />
         <div className="absolute right-[60px] bottom-[-80px] w-40 h-40 rounded-full" style={{ backgroundColor: "rgba(101,246,204,0.08)" }} />
       </div>
@@ -129,9 +214,11 @@ export default function Dashboard({ profile }) {
         <StatCard label="Action Required" value={stats.incomplete} sub="Incomplete profiles" color="#c93535" />
       </div>
 
+      {/* Pending review panel — admin only */}
+      {isAdmin && !loading && <PendingReviewPanel pendingTrainers={pendingTrainers} notifications={notifications} onMarkRead={markNotificationRead} onNavigate={navigate} />}
+
       {/* Two columns */}
       <div className="grid grid-cols-2 gap-5">
-        {/* Trainer status */}
         <div className="bg-white border border-gray-200 rounded-xl">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <h3 className="text-sm font-semibold text-gray-800">Trainer Status</h3>
@@ -145,9 +232,11 @@ export default function Dashboard({ profile }) {
             ) : trainers.length === 0 ? (
               <div className="text-center py-10">
                 <p className="text-sm text-gray-400 mb-3">No trainers yet</p>
-                <button onClick={() => navigate("/trainers/invite")} className="text-sm font-semibold px-4 py-2 rounded-lg text-white" style={{ backgroundColor: "#1c5ea8" }}>
-                  Invite your first trainer
-                </button>
+                {isAdmin && (
+                  <button onClick={() => navigate("/trainers/invite")} className="text-sm font-semibold px-4 py-2 rounded-lg text-white" style={{ backgroundColor: "#1c5ea8" }}>
+                    Invite your first trainer
+                  </button>
+                )}
               </div>
             ) : (
               trainers.slice(0, 5).map((trainer) => <TrainerRow key={trainer.id} trainer={trainer} onClick={() => navigate(`/trainers/${trainer.id}`)} />)
@@ -155,28 +244,53 @@ export default function Dashboard({ profile }) {
           </div>
         </div>
 
-        {/* Activity feed */}
+        {/* Recent notifications / activity */}
         <div className="bg-white border border-gray-200 rounded-xl">
           <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-800">Recent Activity</h3>
+            <h3 className="text-sm font-semibold text-gray-800">{isAdmin ? "Recent Notifications" : "Recent Activity"}</h3>
           </div>
           <div className="px-5 py-2">
-            {trainers.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-10">Activity will appear here as trainers are onboarded</p>
+            {loading ? (
+              <p className="text-sm text-gray-400 text-center py-8">Loading...</p>
+            ) : isAdmin && notifications.length > 0 ? (
+              notifications.slice(0, 6).map((n) => (
+                <div
+                  key={n.id}
+                  className="flex gap-3 py-2.5 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50 rounded transition-colors"
+                  onClick={() => {
+                    markNotificationRead(n.id);
+                    navigate(`/trainers/${n.trainer_id}`);
+                  }}
+                >
+                  <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: n.read ? "#d1d5db" : "#e8a020" }} />
+                  <div>
+                    <p className="text-xs text-gray-700 font-medium">{n.trainer_name}</p>
+                    <p className="text-xs text-gray-500">{n.message}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {new Date(n.created_at).toLocaleDateString("en-AU", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))
             ) : (
               trainers.slice(0, 5).map((trainer) => (
-                <ActivityItem
-                  key={trainer.id}
-                  dot="#32ba9a"
-                  text={`${trainer.full_name} — profile ${trainer.compliance_status?.toLowerCase() || "created"}`}
-                  time={new Date(trainer.created_at).toLocaleDateString("en-AU", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                />
+                <div key={trainer.id} className="flex gap-3 py-2 border-b border-gray-100 last:border-0">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: "#32ba9a" }} />
+                  <div>
+                    <p className="text-xs text-gray-600">
+                      {trainer.full_name} — profile {trainer.compliance_status?.toLowerCase() || "created"}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">{new Date(trainer.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}</p>
+                  </div>
+                </div>
               ))
             )}
+            {isAdmin && notifications.length === 0 && !loading && <p className="text-sm text-gray-400 text-center py-10">Notifications will appear here when trainers submit</p>}
           </div>
         </div>
       </div>

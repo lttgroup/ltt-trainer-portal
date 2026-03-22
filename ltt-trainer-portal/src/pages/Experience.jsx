@@ -348,6 +348,30 @@ export default function Experience({ profile }) {
 
     await supabase.from("trainers").update({ compliance_status: "Pending" }).eq("id", trainerId);
 
+    // Create in-app notification for admin
+    await supabase.from("notifications").insert({
+      trainer_id: trainerId,
+      trainer_name: profile?.full_name || "A trainer",
+      type: "experience_submitted",
+      message: `${profile?.full_name || "A trainer"} has submitted their industry experience and is awaiting quality review.`,
+      read: false,
+    });
+
+    // Send email notification via Resend (once DNS is verified)
+    // const RESEND_KEY = import.meta.env.VITE_RESEND_API_KEY
+    // if (RESEND_KEY) {
+    //   await fetch('https://api.resend.com/emails', {
+    //     method: 'POST',
+    //     headers: { 'Authorization': `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({
+    //       from: 'noreply@ltt.edu.au',
+    //       to: 'quality@ltt.edu.au',
+    //       subject: `Industry Experience Submitted — ${profile?.full_name}`,
+    //       html: `<p>${profile?.full_name} has submitted their industry experience for quality review.</p><p><a href="https://ltt-trainer-portal.pages.dev/trainers/${trainerId}">Review now →</a></p>`,
+    //     }),
+    //   })
+    // }
+
     setSubmitting(false);
     navigate("/dashboard");
   };

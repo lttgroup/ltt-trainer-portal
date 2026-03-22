@@ -15,7 +15,7 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
       mapped[e.unit_code] = {
         competency_confirmed: e.competency_confirmed,
         holds_unit: e.holds_unit || false,
-        admin_notes: e.admin_notes || "",
+        quality_notes: e.quality_notes || "",
         professional_development: e.professional_development || "",
         element_descriptions: e.element_descriptions || {},
       };
@@ -39,19 +39,31 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
   const saveUnit = async (unitCode) => {
     setSaving((prev) => ({ ...prev, [unitCode]: true }));
     const data = localExp[unitCode] || {};
-    await supabase.from("industry_experience").upsert(
-      {
+    // Use update so we never overwrite trainer-entered element descriptions
+    const { error } = await supabase
+      .from("industry_experience")
+      .update({
+        competency_confirmed: data.competency_confirmed,
+        holds_unit: data.holds_unit,
+        quality_notes: data.quality_notes,
+        reviewed_by: adminProfile?.full_name,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("trainer_id", trainerId)
+      .eq("unit_code", unitCode);
+    // If no row yet (trainer hasn't submitted), insert a shell row
+    if (error) {
+      await supabase.from("industry_experience").insert({
         trainer_id: trainerId,
         unit_code: unitCode,
         unit_title: UNITS.find((u) => u.code === unitCode)?.title || "",
         competency_confirmed: data.competency_confirmed,
         holds_unit: data.holds_unit,
-        admin_notes: data.admin_notes,
+        quality_notes: data.quality_notes,
         reviewed_by: adminProfile?.full_name,
         reviewed_at: new Date().toISOString(),
-      },
-      { onConflict: "trainer_id,unit_code" },
-    );
+      });
+    }
     setSaving((prev) => ({ ...prev, [unitCode]: false }));
     onUpdate();
   };
@@ -172,7 +184,7 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
 
                 {/* Admin controls */}
                 <div className="border-t border-gray-100 pt-4">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Admin Assessment</p>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Quality Assessment</p>
                   <div className="grid grid-cols-3 gap-4">
                     {/* Competency confirmation */}
                     <div>
@@ -221,12 +233,12 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
                     </div>
                   </div>
 
-                  {/* Admin notes */}
+                  {/* Quality notes */}
                   <div className="mt-3">
                     <textarea
-                      value={exp.admin_notes || ""}
-                      onChange={(e) => update(unit.code, "admin_notes", e.target.value)}
-                      placeholder="Admin notes (optional)..."
+                      value={exp.quality_notes || ""}
+                      onChange={(e) => update(unit.code, "quality_notes", e.target.value)}
+                      placeholder="Quality notes (optional)..."
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs text-gray-700 focus:outline-none focus:border-blue-400 resize-none"
                       rows={2}
                     />
@@ -914,9 +926,36 @@ export default function TrainerDetail({ profile: adminProfile }) {
                     <span className="text-xs font-bold font-mono flex-shrink-0" style={{ color: r.response === "yes" ? "#1c5ea8" : "#9ca3af" }}>
                       {r.unit_code}
                     </span>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={r.response === "yes" ? { backgroundColor: "#dbeafe", color: "#1c5ea8" } : { backgroundColor: "#fdeaea", color: "#c93535" }}>
-                      {r.response === "yes" ? "Experience" : "No"}
-                    </span>
+                    {(() => {
+                      // Find competency status from experience data
+                      const expEntry = experienceData.find((e) => e.unit_code === r.unit_code);
+                      if (r.response === "yes") {
+                        if (expEntry?.competency_confirmed === true) {
+                          return (
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>
+                              Approved
+                            </span>
+                          );
+                        } else if (expEntry?.competency_confirmed === false) {
+                          return (
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>
+                              Not Approved
+                            </span>
+                          );
+                        } else {
+                          return (
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#dbeafe", color: "#1c5ea8" }}>
+                              Experience
+                            </span>
+                          );
+                        }
+                      }
+                      return (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>
+                          No
+                        </span>
+                      );
+                    })()}
                   </div>
                 ))}
             </div>
