@@ -3,9 +3,189 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { UNITS } from "../lib/units";
 
+// ── Single unit card ──────────────────────────────────────────────────────────
+function UnitExperienceCard({ unit, exp, onUpdateElement, onUpdatePD, onUpdateHasPD }) {
+  const topRef = useRef(null);
+
+  // A unit is complete when all elements have text AND pd choice has been made
+  const elementsComplete = unit.elements.length > 0 ? unit.elements.every((_, i) => exp.element_descriptions?.[i]?.trim()) : !!exp.element_descriptions?.[0]?.trim();
+
+  const pdComplete = exp.has_pd === false || (exp.has_pd === true && exp.professional_development?.trim());
+  const unitComplete = elementsComplete && pdComplete;
+
+  // Track which element is "open" - auto-close when text entered
+  const [openElement, setOpenElement] = useState(
+    // Open first incomplete element by default
+    unit.elements.findIndex((_, i) => !exp.element_descriptions?.[i]?.trim()),
+  );
+
+  const handleElementChange = (idx, value) => {
+    onUpdateElement(unit.code, idx, value);
+  };
+
+  const handleElementBlur = (idx) => {
+    const val = exp.element_descriptions?.[idx]?.trim();
+    if (val) {
+      // Move to next incomplete element
+      const nextIncomplete = unit.elements.findIndex((_, i) => i > idx && !exp.element_descriptions?.[i]?.trim());
+      if (nextIncomplete !== -1) {
+        setOpenElement(nextIncomplete);
+      } else {
+        // All elements done — collapse
+        setOpenElement(null);
+      }
+    }
+  };
+
+  return (
+    <div
+      ref={topRef}
+      className="bg-white border rounded-xl overflow-hidden transition-all"
+      style={{
+        borderColor: unitComplete ? "#bbf7d0" : "#e5e7eb",
+        backgroundColor: unitComplete ? "#f0fdf4" : "#fff",
+      }}
+    >
+      {/* Unit header */}
+      <div
+        className="flex items-center gap-3 px-5 py-3 border-b"
+        style={{
+          backgroundColor: unitComplete ? "#dcfce7" : "#f9fafb",
+          borderColor: unitComplete ? "#bbf7d0" : "#f3f4f6",
+        }}
+      >
+        <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
+          {unit.code}
+        </span>
+        <span className="text-sm font-medium text-gray-800 flex-1">{unit.title}</span>
+        {unitComplete && (
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>
+            ✓ Complete
+          </span>
+        )}
+        {!unitComplete && (
+          <span className="text-xs text-gray-400 flex-shrink-0">
+            {unit.elements.filter((_, i) => exp.element_descriptions?.[i]?.trim()).length}/{unit.elements.length} elements
+          </span>
+        )}
+      </div>
+
+      <div className="p-5">
+        {/* Element descriptions */}
+        {unit.elements.length > 0 ? (
+          <div className="space-y-2 mb-5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Industry Experience — describe your experience for each element</p>
+            {unit.elements.map((element, idx) => {
+              const value = exp.element_descriptions?.[idx] || "";
+              const isDone = !!value.trim();
+              const isOpen = openElement === idx;
+
+              return (
+                <div
+                  key={idx}
+                  className="rounded-lg border overflow-hidden transition-all"
+                  style={{
+                    borderColor: isDone ? "#bbf7d0" : isOpen ? "#93c5fd" : "#e5e7eb",
+                    backgroundColor: isDone && !isOpen ? "#f0fdf4" : "#fff",
+                  }}
+                >
+                  {/* Element header — always visible, click to expand */}
+                  <button className="w-full flex items-center gap-2 px-3 py-2.5 text-left" onClick={() => setOpenElement(isOpen ? null : idx)}>
+                    <span className="text-xs font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ backgroundColor: "#f0f4ff", color: "#1c5ea8" }}>
+                      {idx + 1}
+                    </span>
+                    <span className="text-xs font-medium text-gray-700 flex-1 text-left">{element}</span>
+                    {isDone ? (
+                      <span className="text-xs font-semibold flex-shrink-0" style={{ color: "#0f7a5a" }}>
+                        ✓
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-300 flex-shrink-0">{isOpen ? "▲" : "▼"}</span>
+                    )}
+                  </button>
+
+                  {/* Collapsed preview when done */}
+                  {isDone && !isOpen && (
+                    <div className="px-3 pb-2.5">
+                      <p className="text-xs text-gray-500 line-clamp-2 italic">{value}</p>
+                    </div>
+                  )}
+
+                  {/* Textarea when open */}
+                  {isOpen && (
+                    <div className="px-3 pb-3">
+                      <textarea
+                        autoFocus
+                        value={value}
+                        onChange={(e) => handleElementChange(idx, e.target.value)}
+                        onBlur={() => handleElementBlur(idx)}
+                        placeholder={`Describe your experience related to: ${element.toLowerCase()}...`}
+                        className="w-full px-3 py-2.5 border border-blue-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400 resize-none"
+                        rows={4}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="mb-5">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Industry Experience Description</label>
+            <textarea
+              value={exp.element_descriptions?.[0] || ""}
+              onChange={(e) => onUpdateElement(unit.code, 0, e.target.value)}
+              placeholder="Describe your experience, skills and knowledge related to this unit..."
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400 resize-none"
+              rows={4}
+            />
+          </div>
+        )}
+
+        {/* PD yes/no — only show once all elements complete */}
+        {elementsComplete && (
+          <div className="rounded-xl p-4 border" style={{ backgroundColor: "#f8faff", borderColor: "#e0e7ff" }}>
+            <p className="text-sm font-semibold text-gray-700 mb-3">Have you completed relevant training or professional development for this unit?</p>
+            <div className="flex gap-3 mb-3">
+              <button
+                onClick={() => onUpdateHasPD(unit.code, true)}
+                className="px-5 py-2 rounded-lg text-sm font-semibold border transition-all"
+                style={exp.has_pd === true ? { backgroundColor: "#dbeafe", color: "#1c5ea8", borderColor: "#93c5fd" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => onUpdateHasPD(unit.code, false)}
+                className="px-5 py-2 rounded-lg text-sm font-semibold border transition-all"
+                style={exp.has_pd === false ? { backgroundColor: "#f1f5f9", color: "#475569", borderColor: "#cbd5e1" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
+              >
+                No
+              </button>
+            </div>
+
+            {/* PD text box — only if yes */}
+            {exp.has_pd === true && (
+              <textarea
+                autoFocus
+                value={exp.professional_development || ""}
+                onChange={(e) => onUpdatePD(unit.code, e.target.value)}
+                placeholder="List any relevant qualifications, units or CPD activities..."
+                className="w-full px-3 py-2.5 border border-blue-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400 resize-none"
+                rows={3}
+              />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function Experience({ profile }) {
   const navigate = useNavigate();
   const topRef = useRef(null);
+  const unitRefs = useRef({});
   const [trainerId, setTrainerId] = useState(null);
   const [assignedUnits, setAssignedUnits] = useState(null);
   const [experience, setExperience] = useState({});
@@ -34,7 +214,6 @@ export default function Experience({ profile }) {
 
     setTrainerId(trainer.id);
 
-    // Check questionnaire submitted
     const { data: responses } = await supabase.from("questionnaire_responses").select("unit_code, response").eq("trainer_id", trainer.id);
 
     if (!responses || responses.length === 0) {
@@ -45,12 +224,10 @@ export default function Experience({ profile }) {
 
     setQuestionnaireSubmitted(true);
 
-    // Check assigned units
     const { data: assigned } = await supabase.from("assigned_units").select("unit_code").eq("trainer_id", trainer.id);
 
     setAssignedUnits(assigned || []);
 
-    // Load existing experience
     const { data: expData } = await supabase.from("industry_experience").select("*").eq("trainer_id", trainer.id);
 
     if (expData) {
@@ -59,6 +236,7 @@ export default function Experience({ profile }) {
         mapped[e.unit_code] = {
           professional_development: e.professional_development || "",
           element_descriptions: e.element_descriptions || {},
+          has_pd: e.professional_development ? true : e.element_descriptions && Object.keys(e.element_descriptions).length > 0 ? false : null,
         };
       });
       setExperience(mapped);
@@ -67,29 +245,51 @@ export default function Experience({ profile }) {
     setLoading(false);
   };
 
-  const updatePD = (unitCode, value) => {
-    setExperience((prev) => ({
-      ...prev,
-      [unitCode]: {
-        ...prev[unitCode],
-        professional_development: value,
-      },
-    }));
-    setSaved(false);
-  };
-
-  const updateElement = (unitCode, elementIndex, value) => {
+  const updateElement = (unitCode, idx, value) => {
     setExperience((prev) => ({
       ...prev,
       [unitCode]: {
         ...prev[unitCode],
         element_descriptions: {
           ...(prev[unitCode]?.element_descriptions || {}),
-          [elementIndex]: value,
+          [idx]: value,
         },
       },
     }));
     setSaved(false);
+  };
+
+  const updatePD = (unitCode, value) => {
+    setExperience((prev) => ({
+      ...prev,
+      [unitCode]: { ...prev[unitCode], professional_development: value },
+    }));
+    setSaved(false);
+  };
+
+  const updateHasPD = (unitCode, value) => {
+    setExperience((prev) => ({
+      ...prev,
+      [unitCode]: {
+        ...prev[unitCode],
+        has_pd: value,
+        // Clear PD text if switching to No
+        professional_development: value ? prev[unitCode]?.professional_development || "" : "",
+      },
+    }));
+    setSaved(false);
+
+    // If No — scroll to top of next unit
+    if (!value) {
+      const units = unitsToShow;
+      const currentIdx = units.findIndex((u) => u.code === unitCode);
+      const nextUnit = units[currentIdx + 1];
+      if (nextUnit && unitRefs.current[nextUnit.code]) {
+        setTimeout(() => {
+          unitRefs.current[nextUnit.code].scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 200);
+      }
+    }
   };
 
   const handleSave = async () => {
@@ -101,11 +301,8 @@ export default function Experience({ profile }) {
       trainer_id: trainerId,
       unit_code: unitCode,
       unit_title: UNITS.find((u) => u.code === unitCode)?.title || "",
-      professional_development: data.professional_development,
+      professional_development: data.has_pd ? data.professional_development : "",
       element_descriptions: data.element_descriptions || {},
-      // Keep these null — admin sets them
-      competency_confirmed: null,
-      holds_unit: false,
     }));
 
     if (upserts.length > 0) {
@@ -126,13 +323,7 @@ export default function Experience({ profile }) {
     setSubmitting(true);
     await handleSave();
 
-    await supabase
-      .from("trainer_profiles")
-      .update({
-        profile_status: "Submitted",
-        submitted_at: new Date().toISOString(),
-      })
-      .eq("trainer_id", trainerId);
+    await supabase.from("trainer_profiles").update({ profile_status: "Submitted", submitted_at: new Date().toISOString() }).eq("trainer_id", trainerId);
 
     await supabase.from("trainers").update({ compliance_status: "Pending" }).eq("id", trainerId);
 
@@ -140,7 +331,6 @@ export default function Experience({ profile }) {
     navigate("/dashboard");
   };
 
-  // Units to show — assigned units that trainer marked yes
   const unitsToShow =
     assignedUnits && assignedUnits.length > 0
       ? assignedUnits
@@ -149,12 +339,12 @@ export default function Experience({ profile }) {
           .sort((a, b) => a.code.localeCompare(b.code))
       : [];
 
-  // Progress — a unit is complete when all its elements have descriptions
   const completedCount = unitsToShow.filter((unit) => {
     const exp = experience[unit.code];
     if (!exp) return false;
-    if (unit.elements.length === 0) return !!exp.professional_development?.trim();
-    return unit.elements.every((_, i) => exp.element_descriptions?.[i]?.trim());
+    const elsDone = unit.elements.length > 0 ? unit.elements.every((_, i) => exp.element_descriptions?.[i]?.trim()) : !!exp.element_descriptions?.[0]?.trim();
+    const pdDone = exp.has_pd === false || (exp.has_pd === true && exp.professional_development?.trim());
+    return elsDone && pdDone;
   }).length;
 
   const pct = unitsToShow.length > 0 ? Math.round((completedCount / unitsToShow.length) * 100) : 0;
@@ -185,135 +375,56 @@ export default function Experience({ profile }) {
         </div>
         <div className="px-6 py-4">
           {!questionnaireSubmitted ? (
-            <p className="text-xs text-gray-400">Complete Section 5 — Skills Questionnaire before proceeding to this section.</p>
+            <p className="text-xs text-gray-400">Complete Section 5 — Skills Questionnaire before proceeding.</p>
           ) : assignedUnits && assignedUnits.length > 0 ? (
             <>
               <p className="text-xs text-gray-400 mb-2">
                 {completedCount} of {unitsToShow.length} units completed
               </p>
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${pct}%`,
-                    backgroundColor: pct === 100 ? "#32ba9a" : "#1c5ea8",
-                  }}
-                />
+                <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#32ba9a" : "#1c5ea8" }} />
               </div>
-              <p className="text-xs text-gray-400 mt-3">For each assigned unit describe your workplace experience against each element. Include specific examples of real practice.</p>
+              <p className="text-xs text-gray-400 mt-3">
+                Work through each unit — describe your experience for every element, then indicate whether you have completed relevant professional development. Completed elements collapse automatically to help you track progress.
+              </p>
             </>
           ) : (
-            <p className="text-xs text-gray-400">
-              {questionnaireSubmitted
-                ? "Your Skills Questionnaire has been submitted. Your compliance officer is reviewing your responses and will assign the units required for this section. You will be notified when Section 6 is ready to complete."
-                : "Complete Section 5 — Skills Questionnaire before proceeding to this section."}
-            </p>
+            <p className="text-xs text-gray-400">Your Skills Questionnaire has been submitted. Your compliance officer is reviewing your responses and will assign units for this section. You will be notified when Section 6 is ready.</p>
           )}
         </div>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5">{error}</div>}
 
-      {/* Not submitted yet */}
       {!questionnaireSubmitted && (
         <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
-          <p className="text-sm text-gray-400 mb-3">You need to complete Section 5 before accessing this section.</p>
+          <p className="text-sm text-gray-400 mb-3">Complete Section 5 before accessing this section.</p>
           <button onClick={() => navigate("/questionnaire")} className="text-sm font-semibold px-4 py-2 rounded-lg text-white" style={{ backgroundColor: "#1c5ea8" }}>
             ← Go to Skills Questionnaire
           </button>
         </div>
       )}
 
-      {/* Awaiting assignment */}
       {questionnaireSubmitted && assignedUnits !== null && assignedUnits.length === 0 && (
         <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
           <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl mx-auto mb-4" style={{ backgroundColor: "#e6f0ff" }}>
             ⏳
           </div>
           <p className="text-sm font-semibold text-gray-800 mb-2">Awaiting unit assignment</p>
-          <p className="text-sm text-gray-400 max-w-md mx-auto">
-            Your Skills Questionnaire has been submitted successfully. Your compliance officer is reviewing your responses and will assign the units required for Section 6. You will be notified when this section is ready.
-          </p>
+          <p className="text-sm text-gray-400 max-w-md mx-auto">Your compliance officer is reviewing your responses and will assign the units required for Section 6. You will be notified when this section is ready.</p>
         </div>
       )}
 
-      {/* Unit experience forms */}
       {questionnaireSubmitted && assignedUnits && assignedUnits.length > 0 && (
-        <div className="space-y-5">
-          {unitsToShow.map((unit) => {
-            const exp = experience[unit.code] || {};
-            const unitComplete = unit.elements.length > 0 ? unit.elements.every((_, i) => exp.element_descriptions?.[i]?.trim()) : !!exp.professional_development?.trim();
-
-            return (
-              <div key={unit.code} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                {/* Unit header */}
-                <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100" style={{ backgroundColor: "#f9fafb" }}>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
-                    {unit.code}
-                  </span>
-                  <span className="text-sm font-medium text-gray-800 flex-1">{unit.title}</span>
-                  {unitComplete && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>
-                      ✓ Complete
-                    </span>
-                  )}
-                </div>
-
-                <div className="p-5">
-                  {/* Element-level descriptions */}
-                  {unit.elements.length > 0 ? (
-                    <div className="space-y-4 mb-5">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Industry Experience — describe your experience for each element</p>
-                      {unit.elements.map((element, idx) => (
-                        <div key={idx}>
-                          <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                            <span className="inline-block mr-2 text-xs font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: "#f0f4ff", color: "#1c5ea8" }}>
-                              {idx + 1}
-                            </span>
-                            {element}
-                          </label>
-                          <textarea
-                            value={exp.element_descriptions?.[idx] || ""}
-                            onChange={(e) => updateElement(unit.code, idx, e.target.value)}
-                            placeholder={`Describe your experience related to: ${element.toLowerCase()}...`}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400 resize-none"
-                            rows={3}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="mb-5">
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Industry Experience Description</label>
-                      <textarea
-                        value={exp.element_descriptions?.[0] || ""}
-                        onChange={(e) => updateElement(unit.code, 0, e.target.value)}
-                        placeholder="Describe your experience, skills and knowledge related to this unit..."
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400 resize-none"
-                        rows={4}
-                      />
-                    </div>
-                  )}
-
-                  {/* Professional development */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Relevant Training / Professional Development</label>
-                    <textarea
-                      value={exp.professional_development || ""}
-                      onChange={(e) => updatePD(unit.code, e.target.value)}
-                      placeholder="List any relevant qualifications, units or CPD activities..."
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400 resize-none"
-                      rows={2}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        <div className="space-y-4">
+          {unitsToShow.map((unit) => (
+            <div key={unit.code} ref={(el) => (unitRefs.current[unit.code] = el)}>
+              <UnitExperienceCard unit={unit} exp={experience[unit.code] || {}} onUpdateElement={updateElement} onUpdatePD={updatePD} onUpdateHasPD={updateHasPD} />
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Action buttons */}
       {questionnaireSubmitted && assignedUnits && assignedUnits.length > 0 && (
         <div className="flex items-center justify-between pt-4 pb-8">
           <button onClick={() => navigate("/questionnaire")} className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors">

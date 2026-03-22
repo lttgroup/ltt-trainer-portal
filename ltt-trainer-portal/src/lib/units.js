@@ -272,7 +272,7 @@ export const UNITS = [
     industryName: "Health",
     question:
       "I have experience, skills and knowledge required to provide a first aid response to a casualty in line with first aid guidelines determined by the Australian Resuscitation Council (ARC) and other Australian national peak clinical bodies..",
-    elements: ["Prepare to provide first aid", "Provide first aid", "Communicate details of the incident", "Review and report on the incident"],
+    elements: ["Respond to an emergency situation", "Apply appropriate first aid procedures", "Communicate details of the incident", "Review the incident"],
   },
   {
     code: "HLTCAR004",
