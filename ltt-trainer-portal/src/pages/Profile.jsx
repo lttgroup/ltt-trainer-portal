@@ -17,14 +17,19 @@ const TAE_SKILLSETS = [
   { code: "TAESS00015", title: "Enterprise Trainer — Presenting Skill Set" },
 ];
 
-function Section({ number, title, children }) {
+function Section({ number, title, children, done }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
-      <div className="flex items-center gap-3 px-6 py-4" style={{ backgroundColor: "#081a47" }}>
-        <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#fff" }}>
-          {number}
+    <div className="bg-white rounded-xl overflow-hidden mb-5" style={{ border: done ? "1px solid #86efac" : "1px solid #e5e7eb" }}>
+      <div className="flex items-center gap-3 px-6 py-4" style={{ backgroundColor: done ? "#166534" : "#081a47" }}>
+        <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: done ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.15)", color: "#fff" }}>
+          {done ? "✓" : number}
         </div>
-        <h3 className="text-sm font-semibold text-white">{title}</h3>
+        <h3 className="text-sm font-semibold text-white flex-1">{title}</h3>
+        {done && (
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.2)", color: "#fff" }}>
+            Complete
+          </span>
+        )}
       </div>
       <div className="px-6 py-5">{children}</div>
     </div>
@@ -248,6 +253,8 @@ export default function Profile({ profile }) {
   const navigate = useNavigate();
   const [trainerId, setTrainerId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profileStatus, setProfileStatus] = useState(null); // from trainer_profiles
+  const [experienceApproval, setExperienceApproval] = useState([]); // from industry_experience
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -284,9 +291,8 @@ export default function Profile({ profile }) {
   const fetchData = async () => {
     if (!profile) return;
 
-    const { data: trainers } = await supabase.from("trainers").select("*").eq("email", profile.email).order("created_at", { ascending: false }).limit(1);
+    const { data: trainer } = await supabase.from("trainers").select("*").eq("email", profile.email).maybeSingle();
 
-    const trainer = trainers?.[0] || null;
     if (!trainer) {
       setLoading(false);
       return;
@@ -307,13 +313,17 @@ export default function Profile({ profile }) {
 
     if (existingProfile) {
       setForm((prev) => ({ ...prev, ...existingProfile }));
-      // Restore credential choice from saved data
+      setProfileStatus(existingProfile.profile_status || null);
       if (existingProfile.tae_qualification) {
         setCredentialChoice("holds");
       } else if (existingProfile.under_direction_qualification) {
         setCredentialChoice("no_holds");
       }
     }
+
+    // Load experience approval status for section badge
+    const { data: expData } = await supabase.from("industry_experience").select("unit_code, competency_confirmed").eq("trainer_id", trainer.id);
+    setExperienceApproval(expData || []);
 
     setLoading(false);
   };
@@ -406,12 +416,62 @@ export default function Profile({ profile }) {
     );
   }
 
+  // Section completion checks
+  const s1Done = !!(form.full_name && form.state && form.position && form.employment_status && form.phone);
+  const s2Done = !!(form.tae_qualification || form.under_direction_qualification);
+  const s4Done = !!(form.declaration_credentials && form.declaration_copies && form.declaration_signature && form.declaration_date);
+  const s6Total = experienceApproval.length;
+  const s6AllApproved = s6Total > 0 && experienceApproval.every((e) => e.competency_confirmed === true);
+  const profileApproved = profileStatus === "Approved";
+
   return (
     <div>
       {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5">{error}</div>}
 
+      {/* Approval status banner */}
+      {profileApproved && (
+        <div className="rounded-xl p-4 mb-5 flex items-center gap-3" style={{ backgroundColor: "#f0fdf4", border: "1px solid #86efac" }}>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#16a34a" }}>
+            <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
+              <path d="M1 5.5l3.5 3.5L13 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold" style={{ color: "#166534" }}>
+              Profile Approved
+            </p>
+            <p className="text-xs" style={{ color: "#15803d" }}>
+              Sections 1–4 have been verified and approved by the quality team.
+            </p>
+          </div>
+          {s6AllApproved && (
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>
+              ✓ All experience approved
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Not-approved notice */}
+      {!profileApproved && experienceApproval.some((e) => e.competency_confirmed === false) && (
+        <div className="rounded-xl p-4 mb-5 flex items-center gap-3" style={{ backgroundColor: "#fef2f2", border: "1px solid #fca5a5" }}>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#c93535" }}>
+            <span className="text-white font-bold text-sm">!</span>
+          </div>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: "#c93535" }}>
+              Some units require attention
+            </p>
+            <p className="text-xs text-gray-500">
+              {experienceApproval.filter((e) => e.competency_confirmed === false).length} unit{experienceApproval.filter((e) => e.competency_confirmed === false).length !== 1 ? "s" : ""} in Section 6 were not approved. Please check your Industry
+              Experience page for details and contact your compliance officer.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Section 1 */}
-      <Section number="1" title="Section 1 — Trainer Assessor Details">
+      <Section number="1" title="Section 1 — Trainer Assessor Details" done={s1Done}>
         <div className="grid grid-cols-2 gap-4 mb-4">
           <FieldGroup label="Full Name">
             <Input value={form.full_name} onChange={(v) => updateForm("full_name", v)} placeholder="As per official ID" />
@@ -451,7 +511,7 @@ export default function Profile({ profile }) {
       </Section>
 
       {/* Section 2 */}
-      <Section number="2" title="Section 2 — Training Credentials">
+      <Section number="2" title="Section 2 — Training Credentials" done={s2Done && profileApproved}>
         {/* Credential choice */}
         <p className="text-xs text-gray-500 mb-3">Select the option that applies to you:</p>
         <div className="grid grid-cols-2 gap-3 mb-6">
@@ -569,13 +629,13 @@ export default function Profile({ profile }) {
       </Section>
 
       {/* Section 3 */}
-      <Section number="3" title="Section 3 — Industry Competencies">
+      <Section number="3" title="Section 3 — Industry Competencies" done={profileApproved}>
         <p className="text-xs text-gray-400 mb-4">List all current industry-related qualifications you hold</p>
         <IndustryQualifications trainerId={trainerId} saveRef={saveQualsRef} />
       </Section>
 
       {/* Section 4 */}
-      <Section number="4" title="Section 4 — Credentials Declaration">
+      <Section number="4" title="Section 4 — Credentials Declaration" done={s4Done}>
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4 space-y-3">
           <label className="flex gap-3 cursor-pointer">
             <input type="checkbox" checked={form.declaration_credentials} onChange={(e) => updateForm("declaration_credentials", e.target.checked)} className="mt-0.5 flex-shrink-0" />

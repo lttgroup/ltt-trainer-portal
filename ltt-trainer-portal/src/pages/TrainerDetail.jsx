@@ -388,7 +388,7 @@ function calcExperiencePct(responses, experienceData, assignedUnits) {
 
 // ── Streams Tab ───────────────────────────────────────────────────────────────
 
-function StreamsTab({ trainerId, responses, assignedUnits, onAssignmentChange }) {
+function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAssignmentChange }) {
   const [streams, setStreams] = useState([]);
   const [streamUnits, setStreamUnits] = useState({}); // streamId -> [unit_codes]
   const [selected, setSelected] = useState(new Set());
@@ -559,21 +559,37 @@ function StreamsTab({ trainerId, responses, assignedUnits, onAssignmentChange })
               const isSelected = selected.has(stream.id);
               const isAssigned = [...(streamUnits[stream.id] || [])].every((u) => assignedSet.has(u)) && (streamUnits[stream.id] || []).length > 0;
 
-              let statusColor = "#c93535"; // red — low coverage
-              if (cov.pct === 100)
-                statusColor = "#1c5ea8"; // blue — full experience
-              else if (cov.pct >= 60) statusColor = "#e8a020"; // amber — partial
+              // Approval: all assigned units in this stream are approved
+              const streamUnitCodes = streamUnits[stream.id] || [];
+              const assignedInStream = streamUnitCodes.filter((u) => assignedSet.has(u));
+              const allApproved = assignedInStream.length > 0 && assignedInStream.every((u) => experienceData.find((e) => e.unit_code === u && e.competency_confirmed === true));
+              const anyNotApproved = assignedInStream.some((u) => experienceData.find((e) => e.unit_code === u && e.competency_confirmed === false));
+              const approvedCount = assignedInStream.filter((u) => experienceData.find((e) => e.unit_code === u && e.competency_confirmed === true)).length;
+
+              // Card colour: green=all approved, red=any not approved, blue=full experience, amber=partial
+              let cardBg = "#fff",
+                cardBorder = "#e5e7eb";
+              if (allApproved) {
+                cardBg = "#f0fdf4";
+                cardBorder = "#86efac";
+              } else if (anyNotApproved) {
+                cardBg = "#fef2f2";
+                cardBorder = "#fca5a5";
+              } else if (isSelected) {
+                cardBg = "#eff6ff";
+                cardBorder = "#1c5ea8";
+              } else if (cov.pct === 100) {
+                cardBg = "#f8faff";
+                cardBorder = "#bfdbfe";
+              }
+
+              let barColor = "#c93535";
+              if (allApproved) barColor = "#16a34a";
+              else if (cov.pct === 100) barColor = "#1c5ea8";
+              else if (cov.pct >= 60) barColor = "#e8a020";
 
               return (
-                <button
-                  key={stream.id}
-                  onClick={() => toggleStream(stream.id)}
-                  className="text-left rounded-xl p-4 transition-all border-2"
-                  style={{
-                    borderColor: isSelected ? "#1c5ea8" : cov.pct === 100 ? "#bfdbfe" : "#e5e7eb",
-                    backgroundColor: isSelected ? "#eff6ff" : cov.pct === 100 ? "#f8faff" : "#fff",
-                  }}
-                >
+                <button key={stream.id} onClick={() => toggleStream(stream.id)} className="text-left rounded-xl p-4 transition-all border-2" style={{ borderColor: cardBorder, backgroundColor: cardBg }}>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-800 leading-snug">{stream.stream_name}</p>
@@ -582,11 +598,11 @@ function StreamsTab({ trainerId, responses, assignedUnits, onAssignmentChange })
                     <div
                       className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5"
                       style={{
-                        borderColor: isSelected ? "#1c5ea8" : "#d1d5db",
-                        backgroundColor: isSelected ? "#1c5ea8" : "transparent",
+                        borderColor: allApproved ? "#16a34a" : isSelected ? "#1c5ea8" : "#d1d5db",
+                        backgroundColor: allApproved ? "#16a34a" : isSelected ? "#1c5ea8" : "transparent",
                       }}
                     >
-                      {isSelected && (
+                      {(allApproved || isSelected) && (
                         <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
                           <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -598,18 +614,38 @@ function StreamsTab({ trainerId, responses, assignedUnits, onAssignmentChange })
                   <div className="mb-1.5">
                     <div className="flex justify-between mb-1">
                       <span className="text-xs text-gray-400">Trainer experience</span>
-                      <span className="text-xs font-semibold" style={{ color: statusColor }}>
+                      <span className="text-xs font-semibold" style={{ color: barColor }}>
                         {cov.yes}/{cov.total} units
                       </span>
                     </div>
                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all" style={{ width: `${cov.pct}%`, backgroundColor: statusColor }} />
+                      <div className="h-full rounded-full transition-all" style={{ width: `${cov.pct}%`, backgroundColor: barColor }} />
                     </div>
                   </div>
 
+                  {/* Approval bar (only shown when units assigned) */}
+                  {assignedInStream.length > 0 && (
+                    <div className="mb-1.5">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-xs text-gray-400">Quality approved</span>
+                        <span className="text-xs font-semibold" style={{ color: allApproved ? "#16a34a" : "#6b7280" }}>
+                          {approvedCount}/{assignedInStream.length} units
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all" style={{ width: `${Math.round((approvedCount / assignedInStream.length) * 100)}%`, backgroundColor: allApproved ? "#16a34a" : "#32ba9a" }} />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Status badges */}
                   <div className="flex gap-1.5 mt-2 flex-wrap">
-                    {cov.pct === 100 && (
+                    {allApproved && (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>
+                        ✓ Quality Approved
+                      </span>
+                    )}
+                    {!allApproved && cov.pct === 100 && (
                       <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#dbeafe", color: "#1c5ea8" }}>
                         ✓ Full experience
                       </span>
@@ -624,9 +660,9 @@ function StreamsTab({ trainerId, responses, assignedUnits, onAssignmentChange })
                         Limited experience
                       </span>
                     )}
-                    {isAssigned && (
+                    {isAssigned && !allApproved && (
                       <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
-                        Currently assigned
+                        Assigned
                       </span>
                     )}
                   </div>
@@ -965,57 +1001,61 @@ export default function TrainerDetail({ profile: adminProfile }) {
             <div className="grid grid-cols-6 gap-1.5">
               {[...questionnaireResponses]
                 .sort((a, b) => a.unit_code.localeCompare(b.unit_code))
-                .map((r) => (
-                  <div
-                    key={r.id}
-                    className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 border"
-                    style={{
-                      backgroundColor: r.response === "yes" ? "#eff6ff" : "#fafafa",
-                      borderColor: r.response === "yes" ? "#bfdbfe" : "#e5e7eb",
-                    }}
-                  >
-                    <span className="text-xs font-bold font-mono flex-shrink-0" style={{ color: r.response === "yes" ? "#1c5ea8" : "#9ca3af" }}>
-                      {r.unit_code}
-                    </span>
-                    {(() => {
-                      // Find competency status from experience data
-                      const expEntry = experienceData.find((e) => e.unit_code === r.unit_code);
-                      if (r.response === "yes") {
-                        if (expEntry?.competency_confirmed === true) {
-                          return (
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>
-                              Approved
-                            </span>
-                          );
-                        } else if (expEntry?.competency_confirmed === false) {
-                          return (
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>
-                              Not Approved
-                            </span>
-                          );
-                        } else {
-                          return (
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#dbeafe", color: "#1c5ea8" }}>
-                              Experience
-                            </span>
-                          );
-                        }
-                      }
-                      return (
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>
-                          No
-                        </span>
-                      );
-                    })()}
-                  </div>
-                ))}
+                .map((r) => {
+                  const expEntry = experienceData.find((e) => e.unit_code === r.unit_code);
+                  const approved = r.response === "yes" && expEntry?.competency_confirmed === true;
+                  const notApproved = r.response === "yes" && expEntry?.competency_confirmed === false;
+                  const experienced = r.response === "yes" && expEntry?.competency_confirmed == null;
+
+                  let bg, border, codeColor, pillBg, pillColor, pillLabel;
+                  if (approved) {
+                    bg = "#f0fdf4";
+                    border = "#86efac";
+                    codeColor = "#166534";
+                    pillBg = "#dcfce7";
+                    pillColor = "#166534";
+                    pillLabel = "✓ Approved";
+                  } else if (notApproved) {
+                    bg = "#fef2f2";
+                    border = "#fca5a5";
+                    codeColor = "#c93535";
+                    pillBg = "#fdeaea";
+                    pillColor = "#c93535";
+                    pillLabel = "✗ Not Approved";
+                  } else if (experienced) {
+                    bg = "#eff6ff";
+                    border = "#bfdbfe";
+                    codeColor = "#1c5ea8";
+                    pillBg = "#dbeafe";
+                    pillColor = "#1c5ea8";
+                    pillLabel = "Experience";
+                  } else {
+                    bg = "#fafafa";
+                    border = "#e5e7eb";
+                    codeColor = "#9ca3af";
+                    pillBg = "#f3f4f6";
+                    pillColor = "#9ca3af";
+                    pillLabel = "No";
+                  }
+
+                  return (
+                    <div key={r.id} className="flex flex-col gap-1 rounded-lg px-2.5 py-2 border" style={{ backgroundColor: bg, borderColor: border }}>
+                      <span className="text-xs font-bold font-mono" style={{ color: codeColor }}>
+                        {r.unit_code}
+                      </span>
+                      <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-center" style={{ backgroundColor: pillBg, color: pillColor }}>
+                        {pillLabel}
+                      </span>
+                    </div>
+                  );
+                })}
             </div>
           )}
         </Section>
       )}
 
       {/* ── STREAMS TAB ── */}
-      {activeTab === "streams" && <StreamsTab trainerId={id} responses={questionnaireResponses} assignedUnits={assignedUnits} onAssignmentChange={fetchAll} />}
+      {activeTab === "streams" && <StreamsTab trainerId={id} responses={questionnaireResponses} assignedUnits={assignedUnits} experienceData={experienceData} onAssignmentChange={fetchAll} />}
 
       {/* ── EXPERIENCE TAB ── */}
       {activeTab === "experience" && <ExperienceTab trainerId={id} assignedUnits={assignedUnits} experienceData={experienceData} adminProfile={adminProfile} onUpdate={fetchAll} />}

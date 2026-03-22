@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import { UNITS } from "../lib/units";
 
 // ── Single unit card ──────────────────────────────────────────────────────────
-function UnitExperienceCard({ unit, exp, onUpdateElement, onUpdatePD, onUpdateHasPD, onComplete, isFirst }) {
+function UnitExperienceCard({ unit, exp, approvalStatus, onUpdateElement, onUpdatePD, onUpdateHasPD, onComplete, isFirst }) {
   const [openElement, setOpenElement] = useState(isFirst ? 0 : null);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -56,17 +56,39 @@ function UnitExperienceCard({ unit, exp, onUpdateElement, onUpdatePD, onUpdateHa
     }
   };
 
-  // Collapsed view
+  // Collapsed view — colour by approval status if available
   if (collapsed) {
+    let colBg = "#f0fdf4",
+      colBorder = "#bbf7d0",
+      colCode = "#1c5ea8",
+      colCodeBg = "#e6f0ff";
+    let pillBg = "#e6f9f4",
+      pillColor = "#0f7a5a",
+      pillLabel = "✓ Complete";
+
+    if (approvalStatus === true) {
+      colBg = "#f0fdf4";
+      colBorder = "#86efac";
+      pillBg = "#dcfce7";
+      pillColor = "#166534";
+      pillLabel = "✓ Quality Approved";
+    } else if (approvalStatus === false) {
+      colBg = "#fef2f2";
+      colBorder = "#fca5a5";
+      pillBg = "#fdeaea";
+      pillColor = "#c93535";
+      pillLabel = "✗ Not Approved";
+    }
+
     return (
-      <div className="bg-white border rounded-xl overflow-hidden cursor-pointer transition-all hover:border-blue-200" style={{ borderColor: "#bbf7d0", backgroundColor: "#f0fdf4" }} onClick={() => setCollapsed(false)}>
+      <div className="bg-white border rounded-xl overflow-hidden cursor-pointer transition-all" style={{ borderColor: colBorder, backgroundColor: colBg }} onClick={() => setCollapsed(false)}>
         <div className="flex items-center gap-3 px-5 py-3">
-          <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
+          <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: colCodeBg, color: colCode }}>
             {unit.code}
           </span>
           <span className="text-sm font-medium text-gray-700 flex-1">{unit.title}</span>
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>
-            ✓ Complete
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: pillBg, color: pillColor }}>
+            {pillLabel}
           </span>
           <span className="text-xs text-gray-400 ml-1">▼ expand</span>
         </div>
@@ -213,6 +235,7 @@ export default function Experience({ profile }) {
   const [trainerId, setTrainerId] = useState(null);
   const [assignedUnits, setAssignedUnits] = useState(null);
   const [experience, setExperience] = useState({});
+  const [approval, setApproval] = useState({}); // unit_code -> competency_confirmed (null|true|false)
   const [questionnaireSubmitted, setQuestionnaireSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -256,6 +279,7 @@ export default function Experience({ profile }) {
 
     if (expData) {
       const mapped = {};
+      const approvalMapped = {};
       expData.forEach((e) => {
         const hasPd = e.professional_development?.trim() ? true : e.element_descriptions && Object.keys(e.element_descriptions).length > 0 ? false : null;
         mapped[e.unit_code] = {
@@ -263,8 +287,10 @@ export default function Experience({ profile }) {
           element_descriptions: e.element_descriptions || {},
           has_pd: hasPd,
         };
+        approvalMapped[e.unit_code] = e.competency_confirmed; // null | true | false
       });
       setExperience(mapped);
+      setApproval(approvalMapped);
     }
 
     setLoading(false);
@@ -405,17 +431,36 @@ export default function Experience({ profile }) {
     <div>
       {/* Section header */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
-        <div className="flex items-center gap-3 px-6 py-4" style={{ backgroundColor: "#081a47" }}>
-          <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#fff" }}>
-            6
-          </div>
-          <h3 className="text-sm font-semibold text-white flex-1">Section 6 — Industry Experience, Skills and Currency</h3>
-          {unitsToShow.length > 0 && (
-            <span className="text-sm font-bold" style={{ color: pct === 100 ? "#32ba9a" : "rgba(255,255,255,0.7)" }}>
-              {pct}%
-            </span>
-          )}
-        </div>
+        {(() => {
+          const approvedCount = Object.values(approval).filter((v) => v === true).length;
+          const notApprovedCount = Object.values(approval).filter((v) => v === false).length;
+          const totalAssigned = assignedUnits?.length || 0;
+          const allQualApproved = totalAssigned > 0 && approvedCount === totalAssigned;
+          const s6BgColor = allQualApproved ? "#166534" : "#081a47";
+          return (
+            <div className="flex items-center gap-3 px-6 py-4" style={{ backgroundColor: s6BgColor }}>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.2)", color: "#fff" }}>
+                {allQualApproved ? "✓" : "6"}
+              </div>
+              <h3 className="text-sm font-semibold text-white flex-1">Section 6 — Industry Experience, Skills and Currency</h3>
+              {allQualApproved && (
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.2)", color: "#fff" }}>
+                  Quality Approved
+                </span>
+              )}
+              {!allQualApproved && unitsToShow.length > 0 && (
+                <span className="text-sm font-bold" style={{ color: pct === 100 ? "#32ba9a" : "rgba(255,255,255,0.7)" }}>
+                  {pct}%
+                </span>
+              )}
+              {notApprovedCount > 0 && (
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>
+                  {notApprovedCount} not approved
+                </span>
+              )}
+            </div>
+          );
+        })()}
         <div className="px-6 py-4">
           {!questionnaireSubmitted ? (
             <p className="text-xs text-gray-400">Complete Section 5 — Skills Questionnaire before proceeding.</p>
@@ -460,7 +505,16 @@ export default function Experience({ profile }) {
         <div className="space-y-3">
           {unitsToShow.map((unit, idx) => (
             <div key={unit.code} ref={(el) => (unitRefs.current[unit.code] = el)}>
-              <UnitExperienceCard unit={unit} exp={experience[unit.code] || {}} onUpdateElement={updateElement} onUpdatePD={updatePD} onUpdateHasPD={updateHasPD} onComplete={() => handleUnitComplete(unit.code)} isFirst={idx === 0} />
+              <UnitExperienceCard
+                unit={unit}
+                exp={experience[unit.code] || {}}
+                approvalStatus={approval[unit.code]}
+                onUpdateElement={updateElement}
+                onUpdatePD={updatePD}
+                onUpdateHasPD={updateHasPD}
+                onComplete={() => handleUnitComplete(unit.code)}
+                isFirst={idx === 0}
+              />
             </div>
           ))}
         </div>
