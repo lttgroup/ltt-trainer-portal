@@ -112,9 +112,11 @@ export default function Shell({ user, profile, children, title }) {
         <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-7 flex-shrink-0">
           <h1 className="text-base font-semibold text-gray-800">{title}</h1>
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/trainers/invite")} className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: "#1c5ea8" }}>
-              + Invite Trainer
-            </button>
+            {profile?.role !== "trainer" && (
+              <button onClick={() => navigate("/trainers/invite")} className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: "#1c5ea8" }}>
+                + Invite Trainer
+              </button>
+            )}{" "}
           </div>
         </header>
 

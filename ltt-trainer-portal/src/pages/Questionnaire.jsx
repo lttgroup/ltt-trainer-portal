@@ -5,22 +5,22 @@ import { UNITS, INDUSTRIES } from "../lib/units";
 
 // ─── UNIT CARD ───────────────────────────────────────────────────────────────
 function UnitCard({ unit, response, onChange }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(!response);
+
+  // Auto-collapse when answered
+  useEffect(() => {
+    if (response) setExpanded(false);
+  }, [response]);
 
   return (
-    <div
-      className="bg-white rounded-xl overflow-hidden mb-2 border transition-all"
-      style={{
-        borderColor: response ? "#e5e7eb" : "#e5e7eb",
-      }}
-    >
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3">
+    <div className="bg-white rounded-xl overflow-hidden mb-2 border" style={{ borderColor: "#e5e7eb" }}>
+      {/* Header row — always visible, click to expand/collapse */}
+      <div className="flex items-center gap-3 px-4 py-3 cursor-pointer" onClick={() => setExpanded(!expanded)}>
         <span className="text-xs font-bold px-2 py-0.5 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
           {unit.code}
         </span>
         <p className="text-sm font-medium text-gray-800 flex-1 leading-snug">{unit.title}</p>
-        {response && (
+        {response ? (
           <span
             className="text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0"
             style={{
@@ -30,49 +30,69 @@ function UnitCard({ unit, response, onChange }) {
           >
             {response === "yes" ? "✓ Yes" : "✗ No"}
           </span>
+        ) : (
+          <span className="text-xs text-gray-300 flex-shrink-0">{expanded ? "▲" : "▼"}</span>
         )}
       </div>
 
-      {/* Question */}
-      <div className="px-4 pb-2">
-        <p className="text-sm text-gray-600 leading-relaxed">{unit.question}</p>
-      </div>
+      {/* Expanded content — question, elements, Yes/No buttons */}
+      {expanded && (
+        <>
+          {/* Question */}
+          <div className="px-4 pb-2">
+            <p className="text-sm text-gray-600 leading-relaxed">{unit.question}</p>
+          </div>
 
-      {/* Elements toggle */}
-      <div className="px-4 pb-2">
-        <button onClick={() => setExpanded(!expanded)} className="text-xs font-medium" style={{ color: "#1c5ea8" }}>
-          {expanded ? "▲ Hide unit elements" : "▼ View unit elements"}
-        </button>
-        {expanded && (
-          <div className="mt-2 space-y-1">
-            {unit.elements.map((el, i) => (
-              <div key={i} className="flex gap-2 text-xs text-gray-500">
-                <span className="text-gray-300 flex-shrink-0">→</span>
-                {el}
+          {/* Elements toggle */}
+          <div className="px-4 pb-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded((prev) => {
+                  /* keep expanded, just toggle elements */ return prev;
+                });
+              }}
+              className="text-xs font-medium"
+              style={{ color: "#1c5ea8" }}
+            ></button>
+            <details className="mt-1">
+              <summary className="text-xs font-medium cursor-pointer" style={{ color: "#1c5ea8" }}>
+                View unit elements
+              </summary>
+              <div className="mt-2 space-y-1">
+                {unit.elements.map((el, i) => (
+                  <div key={i} className="flex gap-2 text-xs text-gray-500">
+                    <span className="text-gray-300 flex-shrink-0">→</span>
+                    {el}
+                  </div>
+                ))}
               </div>
+            </details>
+          </div>
+
+          {/* Yes / No */}
+          <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100" style={{ backgroundColor: "#f9fafb" }}>
+            <span className="text-xs text-gray-400 mr-1 flex-shrink-0">Workplace experience:</span>
+            {[
+              { value: "yes", label: "Yes", bg: "#e6f9f4", color: "#0f7a5a", border: "#32ba9a" },
+              { value: "no", label: "No", bg: "#fdeaea", color: "#c93535", border: "#c93535" },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange(unit.code, response === opt.value ? null : opt.value);
+                }}
+                className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all border"
+                style={response === opt.value ? { backgroundColor: opt.bg, color: opt.color, borderColor: opt.border } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
+              >
+                {response === opt.value ? "✓ " : ""}
+                {opt.label}
+              </button>
             ))}
           </div>
-        )}
-      </div>
-
-      {/* Yes / No */}
-      <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100" style={{ backgroundColor: "#f9fafb" }}>
-        <span className="text-xs text-gray-400 mr-1 flex-shrink-0">Workplace experience:</span>
-        {[
-          { value: "yes", label: "Yes", bg: "#e6f9f4", color: "#0f7a5a", border: "#32ba9a" },
-          { value: "no", label: "No", bg: "#fdeaea", color: "#c93535", border: "#c93535" },
-        ].map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => onChange(unit.code, response === opt.value ? null : opt.value)}
-            className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all border"
-            style={response === opt.value ? { backgroundColor: opt.bg, color: opt.color, borderColor: opt.border } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
-          >
-            {response === opt.value ? "✓ " : ""}
-            {opt.label}
-          </button>
-        ))}
-      </div>
+        </>
+      )}
     </div>
   );
 }
@@ -83,19 +103,26 @@ function IndustrySection({ industry, units, responses, onChange }) {
   const total = units.length;
   const allAnswered = answered === total;
 
-  // Auto-collapse when all answered, allow manual toggle
   const [collapsed, setCollapsed] = useState(false);
   const prevAllAnswered = useRef(false);
+  const sectionRef = useRef(null);
 
   useEffect(() => {
     if (allAnswered && !prevAllAnswered.current) {
       setCollapsed(true);
+      // Scroll to next section after collapse animation
+      setTimeout(() => {
+        const next = sectionRef.current?.nextElementSibling;
+        if (next) {
+          next.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 350);
     }
     prevAllAnswered.current = allAnswered;
   }, [allAnswered]);
 
   return (
-    <div className="mb-3">
+    <div className="mb-3" ref={sectionRef}>
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="w-full flex items-center gap-3 py-3 px-4 rounded-xl text-left transition-all"
@@ -108,7 +135,7 @@ function IndustrySection({ industry, units, responses, onChange }) {
           className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0"
           style={{
             backgroundColor: allAnswered ? "#32ba9a" : "rgba(255,255,255,0.15)",
-            color: allAnswered ? "#fff" : "#fff",
+            color: "#fff",
           }}
         >
           {industry.code}
@@ -225,7 +252,6 @@ export default function Questionnaire({ profile }) {
       };
     });
 
-    // Delete any responses that were cleared
     const clearedCodes = UNITS.map((u) => u.code).filter((code) => !responses[code]);
 
     if (clearedCodes.length > 0 && Object.keys(responses).length > 0) {
@@ -273,7 +299,7 @@ export default function Questionnaire({ profile }) {
     <div>
       <div ref={topRef} />
 
-      {/* Section 5 header — matches Trainer Profile section style */}
+      {/* Section 5 header */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
         <div className="flex items-center gap-3 px-6 py-4" style={{ backgroundColor: "#081a47" }}>
           <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#fff" }}>
@@ -285,11 +311,9 @@ export default function Questionnaire({ profile }) {
           </span>
         </div>
         <div className="px-6 py-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-gray-400">
-              {answeredCount} of {totalCount} units completed
-            </p>
-          </div>
+          <p className="text-xs text-gray-400 mb-2">
+            {answeredCount} of {totalCount} units completed
+          </p>
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all"
@@ -300,7 +324,7 @@ export default function Questionnaire({ profile }) {
             />
           </div>
           <p className="text-xs text-gray-400 mt-3">
-            Select <strong>Yes</strong> or <strong>No</strong> for each unit. Each industry section will collapse automatically once all units are answered. You must respond to every unit before submitting.
+            Select <strong>Yes</strong> or <strong>No</strong> for each unit. Sections collapse automatically once complete. You must respond to every unit before submitting.
           </p>
         </div>
       </div>
