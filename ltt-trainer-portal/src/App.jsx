@@ -2,20 +2,17 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
 
-// Layout
 import Shell from "./components/layout/Shell";
-
-// Pages
 import Login from "./pages/Login";
 import SetPassword from "./pages/SetPassword";
 import Dashboard from "./pages/Dashboard";
 import Trainers from "./pages/Trainers";
 import TrainerDetail from "./pages/TrainerDetail";
-import Questionnaire from "./pages/Questionnaire";
 import Profile from "./pages/Profile";
+import Questionnaire from "./pages/Questionnaire";
+import Experience from "./pages/Experience";
 import CredentialRegister from "./pages/CredentialRegister";
 import EvidenceVault from "./pages/EvidenceVault";
-import Experience from "./pages/Experience";
 
 function LoadingScreen() {
   return (
@@ -40,6 +37,17 @@ function AppShell({ session, profile, title, children }) {
         {children}
       </Shell>
     </PrivateRoute>
+  );
+}
+
+// Admin-only route — redirects trainers to their profile
+function AdminRoute({ session, profile, title, children }) {
+  if (!session) return <Navigate to="/login" replace />;
+  if (profile && profile.role === "trainer") return <Navigate to="/profile" replace />;
+  return (
+    <Shell user={session?.user} profile={profile} title={title}>
+      {children}
+    </Shell>
   );
 }
 
@@ -71,53 +79,67 @@ export default function App() {
 
   if (session === undefined) return <LoadingScreen />;
 
+  // Once profile is loaded, decide where to send the user on login
+  const defaultRoute = profile?.role === "trainer" ? "/profile" : "/dashboard";
+
   return (
     <BrowserRouter>
       <Routes>
         {/* Public */}
-        <Route path="/login" element={session ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Route path="/login" element={session ? <Navigate to={defaultRoute} replace /> : <Login />} />
         <Route path="/set-password" element={<SetPassword />} />
-        {/* Protected */}
+
+        {/* ── ADMIN ROUTES ── */}
         <Route
           path="/dashboard"
           element={
-            <AppShell session={session} profile={profile} title="Dashboard">
+            <AdminRoute session={session} profile={profile} title="Dashboard">
               <Dashboard profile={profile} />
-            </AppShell>
+            </AdminRoute>
           }
         />
         <Route
           path="/trainers"
           element={
-            <AppShell session={session} profile={profile} title="Trainers">
+            <AdminRoute session={session} profile={profile} title="Trainers">
               <Trainers />
-            </AppShell>
+            </AdminRoute>
           }
         />
         <Route
           path="/trainers/invite"
           element={
-            <AppShell session={session} profile={profile} title="Trainers">
+            <AdminRoute session={session} profile={profile} title="Trainers">
               <Trainers showInviteOnLoad={true} />
-            </AppShell>
+            </AdminRoute>
           }
         />
         <Route
           path="/trainers/:id"
           element={
-            <AppShell session={session} profile={profile} title="Trainer Detail">
+            <AdminRoute session={session} profile={profile} title="Trainer Detail">
               <TrainerDetail profile={profile} />
-            </AppShell>
+            </AdminRoute>
           }
         />
         <Route
-          path="/questionnaire"
+          path="/register"
           element={
-            <AppShell session={session} profile={profile} title="Skills Questionnaire">
-              <Questionnaire profile={profile} />
-            </AppShell>
+            <AdminRoute session={session} profile={profile} title="Credential Register">
+              <CredentialRegister />
+            </AdminRoute>
           }
         />
+        <Route
+          path="/evidence"
+          element={
+            <AdminRoute session={session} profile={profile} title="Evidence Vault">
+              <EvidenceVault profile={profile} />
+            </AdminRoute>
+          }
+        />
+
+        {/* ── TRAINER ROUTES (accessible by both trainers and admins) ── */}
         <Route
           path="/profile"
           element={
@@ -125,33 +147,26 @@ export default function App() {
               <Profile profile={profile} />
             </AppShell>
           }
-        />{" "}
-        <Route
-          path="/register"
-          element={
-            <AppShell session={session} profile={profile} title="Credential Register">
-              <CredentialRegister />
-            </AppShell>
-          }
         />
         <Route
-          path="/evidence"
+          path="/questionnaire"
           element={
-            <AppShell session={session} profile={profile} title="Evidence Vault">
-              <EvidenceVault profile={profile} />
+            <AppShell session={session} profile={profile} title="Section 5 — Skills Questionnaire">
+              <Questionnaire profile={profile} />
             </AppShell>
           }
         />
         <Route
           path="/experience"
           element={
-            <AppShell session={session} profile={profile} title="Industry Experience">
+            <AppShell session={session} profile={profile} title="Section 6 — Industry Experience">
               <Experience profile={profile} />
             </AppShell>
           }
         />
+
         {/* Catch all */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to={defaultRoute} replace />} />
       </Routes>
     </BrowserRouter>
   );

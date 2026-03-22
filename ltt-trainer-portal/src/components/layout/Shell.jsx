@@ -3,20 +3,12 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import logo2 from "../../assets/logo2.png";
 
-const navItems = [
+const adminNavItems = [
   {
     section: "Overview",
     items: [
-      { to: "/dashboard", label: "Dashboard", icon: "▦" },
+      { to: "/dashboard", label: "Dashboard", icon: "◧" },
       { to: "/trainers", label: "Trainers", icon: "👤" },
-    ],
-  },
-  {
-    section: "Onboarding",
-    items: [
-      { to: "/profile", label: "Trainer Profile", icon: "📄" },
-      { to: "/questionnaire", label: "Skills Questionnaire", icon: "📋" },
-      { to: "/experience", label: "Industry Experience", icon: "🔬" },
     ],
   },
   {
@@ -28,7 +20,19 @@ const navItems = [
   },
 ];
 
+const trainerNavItems = [
+  {
+    section: "My Onboarding",
+    items: [
+      { to: "/profile", label: "Trainer Profile (AF3.21)", icon: "📄" },
+      { to: "/questionnaire", label: "Section 5 — Skills Questionnaire", icon: "📋" },
+      { to: "/experience", label: "Section 6 — Industry Experience", icon: "🔬" },
+      { to: "/evidence", label: "Evidence Vault", icon: "🗂️" },
+    ],
+  },
+];
 export default function Shell({ user, profile, children, title }) {
+  const navItems = profile?.role === "trainer" ? trainerNavItems : adminNavItems;
   const navigate = useNavigate();
   const [signingOut, setSigningOut] = useState(false);
 

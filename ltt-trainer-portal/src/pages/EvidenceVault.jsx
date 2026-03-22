@@ -31,8 +31,11 @@ function formatDate(d) {
 }
 
 export default function EvidenceVault({ profile }) {
+  const isAdmin = profile?.role === "admin" || profile?.role === "compliance_officer";
+
   const [files, setFiles] = useState([]);
   const [trainers, setTrainers] = useState([]);
+  const [trainerId, setTrainerId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState("");
@@ -41,7 +44,7 @@ export default function EvidenceVault({ profile }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Upload form state
+  // Upload form
   const [selectedTrainer, setSelectedTrainer] = useState("");
   const [selectedType, setSelectedType] = useState("TAE Qualification");
   const [selectedFile, setSelectedFile] = useState(null);
@@ -50,23 +53,39 @@ export default function EvidenceVault({ profile }) {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [profile]);
 
   const fetchData = async () => {
-    const [{ data: fileData }, { data: trainerData }] = await Promise.all([
-      supabase.from("evidence_files").select("*, trainers(full_name)").order("uploaded_at", { ascending: false }),
-      supabase.from("trainers").select("id, full_name").order("full_name"),
-    ]);
+    if (!profile) return;
 
-    setFiles(fileData || []);
-    setTrainers(trainerData || []);
+    if (isAdmin) {
+      // Admin — load all files and trainer list
+      const [{ data: fileData }, { data: trainerData }] = await Promise.all([
+        supabase.from("evidence_files").select("*, trainers(full_name)").order("uploaded_at", { ascending: false }),
+        supabase.from("trainers").select("id, full_name").order("full_name"),
+      ]);
+      setFiles(fileData || []);
+      setTrainers(trainerData || []);
+    } else {
+      // Trainer — load only their own files
+      const { data: trainerData } = await supabase.from("trainers").select("id").eq("email", profile.email).maybeSingle();
+
+      if (trainerData) {
+        setTrainerId(trainerData.id);
+        setSelectedTrainer(trainerData.id);
+
+        const { data: fileData } = await supabase.from("evidence_files").select("*, trainers(full_name)").eq("trainer_id", trainerData.id).order("uploaded_at", { ascending: false });
+
+        setFiles(fileData || []);
+      }
+    }
+
     setLoading(false);
   };
 
   const handleFileSelect = (file) => {
     if (!file) return;
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
+    if (file.size > 10 * 1024 * 1024) {
       setError("File is too large. Maximum size is 10MB.");
       return;
     }
@@ -77,13 +96,14 @@ export default function EvidenceVault({ profile }) {
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    handleFileSelect(file);
+    handleFileSelect(e.dataTransfer.files[0]);
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !selectedTrainer) {
-      setError("Please select a trainer and a file.");
+    const uploadTrainerId = isAdmin ? selectedTrainer : trainerId;
+
+    if (!selectedFile || !uploadTrainerId) {
+      setError(isAdmin ? "Please select a trainer and a file." : "Please select a file to upload.");
       return;
     }
 
@@ -92,17 +112,14 @@ export default function EvidenceVault({ profile }) {
     setSuccess("");
 
     try {
-      // Get trainer's user ID for storage path
-      const filePath = `${selectedTrainer}/${Date.now()}_${selectedFile.name}`;
+      const filePath = `${uploadTrainerId}/${Date.now()}_${selectedFile.name}`;
 
-      // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage.from("evidence-files").upload(filePath, selectedFile);
 
       if (uploadError) throw uploadError;
 
-      // Save record to database
       const { error: dbError } = await supabase.from("evidence_files").insert({
-        trainer_id: selectedTrainer,
+        trainer_id: uploadTrainerId,
         file_name: selectedFile.name,
         file_path: filePath,
         file_size: selectedFile.size,
@@ -114,7 +131,7 @@ export default function EvidenceVault({ profile }) {
 
       setSuccess(`${selectedFile.name} uploaded successfully!`);
       setSelectedFile(null);
-      setSelectedTrainer("");
+      if (isAdmin) setSelectedTrainer("");
       if (fileInputRef.current) fileInputRef.current.value = "";
       fetchData();
     } catch (err) {
@@ -131,7 +148,6 @@ export default function EvidenceVault({ profile }) {
       setError("Could not generate download link.");
       return;
     }
-
     window.open(data.signedUrl, "_blank");
   };
 
@@ -155,24 +171,28 @@ export default function EvidenceVault({ profile }) {
     <div>
       {/* Upload section */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
-        <h3 className="text-sm font-semibold text-gray-800 mb-4">Upload Evidence Document</h3>
+        <h3 className="text-sm font-semibold text-gray-800 mb-1">Upload Evidence Document</h3>
+        <p className="text-xs text-gray-400 mb-4">{isAdmin ? "Upload qualification documents, USI transcripts or other evidence on behalf of a trainer." : "Upload your qualification documents, USI transcript or other supporting evidence here."}</p>
 
         {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>}
-
         {success && <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3 mb-4">✓ {success}</div>}
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Trainer</label>
-            <select value={selectedTrainer} onChange={(e) => setSelectedTrainer(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-400">
-              <option value="">Select trainer</option>
-              {trainers.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.full_name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className={`grid gap-4 mb-4 ${isAdmin ? "grid-cols-3" : "grid-cols-2"}`}>
+          {/* Trainer selector — admin only */}
+          {isAdmin && (
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Trainer</label>
+              <select value={selectedTrainer} onChange={(e) => setSelectedTrainer(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-400">
+                <option value="">Select trainer</option>
+                {trainers.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.full_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Document Type</label>
             <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-400">
@@ -183,11 +203,24 @@ export default function EvidenceVault({ profile }) {
               ))}
             </select>
           </div>
+
+          <div className="flex items-end">
+            <button
+              onClick={handleUpload}
+              disabled={uploading || !selectedFile || (isAdmin && !selectedTrainer)}
+              className="w-full px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors"
+              style={{
+                backgroundColor: uploading || !selectedFile || (isAdmin && !selectedTrainer) ? "#9ca3af" : "#1c5ea8",
+              }}
+            >
+              {uploading ? "Uploading..." : "Upload Document"}
+            </button>
+          </div>
         </div>
 
         {/* Drop zone */}
         <div
-          className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors mb-4"
+          className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors"
           style={{
             borderColor: isDragging ? "#1c5ea8" : selectedFile ? "#32ba9a" : "#e5e7eb",
             backgroundColor: isDragging ? "#e6f0ff" : selectedFile ? "#e6f9f4" : "#f9fafb",
@@ -215,19 +248,6 @@ export default function EvidenceVault({ profile }) {
             </div>
           )}
         </div>
-
-        <div className="flex justify-end">
-          <button
-            onClick={handleUpload}
-            disabled={uploading || !selectedFile || !selectedTrainer}
-            className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors"
-            style={{
-              backgroundColor: uploading || !selectedFile || !selectedTrainer ? "#9ca3af" : "#1c5ea8",
-            }}
-          >
-            {uploading ? "Uploading..." : "Upload Document"}
-          </button>
-        </div>
       </div>
 
       {/* Files list */}
@@ -238,14 +258,19 @@ export default function EvidenceVault({ profile }) {
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">⌕</span>
             <input type="text" placeholder="Search files..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-8 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-400 bg-white" />
           </div>
-          <select value={trainerFilter} onChange={(e) => setTrainerFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none">
-            <option value="All">All trainers</option>
-            {trainers.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.full_name}
-              </option>
-            ))}
-          </select>
+
+          {/* Trainer filter — admin only */}
+          {isAdmin && (
+            <select value={trainerFilter} onChange={(e) => setTrainerFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none">
+              <option value="All">All trainers</option>
+              {trainers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.full_name}
+                </option>
+              ))}
+            </select>
+          )}
+
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none">
             <option value="All">All types</option>
             {DOC_TYPES.map((t) => (
@@ -254,6 +279,7 @@ export default function EvidenceVault({ profile }) {
               </option>
             ))}
           </select>
+
           <span className="text-xs text-gray-400 ml-auto">
             {filtered.length} file{filtered.length !== 1 ? "s" : ""}
           </span>
@@ -264,7 +290,7 @@ export default function EvidenceVault({ profile }) {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                {["File", "Trainer", "Type", "Size", "Uploaded", ""].map((h) => (
+                {["File", ...(isAdmin ? ["Trainer"] : []), "Type", "Size", "Uploaded", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
                     {h}
                   </th>
@@ -274,14 +300,14 @@ export default function EvidenceVault({ profile }) {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-sm text-gray-400">
+                  <td colSpan={isAdmin ? 6 : 5} className="text-center py-12 text-sm text-gray-400">
                     Loading...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-sm text-gray-400">
-                    {search || typeFilter !== "All" || trainerFilter !== "All" ? "No files match your search" : "No evidence files uploaded yet"}
+                  <td colSpan={isAdmin ? 6 : 5} className="text-center py-12 text-sm text-gray-400">
+                    {search || typeFilter !== "All" ? "No files match your search" : isAdmin ? "No evidence files uploaded yet" : "You have not uploaded any documents yet"}
                   </td>
                 </tr>
               ) : (
@@ -295,15 +321,9 @@ export default function EvidenceVault({ profile }) {
                           <p className="text-sm font-medium text-gray-800">{file.file_name}</p>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{file.trainers?.full_name || "—"}</td>
+                      {isAdmin && <td className="px-4 py-3 text-sm text-gray-600">{file.trainers?.full_name || "—"}</td>}
                       <td className="px-4 py-3">
-                        <span
-                          className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                          style={{
-                            backgroundColor: typeStyle.bg,
-                            color: typeStyle.color,
-                          }}
-                        >
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: typeStyle.bg, color: typeStyle.color }}>
                           {file.document_type}
                         </span>
                       </td>
@@ -314,9 +334,12 @@ export default function EvidenceVault({ profile }) {
                           <button onClick={() => handleDownload(file)} className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">
                             View
                           </button>
-                          <button onClick={() => handleDelete(file)} className="text-xs font-medium px-3 py-1.5 rounded-lg border text-red-500 border-red-200 hover:bg-red-50">
-                            Delete
-                          </button>
+                          {/* Only admins or the owning trainer can delete */}
+                          {(isAdmin || file.trainer_id === trainerId) && (
+                            <button onClick={() => handleDelete(file)} className="text-xs font-medium px-3 py-1.5 rounded-lg border text-red-500 border-red-200 hover:bg-red-50">
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
