@@ -23,16 +23,18 @@ function TrainerRow({ trainer, onClick }) {
   };
   const style = statusStyles[trainer.compliance_status] || statusStyles["Incomplete"];
   const initials = trainer.full_name
-    ? trainer.full_name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
+    ? trainer.full_name.split(" ").map((n) => n[0]).join("").toUpperCase()
     : "?";
 
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50 rounded-lg px-2 transition-colors" onClick={onClick}>
-      <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
+    <div
+      className="flex items-center gap-3 py-3 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50 rounded-lg px-2 transition-colors"
+      onClick={onClick}
+    >
+      <div
+        className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+        style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}
+      >
         {initials}
       </div>
       <div className="flex-1 min-w-0">
@@ -41,7 +43,10 @@ function TrainerRow({ trainer, onClick }) {
           {trainer.position} · {trainer.employment_status}
         </p>
       </div>
-      <span className="text-xs font-semibold px-3 py-1 rounded-full flex-shrink-0" style={{ backgroundColor: style.bg, color: style.color }}>
+      <span
+        className="text-xs font-semibold px-3 py-1 rounded-full flex-shrink-0"
+        style={{ backgroundColor: style.bg, color: style.color }}
+      >
         {trainer.compliance_status || "Incomplete"}
       </span>
     </div>
@@ -51,12 +56,14 @@ function TrainerRow({ trainer, onClick }) {
 // ── Pending Review Panel (admin only) ─────────────────────────────────────────
 function PendingReviewPanel({ pendingTrainers, notifications, onMarkRead, onNavigate }) {
   if (pendingTrainers.length === 0 && notifications.length === 0) return null;
-
   const unread = notifications.filter((n) => !n.read);
 
   return (
     <div className="rounded-xl mb-6 overflow-hidden" style={{ border: "1px solid #f5d78a", backgroundColor: "#fffdf5" }}>
-      <div className="flex items-center justify-between px-5 py-3" style={{ backgroundColor: "#fdf3e0", borderBottom: "1px solid #f5d78a" }}>
+      <div
+        className="flex items-center justify-between px-5 py-3"
+        style={{ backgroundColor: "#fdf3e0", borderBottom: "1px solid #f5d78a" }}
+      >
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse inline-block" />
           <h3 className="text-sm font-semibold" style={{ color: "#92500a" }}>
@@ -72,7 +79,6 @@ function PendingReviewPanel({ pendingTrainers, notifications, onMarkRead, onNavi
           View all trainers →
         </button>
       </div>
-
       <div className="divide-y" style={{ borderColor: "#f5e7b0" }}>
         {pendingTrainers.map((trainer) => {
           const notif = notifications.find((n) => n.trainer_id === trainer.id && !n.read);
@@ -85,23 +91,21 @@ function PendingReviewPanel({ pendingTrainers, notifications, onMarkRead, onNavi
                 onNavigate(`/trainers/${trainer.id}`);
               }}
             >
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "#fde68a", color: "#92500a" }}>
-                {trainer.full_name
-                  ?.split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .toUpperCase() || "?"}
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                style={{ backgroundColor: "#fde68a", color: "#92500a" }}
+              >
+                {trainer.full_name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "?"}
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-gray-800">{trainer.full_name}</p>
-                <p className="text-xs text-gray-500">{notif ? notif.message : "Industry experience submitted — awaiting quality review"}</p>
+                <p className="text-xs text-gray-500">
+                  {notif ? notif.message : "Industry experience submitted — awaiting quality review"}
+                </p>
                 {notif && (
                   <p className="text-xs text-gray-400 mt-0.5">
                     {new Date(notif.created_at).toLocaleDateString("en-AU", {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
+                      day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
                     })}
                   </p>
                 )}
@@ -120,30 +124,39 @@ function PendingReviewPanel({ pendingTrainers, notifications, onMarkRead, onNavi
   );
 }
 
-// ── Trainer Progress Dashboard ────────────────────────────────────────────────
+// ── Section Card ──────────────────────────────────────────────────────────────
 function SectionCard({ number, title, status, sub, actionLabel, onAction, locked }) {
   const styles = {
-    complete: { bg: "#f0fdf4", border: "#86efac", iconBg: "#16a34a", icon: "✓", iconColor: "#fff", titleColor: "#166534" },
-    approved: { bg: "#f0fdf4", border: "#86efac", iconBg: "#16a34a", icon: "✓", iconColor: "#fff", titleColor: "#166534" },
-    pending: { bg: "#fffdf5", border: "#f5d78a", iconBg: "#e8a020", icon: "⏳", iconColor: "#fff", titleColor: "#92500a" },
-    rejected: { bg: "#fef2f2", border: "#fca5a5", iconBg: "#c93535", icon: "✗", iconColor: "#fff", titleColor: "#c93535" },
-    updated: { bg: "#faf5ff", border: "#c4b5fd", iconBg: "#7c3aed", icon: "↺", iconColor: "#fff", titleColor: "#6d28d9" },
+    complete:   { bg: "#f0fdf4", border: "#86efac", iconBg: "#16a34a", icon: "✓", iconColor: "#fff", titleColor: "#166534" },
+    approved:   { bg: "#f0fdf4", border: "#86efac", iconBg: "#16a34a", icon: "✓", iconColor: "#fff", titleColor: "#166534" },
+    pending:    { bg: "#fffdf5", border: "#f5d78a", iconBg: "#e8a020", icon: "⏳", iconColor: "#fff", titleColor: "#92500a" },
+    rejected:   { bg: "#fef2f2", border: "#fca5a5", iconBg: "#c93535", icon: "✗", iconColor: "#fff", titleColor: "#c93535" },
+    updated:    { bg: "#faf5ff", border: "#c4b5fd", iconBg: "#7c3aed", icon: "↺", iconColor: "#fff", titleColor: "#6d28d9" },
     incomplete: { bg: "#f9fafb", border: "#e5e7eb", iconBg: "#e5e7eb", icon: number, iconColor: "#6b7280", titleColor: "#374151" },
   };
   const s = styles[status] || styles.incomplete;
+
   return (
-    <div className="bg-white rounded-xl border p-5 flex items-start gap-4 transition-all" style={{ borderColor: s.border, backgroundColor: s.bg, opacity: locked ? 0.5 : 1 }}>
-      <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" style={{ backgroundColor: s.iconBg, color: s.iconColor }}>
+    <div
+      className="bg-white rounded-xl border p-5 flex items-start gap-4 transition-all"
+      style={{ borderColor: s.border, backgroundColor: s.bg, opacity: locked ? 0.5 : 1 }}
+    >
+      <div
+        className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+        style={{ backgroundColor: s.iconBg, color: s.iconColor }}
+      >
         {s.icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold" style={{ color: s.titleColor }}>
-          {title}
-        </p>
+        <p className="text-sm font-semibold" style={{ color: s.titleColor }}>{title}</p>
         <p className="text-xs text-gray-500 mt-0.5">{sub}</p>
       </div>
       {actionLabel && !locked && (
-        <button onClick={onAction} className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors" style={{ backgroundColor: "#1c5ea8" }}>
+        <button
+          onClick={onAction}
+          className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors"
+          style={{ backgroundColor: "#1c5ea8" }}
+        >
           {actionLabel}
         </button>
       )}
@@ -152,6 +165,7 @@ function SectionCard({ number, title, status, sub, actionLabel, onAction, locked
   );
 }
 
+// ── Trainer Progress Dashboard ────────────────────────────────────────────────
 function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses, expData, assignedUnits, navigate }) {
   if (!trainerData)
     return (
@@ -164,48 +178,61 @@ function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses,
   const profileStatus = trainerProfile?.profile_status || "Draft";
   const industryQualsApproved = trainerProfile?.industry_quals_approved;
 
-  // Section 1–4 status
+  // Sections 1, 2 & 4 status (profile form)
   const s1Done = !!(trainerData.full_name && trainerData.state && trainerData.position && trainerData.employment_status);
   const s2Done = !!(trainerProfile?.tae_qualification || trainerProfile?.under_direction_qualification);
   const s4Done = !!(trainerProfile?.declaration_credentials && trainerProfile?.declaration_signature);
   const profilesDone = s1Done && s2Done && s4Done;
   const profileApproved = profileStatus === "Approved";
 
-  const s1s4Status = profileApproved ? "approved" : profileStatus === "Rejected" ? "rejected" : profileStatus === "Submitted" || profileStatus === "Under Review" ? "pending" : profilesDone ? "complete" : "incomplete";
+  const s1s4Status =
+    profileApproved ? "approved"
+    : profileStatus === "Rejected" ? "rejected"
+    : profileStatus === "Submitted" || profileStatus === "Under Review" ? "pending"
+    : profilesDone ? "complete"
+    : "incomplete";
 
   // Section 3 status
-  const s3Status = industryQualsApproved === true ? "approved" : industryQualsApproved === false ? "rejected" : profileStatus === "Submitted" ? "pending" : "incomplete";
+  const s3Status =
+    industryQualsApproved === true ? "approved"
+    : industryQualsApproved === false ? "rejected"
+    : profileStatus === "Submitted" ? "pending"
+    : "incomplete";
 
   // Section 5 status
   const answeredCount = questResponses.length;
   const totalUnits = 150;
   const questDone = answeredCount === totalUnits;
-  const questStatus = questDone ? "complete" : answeredCount > 0 ? "incomplete" : "incomplete";
+  const questStatus = questDone ? "complete" : "incomplete";
 
   // Section 6 status
   const assignedCount = assignedUnits.length;
   const approvedCount = expData.filter((e) => e.competency_confirmed === true).length;
   const notApprovedCount = expData.filter((e) => e.competency_confirmed === false).length;
-  const updatedCount = expData.filter((e) => e.competency_confirmed === null && Object.values(e.element_descriptions || {}).some((v) => v?.trim())).length;
+  const updatedCount = expData.filter(
+    (e) => e.competency_confirmed === null && Object.values(e.element_descriptions || {}).some((v) => v?.trim())
+  ).length;
   const s6Locked = assignedCount === 0;
   const s6AllApproved = assignedCount > 0 && approvedCount === assignedCount;
-  const s6Status = s6AllApproved ? "approved" : notApprovedCount > 0 && updatedCount > 0 ? "updated" : notApprovedCount > 0 ? "rejected" : compliance === "Pending" && approvedCount === 0 ? "pending" : approvedCount > 0 ? "pending" : "incomplete";
+  const s6Status =
+    s6AllApproved ? "approved"
+    : notApprovedCount > 0 && updatedCount > 0 ? "updated"
+    : notApprovedCount > 0 ? "rejected"
+    : compliance === "Pending" && approvedCount === 0 ? "pending"
+    : approvedCount > 0 ? "pending"
+    : "incomplete";
 
   const sections = [
     {
-      number: "1–4",
-      title: "Sections 1–4 — Trainer Profile",
+      number: "1,2,4",
+      title: "Sections 1, 2 & 4 — Trainer Profile",
       status: s1s4Status,
       sub:
-        s1s4Status === "approved"
-          ? "Profile verified by quality team"
-          : s1s4Status === "rejected"
-            ? "Some credentials need attention — check your profile"
-            : s1s4Status === "pending"
-              ? "Submitted — awaiting quality review"
-              : profilesDone
-                ? "Complete — ready to submit"
-                : "Complete Sections 1, 2 and 4 of your Trainer Profile",
+        s1s4Status === "approved" ? "Profile verified by quality team"
+        : s1s4Status === "rejected" ? "Some credentials need attention — check your profile"
+        : s1s4Status === "pending" ? "Submitted — awaiting quality review"
+        : profilesDone ? "Complete — ready to submit"
+        : "Complete your personal details, TAE credentials and declaration",
       actionLabel: s1s4Status === "incomplete" || s1s4Status === "complete" ? "Go to Profile" : null,
       onAction: () => navigate("/profile"),
     },
@@ -214,13 +241,10 @@ function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses,
       title: "Section 3 — Industry Competencies",
       status: s3Status,
       sub:
-        s3Status === "approved"
-          ? "Industry qualifications verified"
-          : s3Status === "rejected"
-            ? "Industry qualifications not approved — upload updated evidence"
-            : s3Status === "pending"
-              ? "Submitted — awaiting quality review"
-              : "List your industry qualifications and upload certificates",
+        s3Status === "approved" ? "Industry qualifications verified"
+        : s3Status === "rejected" ? "Industry qualifications not approved — upload updated evidence"
+        : s3Status === "pending" ? "Submitted — awaiting quality review"
+        : "List your industry qualifications and upload certificates",
       actionLabel: s3Status !== "pending" && s3Status !== "approved" ? "Go to Profile" : null,
       onAction: () => navigate("/profile"),
     },
@@ -228,7 +252,11 @@ function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses,
       number: "5",
       title: "Section 5 — Skills Questionnaire",
       status: questStatus,
-      sub: questDone ? `All ${totalUnits} units answered` : answeredCount > 0 ? `${answeredCount} of ${totalUnits} units answered` : "Answer Yes/No/Hold for all 150 units of competency",
+      sub: questDone
+        ? `All ${totalUnits} units answered`
+        : answeredCount > 0
+        ? `${answeredCount} of ${totalUnits} units answered`
+        : "Answer Yes/No/Hold for all 150 units of competency",
       actionLabel: !questDone ? (answeredCount > 0 ? "Continue" : "Start") : null,
       onAction: () => navigate("/questionnaire"),
     },
@@ -240,21 +268,23 @@ function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses,
       sub: s6Locked
         ? "Awaiting unit assignment from your compliance officer"
         : s6AllApproved
-          ? `All ${assignedCount} units quality approved`
-          : notApprovedCount > 0 && updatedCount > 0
-            ? `${notApprovedCount} unit${notApprovedCount !== 1 ? "s" : ""} not approved — updated evidence submitted, awaiting re-review`
-            : notApprovedCount > 0
-              ? `${notApprovedCount} unit${notApprovedCount !== 1 ? "s" : ""} not approved — review feedback and update your evidence`
-              : compliance === "Pending"
-                ? `Submitted — ${approvedCount} of ${assignedCount} units approved`
-                : `${approvedCount} of ${assignedCount} units approved`,
-      actionLabel: !s6Locked && !s6AllApproved ? (compliance === "Pending" && notApprovedCount === 0 ? null : "Go to Experience") : null,
+        ? `All ${assignedCount} units quality approved`
+        : notApprovedCount > 0 && updatedCount > 0
+        ? `${notApprovedCount} unit${notApprovedCount !== 1 ? "s" : ""} not approved — updated evidence submitted, awaiting re-review`
+        : notApprovedCount > 0
+        ? `${notApprovedCount} unit${notApprovedCount !== 1 ? "s" : ""} not approved — review feedback and update your evidence`
+        : compliance === "Pending"
+        ? `Submitted — ${approvedCount} of ${assignedCount} units approved`
+        : `${approvedCount} of ${assignedCount} units approved`,
+      actionLabel: !s6Locked && !s6AllApproved
+        ? compliance === "Pending" && notApprovedCount === 0 ? null : "Go to Experience"
+        : null,
       onAction: () => navigate("/experience"),
     },
   ];
 
   return (
-    <div>
+    <div className="mb-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-gray-700">Your Onboarding Progress</h3>
         <span className="text-xs text-gray-400">
@@ -270,6 +300,7 @@ function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses,
   );
 }
 
+// ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function Dashboard({ profile }) {
   const navigate = useNavigate();
   const isAdmin = profile?.role === "admin" || profile?.role === "compliance_officer";
@@ -280,11 +311,6 @@ export default function Dashboard({ profile }) {
   const [stats, setStats] = useState({ total: 0, compliant: 0, pending: 0, incomplete: 0 });
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  if (profile !== null && profile !== undefined) {
-    fetchData();
-  }
-}, [profile]); // ← was []. Now re-runs when profile loads
   // Trainer-specific data
   const [trainerData, setTrainerData] = useState(null);
   const [trainerProfile, setTrainerProfile] = useState(null);
@@ -292,10 +318,15 @@ useEffect(() => {
   const [expData, setExpData] = useState([]);
   const [assignedUnits, setAssignedUnits] = useState([]);
 
+  useEffect(() => {
+    if (profile !== null && profile !== undefined) {
+      fetchData();
+    }
+  }, [profile]);
+
   const fetchData = async () => {
     if (isAdmin) {
       const { data, error } = await supabase.from("trainers").select("*").order("full_name", { ascending: true });
-
       if (!error && data) {
         setTrainers(data);
         const pending = data.filter((t) => t.compliance_status === "Pending");
@@ -307,11 +338,19 @@ useEffect(() => {
           incomplete: data.filter((t) => !t.compliance_status || t.compliance_status === "Incomplete").length,
         });
       }
-      const { data: notifData } = await supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(20);
+      const { data: notifData } = await supabase
+        .from("notifications")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
       setNotifications(notifData || []);
     } else {
       // Trainer view — load their own data
-      const { data: tRows } = await supabase.from("trainers").select("*").eq("email", profile?.email).limit(1);
+      const { data: tRows } = await supabase
+        .from("trainers")
+        .select("*")
+        .eq("email", profile?.email)
+        .limit(1);
       const t = tRows?.[0] || null;
       setTrainerData(t);
       if (t) {
@@ -340,13 +379,19 @@ useEffect(() => {
       {/* Welcome banner */}
       <div className="rounded-xl p-7 mb-6 relative overflow-hidden" style={{ backgroundColor: "#081a47" }}>
         <div className="relative z-10">
-          <h2 className="text-xl font-semibold text-white mb-1">Welcome back, {profile?.full_name?.split(" ")[0] || "there"} 👋</h2>
+          <h2 className="text-xl font-semibold text-white mb-1">
+            Welcome back, {profile?.full_name?.split(" ")[0] || "there"} 👋
+          </h2>
           <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
             Trainer Competency Portal — Standards for RTOs 2025
           </p>
           {isAdmin ? (
             <div className="flex gap-3 mt-5">
-              <button onClick={() => navigate("/trainers/invite")} className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors" style={{ backgroundColor: "#32ba9a", color: "#081a47" }}>
+              <button
+                onClick={() => navigate("/trainers/invite")}
+                className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                style={{ backgroundColor: "#32ba9a", color: "#081a47" }}
+              >
                 + Invite Trainer
               </button>
               <button
@@ -363,17 +408,20 @@ useEffect(() => {
                 <span
                   className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
                   style={{
-                    backgroundColor: trainerData.compliance_status === "Compliant" ? "#32ba9a" : trainerData.compliance_status === "Pending" ? "#e8a020" : "rgba(255,255,255,0.15)",
+                    backgroundColor:
+                      trainerData.compliance_status === "Compliant" ? "#32ba9a"
+                      : trainerData.compliance_status === "Pending" ? "#e8a020"
+                      : "rgba(255,255,255,0.15)",
                     color: trainerData.compliance_status === "Compliant" ? "#081a47" : "#fff",
                   }}
                 >
                   {trainerData.compliance_status === "Compliant"
                     ? "✓ Profile Compliant"
                     : trainerData.compliance_status === "Pending"
-                      ? "⏳ Awaiting Quality Review"
-                      : trainerData.compliance_status === "Under Review"
-                        ? "🔍 Under Review"
-                        : "⚠ Profile Incomplete"}
+                    ? "⏳ Awaiting Quality Review"
+                    : trainerData.compliance_status === "Under Review"
+                    ? "🔍 Under Review"
+                    : "⚠ Profile Incomplete"}
                 </span>
               )}
             </div>
@@ -393,89 +441,102 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Trainer progress dashboard */}
-      {!isAdmin && !loading && <TrainerProgressDashboard trainerData={trainerData} trainerProfile={trainerProfile} questResponses={questResponses} expData={expData} assignedUnits={assignedUnits} navigate={navigate} />}
+      {/* Trainer progress — trainer only */}
+      {!isAdmin && !loading && (
+        <TrainerProgressDashboard
+          trainerData={trainerData}
+          trainerProfile={trainerProfile}
+          questResponses={questResponses}
+          expData={expData}
+          assignedUnits={assignedUnits}
+          navigate={navigate}
+        />
+      )}
 
       {/* Pending review panel — admin only */}
-      {isAdmin && !loading && <PendingReviewPanel pendingTrainers={pendingTrainers} notifications={notifications} onMarkRead={markNotificationRead} onNavigate={navigate} />}
+      {isAdmin && !loading && (
+        <PendingReviewPanel
+          pendingTrainers={pendingTrainers}
+          notifications={notifications}
+          onMarkRead={markNotificationRead}
+          onNavigate={navigate}
+        />
+      )}
 
-      {/* Two columns */}
-      <div className="grid grid-cols-2 gap-5">
-        <div className="bg-white border border-gray-200 rounded-xl">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-800">Trainer Status</h3>
-            <button onClick={() => navigate("/trainers")} className="text-xs font-medium" style={{ color: "#1c5ea8" }}>
-              View all →
-            </button>
-          </div>
-          <div className="px-3 py-2">
-            {loading ? (
-              <p className="text-sm text-gray-400 text-center py-8">Loading...</p>
-            ) : trainers.length === 0 ? (
-              <div className="text-center py-10">
-                <p className="text-sm text-gray-400 mb-3">No trainers yet</p>
-                {isAdmin && (
-                  <button onClick={() => navigate("/trainers/invite")} className="text-sm font-semibold px-4 py-2 rounded-lg text-white" style={{ backgroundColor: "#1c5ea8" }}>
+      {/* Two columns — admin only */}
+      {isAdmin && (
+        <div className="grid grid-cols-2 gap-5">
+          <div className="bg-white border border-gray-200 rounded-xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-800">Trainer Status</h3>
+              <button onClick={() => navigate("/trainers")} className="text-xs font-medium" style={{ color: "#1c5ea8" }}>
+                View all →
+              </button>
+            </div>
+            <div className="px-3 py-2">
+              {loading ? (
+                <p className="text-sm text-gray-400 text-center py-8">Loading...</p>
+              ) : trainers.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="text-sm text-gray-400 mb-3">No trainers yet</p>
+                  <button
+                    onClick={() => navigate("/trainers/invite")}
+                    className="text-sm font-semibold px-4 py-2 rounded-lg text-white"
+                    style={{ backgroundColor: "#1c5ea8" }}
+                  >
                     Invite your first trainer
                   </button>
-                )}
-              </div>
-            ) : (
-              trainers.slice(0, 5).map((trainer) => <TrainerRow key={trainer.id} trainer={trainer} onClick={() => navigate(`/trainers/${trainer.id}`)} />)
-            )}
+                </div>
+              ) : (
+                trainers.slice(0, 5).map((trainer) => (
+                  <TrainerRow key={trainer.id} trainer={trainer} onClick={() => navigate(`/trainers/${trainer.id}`)} />
+                ))
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Recent notifications / activity */}
-        <div className="bg-white border border-gray-200 rounded-xl">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-800">{isAdmin ? "Recent Notifications" : "Recent Activity"}</h3>
-          </div>
-          <div className="px-5 py-2">
-            {loading ? (
-              <p className="text-sm text-gray-400 text-center py-8">Loading...</p>
-            ) : isAdmin && notifications.length > 0 ? (
-              notifications.slice(0, 6).map((n) => (
-                <div
-                  key={n.id}
-                  className="flex gap-3 py-2.5 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50 rounded transition-colors"
-                  onClick={() => {
-                    markNotificationRead(n.id);
-                    navigate(`/trainers/${n.trainer_id}`);
-                  }}
-                >
-                  <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: n.read ? "#d1d5db" : n.type === "experience_updated" ? "#7c3aed" : "#e8a020" }} />
-                  <div>
-                    <p className="text-xs text-gray-700 font-medium">{n.trainer_name}</p>
-                    <p className="text-xs text-gray-500">{n.message}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {new Date(n.created_at).toLocaleDateString("en-AU", {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
+          {/* Recent notifications */}
+          <div className="bg-white border border-gray-200 rounded-xl">
+            <div className="px-5 py-4 border-b border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-800">Recent Notifications</h3>
+            </div>
+            <div className="px-5 py-2">
+              {loading ? (
+                <p className="text-sm text-gray-400 text-center py-8">Loading...</p>
+              ) : notifications.length > 0 ? (
+                notifications.slice(0, 6).map((n) => (
+                  <div
+                    key={n.id}
+                    className="flex gap-3 py-2.5 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50 rounded transition-colors"
+                    onClick={() => {
+                      markNotificationRead(n.id);
+                      navigate(`/trainers/${n.trainer_id}`);
+                    }}
+                  >
+                    <div
+                      className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5"
+                      style={{ backgroundColor: n.read ? "#d1d5db" : n.type === "experience_updated" ? "#7c3aed" : "#e8a020" }}
+                    />
+                    <div>
+                      <p className="text-xs text-gray-700 font-medium">{n.trainer_name}</p>
+                      <p className="text-xs text-gray-500">{n.message}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {new Date(n.created_at).toLocaleDateString("en-AU", {
+                          day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))
-            ) : (
-              trainers.slice(0, 5).map((trainer) => (
-                <div key={trainer.id} className="flex gap-3 py-2 border-b border-gray-100 last:border-0">
-                  <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: "#32ba9a" }} />
-                  <div>
-                    <p className="text-xs text-gray-600">
-                      {trainer.full_name} — profile {trainer.compliance_status?.toLowerCase() || "created"}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">{new Date(trainer.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}</p>
-                  </div>
-                </div>
-              ))
-            )}
-            {isAdmin && notifications.length === 0 && !loading && <p className="text-sm text-gray-400 text-center py-10">Notifications will appear here when trainers submit</p>}
+                ))
+              ) : (
+                <p className="text-sm text-gray-400 text-center py-10">
+                  Notifications will appear here when trainers submit
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
