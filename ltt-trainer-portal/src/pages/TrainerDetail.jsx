@@ -40,36 +40,53 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
   const saveUnit = async (unitCode) => {
     setSaving((prev) => ({ ...prev, [unitCode]: true }));
     const data = localExp[unitCode] || {};
-    // Use update so we never overwrite trainer-entered element descriptions
-    const { error } = await supabase
-      .from("industry_experience")
-      .update({
-        competency_confirmed: data.competency_confirmed,
-        holds_unit: data.holds_unit,
-        quality_notes: data.quality_notes,
-        reviewed_by: adminProfile?.full_name,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq("trainer_id", trainerId)
-      .eq("unit_code", unitCode);
-    // If no row yet (trainer hasn't submitted), insert a shell row
-    if (error) {
-      await supabase.from("industry_experience").insert({
-        trainer_id: trainerId,
-        unit_code: unitCode,
-        unit_title: UNITS.find((u) => u.code === unitCode)?.title || "",
-        competency_confirmed: data.competency_confirmed,
-        holds_unit: data.holds_unit,
-        quality_notes: data.quality_notes,
-        reviewed_by: adminProfile?.full_name,
-        reviewed_at: new Date().toISOString(),
-      });
+    const payload = {
+      competency_confirmed: data.competency_confirmed,
+      holds_unit: data.holds_unit ?? false,
+      quality_notes: data.quality_notes || null,
+      reviewed_by: adminProfile?.full_name || null,
+      reviewed_at: new Date().toISOString(),
+    };
+
+    // Try update first — check count to see if a row actually existed
+    const { data: updated, error: updateError } = await supabase.from("industry_experience").update(payload).eq("trainer_id", trainerId).eq("unit_code", unitCode).select();
+
+    // If no row was updated (trainer never submitted this unit), upsert it
+    if (!updateError && (!updated || updated.length === 0)) {
+      const { error: upsertError } = await supabase.from("industry_experience").upsert(
+        {
+          trainer_id: trainerId,
+          unit_code: unitCode,
+          unit_title: UNITS.find((u) => u.code === unitCode)?.title || "",
+          element_descriptions: {},
+          ...payload,
+        },
+        { onConflict: "trainer_id,unit_code" },
+      );
+      if (upsertError) console.error("saveUnit upsert error:", upsertError);
+    } else if (updateError) {
+      console.error("saveUnit update error:", updateError);
     }
+
     setSaving((prev) => ({ ...prev, [unitCode]: false }));
-    // Collapse the unit card after saving
+
+    // Collapse this unit and scroll to next uncollapsed unit
     setCollapsed((prev) => ({ ...prev, [unitCode]: true }));
+    setTimeout(() => {
+      const allCodes = unitsToShow.map((u) => u.code);
+      const currentIdx = allCodes.indexOf(unitCode);
+      const nextCode =
+        allCodes.slice(currentIdx + 1).find((code) => {
+          const e = localExp[code] || {};
+          return e.competency_confirmed === null || e.competency_confirmed === undefined;
+        }) || allCodes[currentIdx + 1];
+      if (nextCode) {
+        const el = document.getElementById(`unit-card-${nextCode}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 150);
+
     onUpdate();
-    // Notify Shell to refresh the pending badge immediately
     window.dispatchEvent(new Event("ltt:assessment-saved"));
   };
 
@@ -128,7 +145,12 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
           const isAssessed = exp.competency_confirmed !== undefined && exp.competency_confirmed !== null;
 
           return (
-            <div key={unit.code} className="bg-white border border-gray-200 rounded-xl overflow-hidden" style={isCollapsed ? { borderColor: isAssessed && exp.competency_confirmed ? "#bfdbfe" : isAssessed ? "#fca5a5" : "#e5e7eb" } : {}}>
+            <div
+              key={unit.code}
+              id={`unit-card-${unit.code}`}
+              className="bg-white border border-gray-200 rounded-xl overflow-hidden"
+              style={isCollapsed ? { borderColor: isAssessed && exp.competency_confirmed ? "#bfdbfe" : isAssessed ? "#fca5a5" : "#e5e7eb" } : {}}
+            >
               {/* Header — always visible, click to expand/collapse */}
               <div
                 className="flex items-center gap-3 px-5 py-3 cursor-pointer select-none"
