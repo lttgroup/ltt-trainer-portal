@@ -7,8 +7,7 @@ export default function Experience({ profile }) {
   const navigate = useNavigate();
   const topRef = useRef(null);
   const [trainerId, setTrainerId] = useState(null);
-  const [yesUnits, setYesUnits] = useState([]);
-  const [assignedUnits, setAssignedUnits] = useState(null); // null = not yet checked
+  const [assignedUnits, setAssignedUnits] = useState(null);
   const [experience, setExperience] = useState({});
   const [questionnaireSubmitted, setQuestionnaireSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -35,7 +34,7 @@ export default function Experience({ profile }) {
 
     setTrainerId(trainer.id);
 
-    // Check if questionnaire has been submitted (any responses exist)
+    // Check questionnaire submitted
     const { data: responses } = await supabase.from("questionnaire_responses").select("unit_code, response").eq("trainer_id", trainer.id);
 
     if (!responses || responses.length === 0) {
@@ -46,27 +45,20 @@ export default function Experience({ profile }) {
 
     setQuestionnaireSubmitted(true);
 
-    // Get yes units
-    const yesResponses = responses.filter((r) => r.response === "yes");
-    const units = yesResponses.map((r) => UNITS.find((u) => u.code === r.unit_code)).filter(Boolean);
-    setYesUnits(units);
-
-    // Check if admin has assigned units
+    // Check assigned units
     const { data: assigned } = await supabase.from("assigned_units").select("unit_code").eq("trainer_id", trainer.id);
 
-    // If assigned_units table doesn't exist yet or is empty, show pending state
     setAssignedUnits(assigned || []);
 
-    // Load existing experience entries
+    // Load existing experience
     const { data: expData } = await supabase.from("industry_experience").select("*").eq("trainer_id", trainer.id);
 
     if (expData) {
       const mapped = {};
       expData.forEach((e) => {
         mapped[e.unit_code] = {
-          experience_description: e.experience_description || "",
           professional_development: e.professional_development || "",
-          competency_confirmed: e.competency_confirmed || false,
+          element_descriptions: e.element_descriptions || {},
         };
       });
       setExperience(mapped);
@@ -75,10 +67,27 @@ export default function Experience({ profile }) {
     setLoading(false);
   };
 
-  const updateExperience = (unitCode, field, value) => {
+  const updatePD = (unitCode, value) => {
     setExperience((prev) => ({
       ...prev,
-      [unitCode]: { ...prev[unitCode], [field]: value },
+      [unitCode]: {
+        ...prev[unitCode],
+        professional_development: value,
+      },
+    }));
+    setSaved(false);
+  };
+
+  const updateElement = (unitCode, elementIndex, value) => {
+    setExperience((prev) => ({
+      ...prev,
+      [unitCode]: {
+        ...prev[unitCode],
+        element_descriptions: {
+          ...(prev[unitCode]?.element_descriptions || {}),
+          [elementIndex]: value,
+        },
+      },
     }));
     setSaved(false);
   };
@@ -88,16 +97,18 @@ export default function Experience({ profile }) {
     setSaving(true);
     setError("");
 
-    if (Object.keys(experience).length > 0) {
-      const upserts = Object.entries(experience).map(([unitCode, data]) => ({
-        trainer_id: trainerId,
-        unit_code: unitCode,
-        unit_title: UNITS.find((u) => u.code === unitCode)?.title || "",
-        experience_description: data.experience_description,
-        professional_development: data.professional_development,
-        competency_confirmed: data.competency_confirmed,
-      }));
+    const upserts = Object.entries(experience).map(([unitCode, data]) => ({
+      trainer_id: trainerId,
+      unit_code: unitCode,
+      unit_title: UNITS.find((u) => u.code === unitCode)?.title || "",
+      professional_development: data.professional_development,
+      element_descriptions: data.element_descriptions || {},
+      // Keep these null — admin sets them
+      competency_confirmed: null,
+      holds_unit: false,
+    }));
 
+    if (upserts.length > 0) {
       const { error: saveError } = await supabase.from("industry_experience").upsert(upserts, { onConflict: "trainer_id,unit_code" });
 
       if (saveError) {
@@ -129,26 +140,37 @@ export default function Experience({ profile }) {
     navigate("/dashboard");
   };
 
-  // Determine which units to show — assigned units if available, otherwise all yes units
-  const unitsToShow = assignedUnits && assignedUnits.length > 0 ? yesUnits.filter((u) => assignedUnits.some((a) => a.unit_code === u.code)) : yesUnits;
+  // Units to show — assigned units that trainer marked yes
+  const unitsToShow =
+    assignedUnits && assignedUnits.length > 0
+      ? assignedUnits
+          .map((a) => UNITS.find((u) => u.code === a.unit_code))
+          .filter(Boolean)
+          .sort((a, b) => a.code.localeCompare(b.code))
+      : [];
 
-  const completedCount = unitsToShow.filter((u) => experience[u.code]?.experience_description?.trim()).length;
+  // Progress — a unit is complete when all its elements have descriptions
+  const completedCount = unitsToShow.filter((unit) => {
+    const exp = experience[unit.code];
+    if (!exp) return false;
+    if (unit.elements.length === 0) return !!exp.professional_development?.trim();
+    return unit.elements.every((_, i) => exp.element_descriptions?.[i]?.trim());
+  }).length;
 
   const pct = unitsToShow.length > 0 ? Math.round((completedCount / unitsToShow.length) * 100) : 0;
 
-  if (loading) {
+  if (loading)
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-sm text-gray-400">Loading...</p>
       </div>
     );
-  }
 
   return (
     <div>
       <div ref={topRef} />
 
-      {/* Section 6 header — matches profile section style */}
+      {/* Section 6 header */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
         <div className="flex items-center gap-3 px-6 py-4" style={{ backgroundColor: "#081a47" }}>
           <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#fff" }}>
@@ -178,11 +200,11 @@ export default function Experience({ profile }) {
                   }}
                 />
               </div>
-              <p className="text-xs text-gray-400 mt-3">For each assigned unit describe your workplace experience, skills and knowledge. Include specific examples of real practice.</p>
+              <p className="text-xs text-gray-400 mt-3">For each assigned unit describe your workplace experience against each element. Include specific examples of real practice.</p>
             </>
           ) : (
             <p className="text-xs text-gray-400">
-              {yesUnits.length > 0
+              {questionnaireSubmitted
                 ? "Your Skills Questionnaire has been submitted. Your compliance officer is reviewing your responses and will assign the units required for this section. You will be notified when Section 6 is ready to complete."
                 : "Complete Section 5 — Skills Questionnaire before proceeding to this section."}
             </p>
@@ -192,7 +214,7 @@ export default function Experience({ profile }) {
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5">{error}</div>}
 
-      {/* Questionnaire not submitted */}
+      {/* Not submitted yet */}
       {!questionnaireSubmitted && (
         <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
           <p className="text-sm text-gray-400 mb-3">You need to complete Section 5 before accessing this section.</p>
@@ -202,7 +224,7 @@ export default function Experience({ profile }) {
         </div>
       )}
 
-      {/* Questionnaire submitted but no assigned units yet */}
+      {/* Awaiting assignment */}
       {questionnaireSubmitted && assignedUnits !== null && assignedUnits.length === 0 && (
         <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
           <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl mx-auto mb-4" style={{ backgroundColor: "#e6f0ff" }}>
@@ -210,84 +232,88 @@ export default function Experience({ profile }) {
           </div>
           <p className="text-sm font-semibold text-gray-800 mb-2">Awaiting unit assignment</p>
           <p className="text-sm text-gray-400 max-w-md mx-auto">
-            Your Skills Questionnaire has been submitted successfully. Your compliance officer is reviewing your responses and will assign the units required for Section 6. You will be notified when this section is ready to complete.
+            Your Skills Questionnaire has been submitted successfully. Your compliance officer is reviewing your responses and will assign the units required for Section 6. You will be notified when this section is ready.
           </p>
         </div>
       )}
 
-      {/* Units to complete */}
+      {/* Unit experience forms */}
       {questionnaireSubmitted && assignedUnits && assignedUnits.length > 0 && (
-        <div className="space-y-4">
-          {unitsToShow.map((unit) => (
-            <div key={unit.code} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              {/* Unit header */}
-              <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100" style={{ backgroundColor: "#f9fafb" }}>
-                <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
-                  {unit.code}
-                </span>
-                <span className="text-sm font-medium text-gray-800">{unit.title}</span>
-                {experience[unit.code]?.experience_description?.trim() && (
-                  <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>
-                    ✓ Completed
+        <div className="space-y-5">
+          {unitsToShow.map((unit) => {
+            const exp = experience[unit.code] || {};
+            const unitComplete = unit.elements.length > 0 ? unit.elements.every((_, i) => exp.element_descriptions?.[i]?.trim()) : !!exp.professional_development?.trim();
+
+            return (
+              <div key={unit.code} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                {/* Unit header */}
+                <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100" style={{ backgroundColor: "#f9fafb" }}>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
+                    {unit.code}
                   </span>
-                )}
-              </div>
+                  <span className="text-sm font-medium text-gray-800 flex-1">{unit.title}</span>
+                  {unitComplete && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>
+                      ✓ Complete
+                    </span>
+                  )}
+                </div>
 
-              <div className="p-5">
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Industry Experience Description</label>
+                <div className="p-5">
+                  {/* Element-level descriptions */}
+                  {unit.elements.length > 0 ? (
+                    <div className="space-y-4 mb-5">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Industry Experience — describe your experience for each element</p>
+                      {unit.elements.map((element, idx) => (
+                        <div key={idx}>
+                          <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                            <span className="inline-block mr-2 text-xs font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: "#f0f4ff", color: "#1c5ea8" }}>
+                              {idx + 1}
+                            </span>
+                            {element}
+                          </label>
+                          <textarea
+                            value={exp.element_descriptions?.[idx] || ""}
+                            onChange={(e) => updateElement(unit.code, idx, e.target.value)}
+                            placeholder={`Describe your experience related to: ${element.toLowerCase()}...`}
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400 resize-none"
+                            rows={3}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mb-5">
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Industry Experience Description</label>
+                      <textarea
+                        value={exp.element_descriptions?.[0] || ""}
+                        onChange={(e) => updateElement(unit.code, 0, e.target.value)}
+                        placeholder="Describe your experience, skills and knowledge related to this unit..."
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400 resize-none"
+                        rows={4}
+                      />
+                    </div>
+                  )}
+
+                  {/* Professional development */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Relevant Training / Professional Development</label>
                     <textarea
-                      value={experience[unit.code]?.experience_description || ""}
-                      onChange={(e) => updateExperience(unit.code, "experience_description", e.target.value)}
-                      placeholder="Describe your experience, skills and knowledge related to this unit. Include specific workplace examples..."
-                      className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400 resize-none"
-                      rows={4}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Relevant Training / Professional Development</label>
-                    <textarea
-                      value={experience[unit.code]?.professional_development || ""}
-                      onChange={(e) => updateExperience(unit.code, "professional_development", e.target.value)}
+                      value={exp.professional_development || ""}
+                      onChange={(e) => updatePD(unit.code, e.target.value)}
                       placeholder="List any relevant qualifications, units or CPD activities..."
-                      className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400 resize-none"
-                      rows={4}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-400 resize-none"
+                      rows={2}
                     />
                   </div>
                 </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">Competency Confirmation</label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => updateExperience(unit.code, "competency_confirmed", true)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
-                      style={experience[unit.code]?.competency_confirmed === true ? { backgroundColor: "#e6f9f4", color: "#0f7a5a", borderColor: "#32ba9a" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
-                    >
-                      {experience[unit.code]?.competency_confirmed === true ? "✓ " : ""}
-                      Yes — I confirm experience, skills and knowledge
-                    </button>
-                    <button
-                      onClick={() => updateExperience(unit.code, "competency_confirmed", false)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
-                      style={
-                        experience[unit.code]?.competency_confirmed === false && experience[unit.code]?.competency_confirmed !== undefined
-                          ? { backgroundColor: "#fdeaea", color: "#c93535", borderColor: "#c93535" }
-                          : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }
-                      }
-                    >
-                      No
-                    </button>
-                  </div>
-                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* Action buttons — only show when units are assigned */}
+      {/* Action buttons */}
       {questionnaireSubmitted && assignedUnits && assignedUnits.length > 0 && (
         <div className="flex items-center justify-between pt-4 pb-8">
           <button onClick={() => navigate("/questionnaire")} className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors">

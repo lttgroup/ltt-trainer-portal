@@ -1,6 +1,6 @@
-// Authoritative unit list — 150 units
-// Source: units.json + trainer_unit_status.csv
-// Do not edit manually — regenerate from source files
+// Authoritative unit list — 150 units with elements
+// Source: units.json + AF3_21_Trainer_Profile.docx
+// Generated automatically — do not edit manually
 
 export const INDUSTRIES = [
   { code: "AMP", name: "Australian Meat Processing" },
@@ -22,7 +22,7 @@ export const UNITS = [
     industry: "AMP",
     industryName: "Australian Meat Processing",
     question: "I have experience, skills and knowledge required to apply Quality Assurance (QA) procedures and Hazard Analysis and Critical Control Points (HACCP) requirements in a meat establishment..",
-    elements: [],
+    elements: ["Identify hazards and control points", "Identify elements of the Quality Assurance (QA) system", "Follow requirements of a HACCP-based QA system", "Identify quality control practices in a HACCP-based QA system", "Inspect own work"],
   },
   {
     code: "BSBCMM211",
@@ -30,7 +30,7 @@ export const UNITS = [
     industry: "BSB",
     industryName: "Business Services",
     question: "I have experience, skills and knowledge required to apply basic communication skills in the workplace, including identifying, gathering and conveying information along with completing assigned written information..",
-    elements: [],
+    elements: ["Identify workplace communication procedures", "Communicate in the workplace", "Draft written information"],
   },
   {
     code: "BSBLDR413",
@@ -38,7 +38,7 @@ export const UNITS = [
     industry: "BSB",
     industryName: "Business Services",
     question: "I have experience, skills and knowledge required to use leadership to promote team cohesion..",
-    elements: [],
+    elements: ["Prepare to lead workplace relationships", "Lead workplace relationships", "Review leadership"],
   },
   {
     code: "BSBLDR414",
@@ -46,7 +46,7 @@ export const UNITS = [
     industry: "BSB",
     industryName: "Business Services",
     question: "I have experience, skills and knowledge required to lead the performance of a team and to develop team cohesion.",
-    elements: [],
+    elements: ["Plan team outcomes", "Promote team cohesion", "Supervise team performance", "Liaise with management"],
   },
   {
     code: "BSBMED301",
@@ -55,7 +55,7 @@ export const UNITS = [
     industryName: "Business Services",
     question:
       "I have experience, skills and knowledge required to understand and respond to instructions; to carry out routine tasks and communicate with a range of internal/external clients in a medical environment; as well as use appropriate medical terminology..",
-    elements: [],
+    elements: ["Respond appropriately to instructions which contain medical terminology", "Carry out routine tasks", "Use appropriate medical terminology in oral and written communication"],
   },
   {
     code: "BSBOPS203",
@@ -64,7 +64,7 @@ export const UNITS = [
     industryName: "Business Services",
     question:
       "I have experience, skills and knowledge required to deliver aspects of customer service at an introductory level. It includes creating a relationship with customers, identifying their needs, delivering services or products, and processing customer feedback..",
-    elements: [],
+    elements: ["Establish contact with customers", "Identify customer needs", "Provide service to customers", "Process customer feedback"],
   },
   {
     code: "BSBOPS305",
@@ -72,7 +72,7 @@ export const UNITS = [
     industry: "BSB",
     industryName: "Business Services",
     question: "I have experience, skills and knowledge required to handle complaints from customers..",
-    elements: [],
+    elements: ["Receive complaints", "Process complaints", "Resolve complaints"],
   },
   {
     code: "BSBTEC201",
@@ -80,7 +80,7 @@ export const UNITS = [
     industry: "BSB",
     industryName: "Business Services",
     question: "I have experience, skills and knowledge required to select and use software and organise electronic information and data..",
-    elements: [],
+    elements: ["Select and prepare to use technology", "Input and process information or data", "Finalise and store document"],
   },
   {
     code: "CHCCCS020",
@@ -88,7 +88,7 @@ export const UNITS = [
     industry: "CHC",
     industryName: "Community Services",
     question: "I have experience, skills and knowledge required to respond effectively to behaviours of concern of people. Skills are associated with handling difficult incidents rather than managing ongoing behaviour difficulties..",
-    elements: [],
+    elements: ["Identify behaviour and plan response", "Apply response", "Report and review incidents"],
   },
   {
     code: "CHCCCS037",
@@ -96,15 +96,15 @@ export const UNITS = [
     industry: "CHC",
     industryName: "Community Services",
     question: "I have experience, skills and knowledge required to make visits to clients to assess needs and/or deliver services in their place of residence..",
-    elements: [],
+    elements: ["Prepare for visit", "Undertake visit", "Establish relationship in the place of residence.", "Follow up visit"],
   },
   {
     code: "CHCCOM001",
     title: "Provide first point of contact",
     industry: "CHC",
     industryName: "Community Services",
-    question: "I have experience, skills and knowledge required to greet clients and exchange routine information, to prioritise the individual\u2019s needs, and to respond to immediate needs..",
-    elements: [],
+    question: "I have experience, skills and knowledge required to greet clients and exchange routine information, to prioritise the individual\\u2019s needs, and to respond to immediate needs..",
+    elements: ["Greet and observe people", "Follow organisational procedures to collect routine client information", "Identify priority of need", "Provide service information"],
   },
   {
     code: "CHCCOM005",
@@ -112,7 +112,14 @@ export const UNITS = [
     industry: "CHC",
     industryName: "Community Services",
     question: "I have experience, skills and knowledge required to communicate effectively with clients, colleagues, management and other industry providers..",
-    elements: [],
+    elements: [
+      "Communicate effectively with people",
+      "Collaborate with colleagues",
+      "Address constraints to communication",
+      "Report problems to supervisor",
+      "Complete workplace correspondence and documentation",
+      "Contribute to continuous improvement",
+    ],
   },
   {
     code: "CHCDIV001",
@@ -120,7 +127,7 @@ export const UNITS = [
     industry: "CHC",
     industryName: "Community Services",
     question: "I have experience, skills and knowledge required to work respectfully with people from diverse social and cultural groups and situations, including Aboriginal and/or Torres Strait Islander people..",
-    elements: [],
+    elements: ["Reflect on own perspectives", "Appreciate diversity and inclusiveness, and their benefits", "Communicate with people from diverse backgrounds and situations", "Promote understanding across diverse groups"],
   },
   {
     code: "CHCDIV002",
@@ -129,7 +136,7 @@ export const UNITS = [
     industryName: "Community Services",
     question:
       "I have experience, skills and knowledge required to identify Aboriginal and/or Torres Strait Islander cultural safety issues in the workplace, model cultural safety in own work practice, and develop strategies to enhance cultural safety..",
-    elements: [],
+    elements: ["Identify cultural safety issues in the workplace", "Model cultural safety in own work", "Develop strategies for improved cultural safety", "Evaluate cultural safety strategies"],
   },
   {
     code: "CHCYTH013",
@@ -137,7 +144,7 @@ export const UNITS = [
     industry: "CHC",
     industryName: "Community Services",
     question: "I have experience, skills and knowledge required to communicate effectively with children and young people in work roles with a specific focus on young people..",
-    elements: [],
+    elements: ["Communicate effectively with young people", "Respond to youth cultures and subcultures and young person\u2019s own development", "Work with the young person as the focus", "Critically reflect on own practice and values"],
   },
   {
     code: "FBPFST4004",
@@ -145,7 +152,15 @@ export const UNITS = [
     industry: "FBP",
     industryName: "Food, Beverage and Pharmaceutical",
     question: "I have experience, skills and knowledge required to perform on-site microbiological procedures in the food industry..",
-    elements: [],
+    elements: [
+      "Prepare for safe microbiological work using aseptic techniques",
+      "Process microbiological samples and undertake microscopy",
+      "Apply aseptic techniques correctly to cultivate and isolate microorganisms",
+      "Estimate the number of microorganisms in food and water samples",
+      "Perform and interpret tests to assist in the identification of common bacterial genera",
+      "Apply quality assurance procedures commonly used in a food testing laboratory",
+      "Interpret the results of laboratory testing and relate to the production plan",
+    ],
   },
   {
     code: "FBPFST5005",
@@ -153,7 +168,12 @@ export const UNITS = [
     industry: "FBP",
     industryName: "Food, Beverage and Pharmaceutical",
     question: "I have experience, skills and knowledge required to examine biochemical substances and reactions and apply knowledge to food product development and processing..",
-    elements: [],
+    elements: [
+      "Use and apply terms and concepts relating to organic substances important in food processing",
+      "Identify biochemical compounds and explain biochemical reactions important in food processing",
+      "Assess the impact of food processing operations on the biochemistry of processed food products",
+      "Extract samples of product or raw materials for testing and apply the results to food production processes",
+    ],
   },
   {
     code: "FBPFSY3002",
@@ -161,7 +181,7 @@ export const UNITS = [
     industry: "FBP",
     industryName: "Food, Beverage and Pharmaceutical",
     question: "I have experience, skills and knowledge required to participate in the development and review of a hazard analysis critical control point (HACCP)-based food safety program..",
-    elements: [],
+    elements: ["Prepare to develop or review a food safety program", "Prepare to develop or review a food safety program", "Establish or review methods to monitor and control food safety hazards"],
   },
   {
     code: "FBPFSY3003",
@@ -169,7 +189,12 @@ export const UNITS = [
     industry: "FBP",
     industryName: "Food, Beverage and Pharmaceutical",
     question: "I have experience, skills and knowledge required to provide a leadership role in supporting day-to-day implementation of the food safety (including food allergen management) and quality programs and procedures in a work area..",
-    elements: [],
+    elements: [
+      "Ensure others in the work area are able to meet food safety and quality requirements",
+      "Monitor compliance of food safety and quality standards in the work area",
+      "Take corrective action in response to food safety and quality non-compliance",
+      "Improve food safety and quality in the work area",
+    ],
   },
   {
     code: "FBPFSY4001",
@@ -177,7 +202,7 @@ export const UNITS = [
     industry: "FBP",
     industryName: "Food, Beverage and Pharmaceutical",
     question: "I have experience, skills and knowledge required to maintain and implement a hazard analysis critical control point (HACCP) based food safety plan..",
-    elements: [],
+    elements: ["Review the existing food safety plan", "Communicate the requirements of the food safety plan", "Monitor the implementation of the food safety plan", "Maintain the food safety plan"],
   },
   {
     code: "FBPFSY5001",
@@ -185,7 +210,15 @@ export const UNITS = [
     industry: "FBP",
     industryName: "Food, Beverage and Pharmaceutical",
     question: "I have experience, skills and knowledge required to develop a hazard analysis critical control point (HACCP)-based food safety plan and to oversee its implementation and monitoring..",
-    elements: [],
+    elements: [
+      "Describe the product, and scope the food safety plan",
+      "Construct a flow diagram of production and confirm its applicability",
+      "Analyse all potential hazards for each step and consider control measures",
+      "Determine critical control points and the critical limits for each",
+      "Establish a monitoring system for each critical control point",
+      "Establish and record corrective actions and verification procedures",
+      "Establish documentation and recordkeeping requirements",
+    ],
   },
   {
     code: "FBPSUG2024",
@@ -193,7 +226,7 @@ export const UNITS = [
     industry: "FBP",
     industryName: "Food, Beverage and Pharmaceutical",
     question: "I have experience, skills and knowledge required to perform standard tests on cane samples for routine factory control..",
-    elements: [],
+    elements: ["Prepare for testing", "Conduct test", "Record test data in laboratory information system"],
   },
   {
     code: "FBPSUG3007",
@@ -201,7 +234,7 @@ export const UNITS = [
     industry: "FBP",
     industryName: "Food, Beverage and Pharmaceutical",
     question: "I have experience, skills and knowledge required to perform tests for factory control..",
-    elements: [],
+    elements: ["Prepare for testing", "Conduct test", "Record test data in laboratory information system"],
   },
   {
     code: "FBPTEC4009",
@@ -209,7 +242,12 @@ export const UNITS = [
     industry: "FBP",
     industryName: "Food, Beverage and Pharmaceutical",
     question: "I have experience, skills and knowledge required to identify the physical and chemical properties of materials, foods and related products within a production environment..",
-    elements: [],
+    elements: [
+      "Apply common physical phenomena in food ingredients to food production processes",
+      "Apply the principles of physical states of matter to food production",
+      "Apply common food science principles to a production process",
+      "Communicate and interpret technical information",
+    ],
   },
   {
     code: "HLTAAP001",
@@ -217,7 +255,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to work with basic information about the human body and to recognise and promote ways to maintain healthy functioning of the body..",
-    elements: [],
+    elements: ["Work with information about the human body", "Recognise and promote ways to support healthy functioning of the body"],
   },
   {
     code: "HLTAID009",
@@ -225,7 +263,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to perform cardiopulmonary resuscitation (CPR) in line with the Australian Resuscitation Council (ARC) guidelines.",
-    elements: [],
+    elements: ["Respond to an emergency situation", "Perform CPR procedures", "Communicate details of the incident", "Review the incident"],
   },
   {
     code: "HLTAID011",
@@ -234,7 +272,7 @@ export const UNITS = [
     industryName: "Health",
     question:
       "I have experience, skills and knowledge required to provide a first aid response to a casualty in line with first aid guidelines determined by the Australian Resuscitation Council (ARC) and other Australian national peak clinical bodies..",
-    elements: [],
+    elements: ["Prepare to provide first aid", "Provide first aid", "Communicate details of the incident", "Review and report on the incident"],
   },
   {
     code: "HLTCAR004",
@@ -242,7 +280,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to prepare for and conduct electrocardiography (ECG) procedures, producing traces that are suitable for diagnostic purposes. It does not include interpretation of the ECG..",
-    elements: [],
+    elements: ["Prepare ECG machine for use", "Prepare for ECG procedure", "Prepare client for ECG procedure according to procedures", "Produce an ECG trace", "Complete ECG process"],
   },
   {
     code: "HLTCAR005",
@@ -250,7 +288,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to attach a holter monitor and produce a diagnostic trace for submission to the requesting medical officer..",
-    elements: [],
+    elements: ["Prepare equipment for use", "Prepare client for holter monitor", "Prepare for monitor recording", "Complete holter monitor process"],
   },
   {
     code: "HLTHPS001",
@@ -258,7 +296,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to prepare for, obtain and record simple clinical measurements..",
-    elements: [],
+    elements: ["Prepare for clinical measurement", "Obtain clinical measurements", "Finalise clinical measurement process"],
   },
   {
     code: "HLTHPS002",
@@ -266,7 +304,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to complete preparation, general assistance and follow up tasks that support health professionals in the delivery of care to clients..",
-    elements: [],
+    elements: ["Prepare environment and equipment", "Prepare client", "Follow health professional directions", "Complete follow up tasks"],
   },
   {
     code: "HLTHPS011",
@@ -274,7 +312,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to prepare an individual for spirometry, complete the spirometry test and to provide a report as an aid to the diagnosis and management of ventilatory impairment..",
-    elements: [],
+    elements: ["Prepare spirometer and materials for use", "Prepare individual for procedure", "Perform spirometry", "Complete spirometry measurement"],
   },
   {
     code: "HLTINF006",
@@ -282,7 +320,11 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to apply basic infection prevention and control principles in work settings including implementing standard and transmission-based precautions and responding to risks..",
-    elements: [],
+    elements: [
+      "Identify the role of infection prevention and control in the work setting",
+      "Follow standard and transmission-based precautions for infection prevention and control in the work setting",
+      "Respond to potential and actual exposure to infection risks within scope of own role",
+    ],
   },
   {
     code: "HLTPAT008",
@@ -290,7 +332,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to recognise individual risk factors, identify emergency situations, and provide emergency or first aid response to individual reactions associated with pathology specimen collection..",
-    elements: [],
+    elements: ["Recognise and assess potential risk", "Identify situations requiring emergency or first aid response", "Respond to individual reactions and complications"],
   },
   {
     code: "HLTPAT009",
@@ -298,7 +340,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to confirm collection requirements, prepare client and equipment, and make routine pathology specimen collections..",
-    elements: [],
+    elements: ["Confirm collection requirements", "Prepare for collection procedure", "Collect specimen", "Follow post collection procedures"],
   },
   {
     code: "HLTPAT010",
@@ -307,7 +349,7 @@ export const UNITS = [
     industryName: "Health",
     question:
       "I have experience, skills and knowledge required to confirm collection requirements, prepare individual and equipment and collect specimens via urine and/or oral and breath testing following the special procedures that apply for drugs of abuse testing..",
-    elements: [],
+    elements: ["Confirm collection requirements", "Prepare for collection procedure", "Collect specimen", "Follow post collection procedures"],
   },
   {
     code: "HLTPAT011",
@@ -315,7 +357,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to receive specimens, complete the administrative process to prepare samples for pathology testing, and dispatch specimens..",
-    elements: [],
+    elements: ["Receive specimens", "Complete administrative processing of specimens", "Prepare specimens", "Dispatch specimens"],
   },
   {
     code: "HLTPAT012",
@@ -323,7 +365,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to confirm collection requirements, prepare client and equipment, and collect capillary blood using specific collection criteria, techniques and equipment..",
-    elements: [],
+    elements: ["Greet client and confirm pre-test criteria", "Prepare for skin puncture blood collections", "Draw blood", "Follow post-blood collection procedures"],
   },
   {
     code: "HLTPAT013",
@@ -331,7 +373,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to prepare, collect and complete venous blood specimens from children from 0 to 5 years..",
-    elements: [],
+    elements: ["Prepare to collect venous blood from children", "Collect venous blood from children", "Complete post venous blood collection procedures", "Complete post venous blood collection procedures"],
   },
   {
     code: "HLTPAT014",
@@ -339,7 +381,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to confirm venous blood collection requirements, prepare individual and equipment, and perform routine venous blood collections..",
-    elements: [],
+    elements: ["Greet client and confirm pre-test criteria", "Prepare for venous blood collection procedure", "Draw blood", "Follow post-blood collection procedures"],
   },
   {
     code: "HLTWHS001",
@@ -347,7 +389,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to participate in safe work practices to ensure their own health and safety, and that of others..",
-    elements: [],
+    elements: ["Follow safe work practices", "Implement safe work practices", "Contribute to safe work practices in the workplace", "Reflect on own safe work practices"],
   },
   {
     code: "HLTWHS006",
@@ -355,7 +397,7 @@ export const UNITS = [
     industry: "HLT",
     industryName: "Health",
     question: "I have experience, skills and knowledge required to maintain health and wellbeing by preventing and managing personal stress..",
-    elements: [],
+    elements: ["Develop strategies to manage personal stress", "Implement stress management strategies", "Evaluate stress reducing strategies"],
   },
   {
     code: "MSL904003",
@@ -363,7 +405,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to calibrate test and measurement equipment in accordance with standard calibration procedures and documented test methods..",
-    elements: [],
+    elements: ["Prepare items for calibration", "Perform calibration", "Document results", "Finalise calibration"],
   },
   {
     code: "MSL905004",
@@ -372,7 +414,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to recognise non-conforming calibration work, research and select the most appropriate test method or calibration procedure for a given measurement request, and then conduct the calibration..",
-    elements: [],
+    elements: ["Select the appropriate calibration procedure", "Prepare items for calibration", "Perform calibration", "Document results", "Finalise calibration"],
   },
   {
     code: "MSL905005",
@@ -381,7 +423,14 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to create or modify calibration procedures in response to the introduction of alternative/new equipment, changing test circumstances, activities involved in research and development trials or to meet client needs..",
-    elements: [],
+    elements: [
+      "Assess the suitability of available calibration procedures",
+      "Develop procedure",
+      "Prepare equipment for testing",
+      "Trial modified or new calibration procedure",
+      "Confirm the modified or new procedure is fit for purpose",
+      "Document and review modified or new calibration procedure",
+    ],
   },
   {
     code: "MSL912002",
@@ -389,7 +438,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to work effectively in a laboratory/field workplace..",
-    elements: [],
+    elements: ["Identify and comply with workplace frameworks", "Provide scientific or technical support", "Organise daily work", "Take responsibility for quality of own work", "Identify own learning needs"],
   },
   {
     code: "MSL913004",
@@ -397,7 +446,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to plan and complete tasks individually or in a team context..",
-    elements: [],
+    elements: ["Plan and organise daily work activities", "Complete allocated work", "Identify and resolve work problems", "Work in a team environment", "Update knowledge and skills as required"],
   },
   {
     code: "MSL914002",
@@ -405,7 +454,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to manage the day-to-day running of science teaching laboratories and the preparation of practical experiments, demonstrations and field trips..",
-    elements: [],
+    elements: ["Ensure safe work practices", "Plan work schedule", "Organise experiments and demonstrations", "Manage resources"],
   },
   {
     code: "MSL915003",
@@ -413,7 +462,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to respond to both internal and external inquiries of a specialised technical nature..",
-    elements: [],
+    elements: ["Assess the request for information and/or advice", "Prepare response", "Provide information and/or advice", "Record details of the request and response"],
   },
   {
     code: "MSL915004",
@@ -421,7 +470,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to schedule laboratory work for a small team to meet operational requirements..",
-    elements: [],
+    elements: ["Determine work requirements and laboratory resources", "Develop schedules in consultation with relevant personnel", "Monitor schedules", "Adjust schedules in consultation with senior personnel"],
   },
   {
     code: "MSL916011",
@@ -429,7 +478,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to develop and maintain relevant documentation in response to identified information requirements or changes in laboratory policy or external accreditation requirements..",
-    elements: [],
+    elements: ["Recognise documentation needs/deficiencies", "Develop or amend documentation", "Implement and evaluate new laboratory documentation"],
   },
   {
     code: "MSL916012",
@@ -437,7 +486,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to develop and empower team members through motivating, mentoring, coaching and promoting team cohesion to achieve planned outcomes..",
-    elements: [],
+    elements: ["Promote team effectiveness", "Identify and develop individual potential", "Monitor individual and team performances"],
   },
   {
     code: "MSL916013",
@@ -445,7 +494,13 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to monitor and direct work practices, coordinate and support personnel and manage and optimise resources within the laboratory..",
-    elements: [],
+    elements: [
+      "Monitor and direct work practices within functional area",
+      "Manage personnel within work area",
+      "Establish resource requirements, operating plans and budget",
+      "Procure resources to achieve operational plans",
+      "Monitor and optimise operational performance and resource usage",
+    ],
   },
   {
     code: "MSL916014",
@@ -454,7 +509,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to take responsibility for the day-to-day operation of the work or functional area and its compliance with legislation and licensing, registration, ethical or accreditation requirements..",
-    elements: [],
+    elements: ["Interpret and communicate current compliance requirements", "Ensure that work practices meet compliance requirements", "Monitor, analyse, adjust and report performance", "Investigate, rectify and report non-conformance"],
   },
   {
     code: "MSL916015",
@@ -463,7 +518,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to interpret complex project briefs, determine project methodologies and resource requirements, establish project plans, manage projects to successful conclusions and evaluate project outcomes..",
-    elements: [],
+    elements: ["Interpret brief and design feasible project plan", "Establish and implement approved project plan", "Manage project", "Finalise project", "Evaluate project methodology"],
   },
   {
     code: "MSL922002",
@@ -471,7 +526,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to record and store data, perform simple calculations of scientific quantities and present information in tables and graphs..",
-    elements: [],
+    elements: ["Record and check data", "Calculate simple scientific quantities", "Present data", "Store data"],
   },
   {
     code: "MSL924005",
@@ -479,7 +534,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to retrieve data, evaluate formulae, perform scientific calculations, present and interpret information in tables and graphs and keep accurate records..",
-    elements: [],
+    elements: ["Retrieve and check data", "Calculate scientific quantities", "Present data", "Interpret data", "Keep accurate records"],
   },
   {
     code: "MSL924006",
@@ -488,7 +543,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to use enterprise laboratory-specific software such as laboratory information management systems, quality information management systems, laboratory instrument software, middleware and quality control data management systems..",
-    elements: [],
+    elements: ["Access application software", "Use software for specified purposes", "Produce reports of retrieved data and/or processed data"],
   },
   {
     code: "MSL925005",
@@ -497,7 +552,13 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to use statistical analysis to estimate and report measurement uncertainty in accordance with the ISO Guide to the Expression of Uncertainty in Measurement (or its replacement Standard)..",
-    elements: [],
+    elements: [
+      "Identify the measured quantity and the uncertainty components",
+      "Determine the size of each uncertainty component",
+      "Reduce each uncertainty component to a standard uncertainty",
+      "Calculate an expanded uncertainty to the required confidence level",
+      "Report the expanded uncertainty",
+    ],
   },
   {
     code: "MSL925006",
@@ -505,7 +566,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to perform scientific calculations, analyse trends and uncertainty in data and report results within the required timeframe..",
-    elements: [],
+    elements: ["Perform scientific calculations", "Analyse trends and relationships in data", "Determine variation and/or uncertainty in data distributions", "Check for aberrant results", "Report results"],
   },
   {
     code: "MSL933005",
@@ -513,7 +574,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to clean laboratory work surfaces, clean and store laboratory equipment and monitor laboratory stocks under direct supervision..",
-    elements: [],
+    elements: ["Clean work preparation areas", "Clean and store equipment", "Monitor stocks of materials and equipment", "Maintain a safe work environment"],
   },
   {
     code: "MSL933007",
@@ -521,7 +582,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to monitor critical, quality and regulatory control points related to a person's work responsibilities..",
-    elements: [],
+    elements: ["Provide routine input to the HACCP plan", "Contribute to the continuous improvement of the HACCP plan", "Maintain a safe work environment"],
   },
   {
     code: "MSL933008",
@@ -529,7 +590,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to perform set-up, pre-use and in-house calibration/validation checks on laboratory equipment and assist with laboratory equipment maintenance..",
-    elements: [],
+    elements: ["Perform set-up and pre-use checks of laboratory equipment", "Perform calibration checks", "Assist with equipment maintenance", "Maintain records"],
   },
   {
     code: "MSL933009",
@@ -537,7 +598,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to apply quality principles to laboratory or field work to achieve quality outcomes..",
-    elements: [],
+    elements: ["Apply quality control procedures", "Contribute to quality improvements", "Maintain commitment to workplace quality standards in own work", "Assist in maintaining customer relationships", "Update knowledge and skills"],
   },
   {
     code: "MSL934008",
@@ -546,7 +607,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to check the serviceability and calibration of laboratory or field instruments and equipment and perform routine maintenance, such as cleaning and replacement of consumables and minor components..",
-    elements: [],
+    elements: ["Perform serviceability checks", "Conduct routine maintenance safely", "Perform calibration checks"],
   },
   {
     code: "MSL934009",
@@ -554,7 +615,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to use quality laboratory practice and effectively participate in quality improvement teams..",
-    elements: [],
+    elements: ["Satisfy quality system requirements in daily work", "Identify risks and/or opportunities for improvements", "Recommend actions", "Participate in the implementation of recommended actions", "Contribute to strategic improvements"],
   },
   {
     code: "MSL934010",
@@ -562,7 +623,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to order, maintain and control the use of laboratory materials and/or equipment in the work area..",
-    elements: [],
+    elements: ["Maintain and control stocks of materials or equipment", "Order and receive materials and equipment", "Maintain stock records", "Maintain a safe work environment"],
   },
   {
     code: "MSL935005",
@@ -570,7 +631,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to critically assess the accuracy of data and validity of test results prior to formally authorising their release to the client..",
-    elements: [],
+    elements: ["Verify the accuracy of data and technical records", "Determine if results are acceptable and within expectation", "Investigate unexpected or unacceptable results", "Liaise with clients about results"],
   },
   {
     code: "MSL935006",
@@ -578,7 +639,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to assist in the maintenance of reference materials that can be used in tests and the identification of new specimens as part of quality control of laboratory procedures..",
-    elements: [],
+    elements: ["Acquire reference materials", "Maintain reference materials", "Dispense reference materials to clients", "Maintain a safe work environment"],
   },
   {
     code: "MSL935008",
@@ -586,7 +647,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to analyse a series of test results and data to detect potential or actual non-conformances, assess their significance and recommend preventative or corrective actions..",
-    elements: [],
+    elements: ["Verify accuracy of data and technical records", "Assess the quality of data and results", "Identify potential causes for unacceptable results", "Report findings to relevant personnel"],
   },
   {
     code: "MSL936005",
@@ -594,15 +655,21 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to take responsibility for the day-to-day operation of the work or functional area and ensure that quality system requirements are met and continuous improvements are initiated..",
-    elements: [],
+    elements: [
+      "Maintain quality framework within work area",
+      "Maintain quality documentation",
+      "Provide training in quality systems and improvement processes",
+      "Optimise and report performance quality",
+      "Evaluate relevant components of quality system",
+    ],
   },
   {
     code: "MSL936006",
     title: "Conduct an internal audit of the quality system",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    question: "I have experience, skills and knowledge required to prepare for, conduct and document an internal audit of aspects of the laboratory\u2019s quality system..",
-    elements: [],
+    question: "I have experience, skills and knowledge required to prepare for, conduct and document an internal audit of aspects of the laboratory\\u2019s quality system..",
+    elements: ["Prepare for internal audit", "Conduct audit", "Report findings", "Complete corrective actions"],
   },
   {
     code: "MSL943003",
@@ -611,7 +678,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to safely store, transport and operate instruments that emit ionising radiation following established safe work practices and in accordance with laboratory procedures and licensing requirements..",
-    elements: [],
+    elements: ["Store instruments safely and securely", "Transport instruments safely and securely", "Use instruments safely and maintain security", "Monitor radiation levels", "Maintain records", "Perform emergency procedures"],
   },
   {
     code: "MSL943004",
@@ -620,7 +687,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to follow work health and safety (WHS) policies and procedures, deal with the identification and control of hazards, work safely at all times, follow emergency response procedures and contribute to the maintenance of workplace safety..",
-    elements: [],
+    elements: ["Identify, control and report WHS and environmental hazards", "Conduct work safely", "Follow incident and emergency response procedures", "Contribute to health and safety in the workplace"],
   },
   {
     code: "MSL944002",
@@ -628,7 +695,14 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to monitor and maintain work health and safety (WHS) within a work area where the person has supervisory responsibility for others..",
-    elements: [],
+    elements: [
+      "Perform all work safely",
+      "Ensure others in the work group are able to implement safe work practices",
+      "Monitor observance of safe work practices in the work area",
+      "Participate in risk management processes",
+      "Support the implementation of participative arrangements",
+      "Support the implementation of emergency procedures within the work group",
+    ],
   },
   {
     code: "MSL946003",
@@ -636,7 +710,15 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to implement and monitor the work health and safety (WHS) and environmental management systems for a work group or laboratory..",
-    elements: [],
+    elements: [
+      "Implement requirements for the WHS and environmental management systems",
+      "Implement and maintain participative arrangements for the management of WHS and the environment",
+      "Implement and maintain WHS and environmental risk management processes",
+      "Implement and maintain an WHS and environmental training program",
+      "Implement and maintain a system for records",
+      "Identify areas for systems improvement",
+      "Initiate and maintain systems improvements",
+    ],
   },
   {
     code: "MSL952003",
@@ -644,7 +726,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to collect samples at field or production sites using specified equipment and workplace procedures..",
-    elements: [],
+    elements: ["Prepare for sampling", "Conduct sampling", "Finalise sampling", "Maintain a safe work environment"],
   },
   {
     code: "MSL952004",
@@ -652,7 +734,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to pick up and transport samples or test/calibration equipment in a way that ensures the integrity of subsequent test results..",
-    elements: [],
+    elements: ["Prepare for pickup", "Pick up and transport items", "Maintain transport equipment", "Maintain a safe work environment"],
   },
   {
     code: "MSL953004",
@@ -660,7 +742,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to operate a robotic sample preparation system to ensure efficient throughput of samples without sacrificing quality or safety..",
-    elements: [],
+    elements: ["Prepare robotic system for operation", "Load samples into system", "Monitor system and report errors", "Unload samples"],
   },
   {
     code: "MSL953005",
@@ -668,7 +750,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to log samples, check sample documentation, and schedule and prepare samples for testing in accordance with workplace procedures..",
-    elements: [],
+    elements: ["Log samples", "Address client and customer service issues", "Prepare samples for testing", "Distribute samples", "Maintain a safe work area and environment"],
   },
   {
     code: "MSL954005",
@@ -676,7 +758,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to reduce given mineral samples to representative client samples and analytical portions that meet client requirements for analysis..",
-    elements: [],
+    elements: ["Interpret and schedule client requirements", "Prepare client samples for analysis", "Use non-destructive methods to prepare laboratory portions for analysis", "Maintain a safe work environment"],
   },
   {
     code: "MSL954006",
@@ -684,7 +766,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to recognise and interpret different types of biological test samples to direct the specimen to the appropriate laboratory for testing..",
-    elements: [],
+    elements: ["Recognise body systems and organs", "Recognise tissues and cells", "Identify and direct test specimens"],
   },
   {
     code: "MSL954007",
@@ -692,7 +774,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to obtain a range of samples that are representative of the source material and to prepare the samples for testing..",
-    elements: [],
+    elements: ["Prepare for sampling", "Conduct sampling and log samples", "Address client issues", "Maintain a safe work environment"],
   },
   {
     code: "MSL972002",
@@ -700,7 +782,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to take direct measurements on site using workplace procedures..",
-    elements: [],
+    elements: ["Prepare for measurements", "Take measurements", "Finalise measurement process", "Maintain a safe work environment"],
   },
   {
     code: "MSL973015",
@@ -708,7 +790,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to prepare culture media which is free of contamination to facilitate optimal growth of organisms and cells..",
-    elements: [],
+    elements: ["Prepare culture media", "Sterilise media", "Dispense or aliquote media", "Label media", "Store and incubate media", "Perform quality control checks", "Maintain work area and equipment to prevent cross-infection and contamination"],
   },
   {
     code: "MSL973017",
@@ -716,7 +798,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to perform tasks associated with the organisation of fieldwork and field surveys..",
-    elements: [],
+    elements: ["Assist with organisation of fieldwork", "Support field operations", "Assist with field activities", "Demonstrate basic field survival skills", "Assist with the completion of fieldwork"],
   },
   {
     code: "MSL973018",
@@ -724,7 +806,14 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to prepare trial batches of materials for evaluation..",
-    elements: [],
+    elements: [
+      "Prepare for trial batch mixing",
+      "Mix trial batch for evaluation",
+      "Evaluate properties of the mixture by inspection and standard test methods",
+      "Clean equipment and dispose of materials",
+      "Maintain records",
+      "Maintain a safe work environment",
+    ],
   },
   {
     code: "MSL973021",
@@ -732,7 +821,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to conduct in situ tests to confirm the acceptability of raw or manufactured, construction materials prior to or after their use..",
-    elements: [],
+    elements: ["Prepare for field-based acceptance tests", "Perform field tests", "Collect site samples and prepare test pieces", "Finalise field testing", "Maintain a safe work environment"],
   },
   {
     code: "MSL973022",
@@ -740,7 +829,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to conduct laboratory tests to confirm the acceptability of raw and/or manufactured construction materials.",
-    elements: [],
+    elements: ["Prepare for laboratory-based acceptance tests", "Prepare samples or test pieces", "Check test equipment before use", "Perform laboratory tests", "Maintain a safe work environment"],
   },
   {
     code: "MSL973023",
@@ -748,7 +837,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to follow standard procedures for extracting precious metals from their host matrices in readiness for analysis..",
-    elements: [],
+    elements: ["Plan work for shift", "Prepare sample racks for fusion", "Obtain acceptable buttons and prills", "Troubleshoot and correct common recovery failures", "Perform daily maintenance of assay equipment", "Maintain a safe work environment"],
   },
   {
     code: "MSL973024",
@@ -756,7 +845,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to prepare for and conduct activities, such as excavations, sampling and testing, as part of a site investigation team..",
-    elements: [],
+    elements: ["Prepare for on-site operations", "Conduct excavation of boreholes, test pits and/or trenches", "Conduct site sampling", "Conduct site testing", "Complete site operations", "Maintain records", "Maintain a safe work environment"],
   },
   {
     code: "MSL973025",
@@ -764,7 +853,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to prepare samples and perform tests and measurements using standard methods with access to readily available advice from supervisors..",
-    elements: [],
+    elements: ["Interpret test requirements", "Prepare sample", "Check equipment before use", "Perform tests on samples", "Maintain a safe work environment"],
   },
   {
     code: "MSL973026",
@@ -772,7 +861,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to prepare working solutions and to check that existing stocks of solutions are suitable for use. Working solutions include those required to perform laboratory tests..",
-    elements: [],
+    elements: ["Make up working solutions", "Check existing stock of solutions", "Maintain a safe work environment"],
   },
   {
     code: "MSL973027",
@@ -780,7 +869,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to perform techniques that prevent cross-contamination to maintain the integrity of both the sample source, and the sample and protect people and the environment..",
-    elements: [],
+    elements: ["Prepare for sampling or transfer", "Transfer materials", "Maintain work area and equipment to prevent cross-infection and contamination"],
   },
   {
     code: "MSL973028",
@@ -788,7 +877,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to set up a light microscope for optimum resolution, to prepare routine samples and to observe, identify and report sample characteristics..",
-    elements: [],
+    elements: ["Prepare samples for examination", "Set up and use a light microscope", "Observe and identify sample characteristics"],
   },
   {
     code: "MSL973029",
@@ -796,7 +885,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to perform straightforward histological procedures involving processing and sectioning (by rotary microtome) of plant and/or animal tissues in paraffin wax..",
-    elements: [],
+    elements: ["Process tissue", "Embed tissue", "Cut sections of tissue", "Stain sections", "Maintain a safe work environment"],
   },
   {
     code: "MSL974016",
@@ -804,7 +893,15 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to interpret physical and mechanical test requirements, prepare samples, conduct pre-use and calibration checks on equipment and perform routine physical tests..",
-    elements: [],
+    elements: [
+      "Interpret and schedule test requirements",
+      "Receive and prepare samples",
+      "Check equipment before use",
+      "Test samples to determine physical properties",
+      "Process and interpret data",
+      "Maintain a safe work environment",
+      "Maintain laboratory records",
+    ],
   },
   {
     code: "MSL974018",
@@ -812,7 +909,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to prepare for and conduct and conclude site activities, such as excavations, sampling and testing as part of a geotechnical investigation team..",
-    elements: [],
+    elements: ["Prepare for on-site operations", "Arrange excavation of boreholes, test pits and/or trenches", "Conduct site sampling", "Conduct testing", "Finalise site operations", "Maintain records", "Maintain a safe work environment"],
   },
   {
     code: "MSL974022",
@@ -821,7 +918,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to organise and undertake field monitoring programs that are primarily focused on the determination of physical and chemical parameters and/or observation and documentation of biological/ecological systems..",
-    elements: [],
+    elements: ["Confirm requirements for field monitoring activities", "Prepare for field monitoring activities", "Perform field activities", "Close down field monitoring activities"],
   },
   {
     code: "MSL974023",
@@ -830,7 +927,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to capture accurate and reproducible images of scientific (environmental, medical and technical) subjects using a scientific approach and workplace procedures/protocols to ensure the integrity of the image..",
-    elements: [],
+    elements: ["Establish requirements for image capture", "Plan and set up the shoot", "Capture and reproduce the required image", "Keep records and deliver images"],
   },
   {
     code: "MSL974026",
@@ -838,7 +935,15 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to conduct multi-stage tests to determine the properties of raw and/or manufactured construction materials..",
-    elements: [],
+    elements: [
+      "Interpret and schedule test requirements",
+      "Prepare samples or test pieces",
+      "Check test equipment before use",
+      "Conduct test to determine sample properties",
+      "Process and interpret data",
+      "Maintain laboratory records",
+      "Maintain a safe work environment",
+    ],
   },
   {
     code: "MSL974028",
@@ -847,7 +952,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to classify soils for geotechnical and civil construction purposes using the symbols and descriptors specified in the Australian Standard for Geotechnical Site Investigations (AS 1726-2017 Geotechnical site investigations, or its replacement)..",
-    elements: [],
+    elements: ["Prepare to classify soil samples", "Examine properties of soil samples", "Analyse available test results", "Record soil classification", "Maintain a safe work environment"],
   },
   {
     code: "MSL974029",
@@ -855,7 +960,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to operate a computer-controlled robotic system for the specialised analysis of minerals, such as iron ore..",
-    elements: [],
+    elements: ["Prepare automated analysis system for operation", "Conduct or monitor loading of samples into system", "Monitor and adjust system operation", "Maintain a safe work environment"],
   },
   {
     code: "MSL974031",
@@ -863,7 +968,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to prepare, standardise and monitor the quality of solutions..",
-    elements: [],
+    elements: ["Prepare solutions", "Standardise and use volumetric solutions", "Calculate and record data", "Monitor the quality of laboratory solutions", "Maintain a safe work environment"],
   },
   {
     code: "MSL974032",
@@ -871,7 +976,14 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to interpret chemical test requirements, prepare samples, conduct pre-use and calibration checks on equipment and perform routine chemical tests..",
-    elements: [],
+    elements: [
+      "Interpret and schedule test requirements",
+      "Receive and prepare samples",
+      "Check equipment before use",
+      "Test samples to determine chemical species or properties",
+      "Process, interpret and record data",
+      "Maintain a safe work environment",
+    ],
   },
   {
     code: "MSL974033",
@@ -880,7 +992,14 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to interpret food test requirements, prepare samples, conduct pre-use and calibration checks on equipment, and perform routine testing of raw food materials, in-process materials and final products..",
-    elements: [],
+    elements: [
+      "Interpret and schedule test requirements",
+      "Receive and prepare food samples",
+      "Check equipment before use",
+      "Test samples to determine food components and characteristics",
+      "Process, analyse and record data",
+      "Maintain a safe work environment",
+    ],
   },
   {
     code: "MSL974034",
@@ -888,7 +1007,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to interpret work requirements, prepare samples, and perform routine biological procedures..",
-    elements: [],
+    elements: ["Interpret and schedule work requirements", "Receive and prepare biological samples", "Perform biological techniques on samples", "Maintain a safe work environment", "Maintain laboratory records"],
   },
   {
     code: "MSL974035",
@@ -896,7 +1015,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to prepare primary tissue cultures for applications, such as maintenance of animal cell lines and propagation of plants by tissue culture, and basic subculture procedures..",
-    elements: [],
+    elements: ["Work safely according to the legal and regulatory framework", "Prepare and test cell or tissue culture media", "Use tissue or cell culture preparation techniques", "Monitor tissue or cell culture", "Maintain records"],
   },
   {
     code: "MSL974036",
@@ -904,7 +1023,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to complete pre-analytics, analyse body fluid specimens, record results and maintain a point of care testing (PoCT) device..",
-    elements: [],
+    elements: ["Complete pre-analytics", "Prepare and operate PoCT device", "Review and document results", "Maintain device readiness"],
   },
   {
     code: "MSL974037",
@@ -912,7 +1031,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to triage and allocate tissue specimens for transfer or surgical cut-up..",
-    elements: [],
+    elements: ["Receive and check tissue specimens", "Triage and distribute specimens"],
   },
   {
     code: "MSL974038",
@@ -920,7 +1039,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to process and transfer tissue specimens that require no selection or cutting..",
-    elements: [],
+    elements: ["Prepare equipment for tissue specimen transfer", "Determine and record macroscopic descriptions", "Transfer simple tissue specimens"],
   },
   {
     code: "MSL975032",
@@ -928,7 +1047,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to work closely with production personnel to conduct a routine trial to adjust formulations or develop products and processes following preliminary laboratory work..",
-    elements: [],
+    elements: ["Prepare for the trial", "Participate in the trial", "Assess and report trial outcomes", "Maintain a safe work environment"],
   },
   {
     code: "MSL975038",
@@ -936,7 +1055,14 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to set up and coordinate sensory analysis and assess the results obtained from a routine sensory analysis..",
-    elements: [],
+    elements: [
+      "Select panellists/ individuals for sensory analysis",
+      "Prepare panellists for sensory analysis",
+      "Prepare samples for sensory analysis",
+      "Conduct routine sensory analysis",
+      "Evaluate and report findings",
+      "Maintain a safe work environment",
+    ],
   },
   {
     code: "MSL975041",
@@ -944,7 +1070,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to safely extract a range of precious metals from their host matrices in readiness for analysis..",
-    elements: [],
+    elements: ["Classify ore samples and select fluxing method", "Prepare for precious metal recovery", "Recover precious metals from ore sample", "Troubleshoot and correct failed recovery", "Perform daily maintenance of assay equipment"],
   },
   {
     code: "MSL975042",
@@ -952,7 +1078,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to design and supervise complex field surveys for a wide range of environmental systems..",
-    elements: [],
+    elements: ["Confirm survey requirements with senior staff", "Design field survey activities", "Identify resources and supervise pre-survey checks", "Supervise field survey activities", "Supervise close-down of field activities"],
   },
   {
     code: "MSL975043",
@@ -960,7 +1086,13 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to perform a range of techniques to collect and preserve animals and plant material for both public and scientific research display..",
-    elements: [],
+    elements: [
+      "Confirm the requirements of the display and plan the work",
+      "Work safely according to the legal and regulatory framework",
+      "Collect plants and animal material",
+      "Preserve plant and animal material",
+      "Display plant and animal material",
+    ],
   },
   {
     code: "MSL975044",
@@ -968,7 +1100,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to prepare test specimens and perform multi-stage mechanical tests on them..",
-    elements: [],
+    elements: ["Interpret and schedule test requirements", "Prepare and measure test specimens", "Check equipment before use", "Test samples", "Process and analyse data", "Maintain laboratory records"],
   },
   {
     code: "MSL975051",
@@ -976,7 +1108,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to supervise and direct geotechnical site investigations based on observation and testing..",
-    elements: [],
+    elements: ["Plan geotechnical investigation", "Establish on-site operations", "Coordinate geotechnical sampling and testing", "Analyse project data and report to client", "Maintain workplace records", "Promote a safe work environment"],
   },
   {
     code: "MSL975052",
@@ -984,7 +1116,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to locate, record and collect evidence or samples that will be used for forensic examination or testing..",
-    elements: [],
+    elements: ["Prepare for evidence/ sample collection", "Record locations and details of evidence/ samples", "Collect evidence/samples", "Package evidence/ samples", "Maintain a safe work environment"],
   },
   {
     code: "MSL975055",
@@ -992,7 +1124,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to classify building sites, including residential, light industrial, commercial and institutional structures for the purpose of providing guidance for the design of footing systems..",
-    elements: [],
+    elements: ["Prepare to classify site", "Analyse site information and test results", "Report site classification", "Finalise site classification"],
   },
   {
     code: "MSL975056",
@@ -1001,7 +1133,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to perform procedures associated with embedding tissue and performing microtomy on those tissues in preparation for staining for examination of tissue structure and abnormalities by pathologists and scientists to assist with disease diagnosis..",
-    elements: [],
+    elements: ["Prepare specialised tissues", "Embed tissue", "Cut tissue sections"],
   },
   {
     code: "MSL975057",
@@ -1010,7 +1142,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to perform tests and procedures associated with processing and staining tissues for examination of tissue structure and abnormalities by pathologists and scientists to assist with disease diagnosis..",
-    elements: [],
+    elements: ["Receive and check specimens and associated request forms", "Process tissue", "Embed tissue", "Cut tissue sections", "Stain tissue sections", "Maintain laboratory records"],
   },
   {
     code: "MSL975058",
@@ -1018,7 +1150,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to perform routine tests and procedures that are part of the requirements of pre- and post-blood transfusion practice..",
-    elements: [],
+    elements: ["Process samples and associated request forms", "Perform tests", "Maintain laboratory records"],
   },
   {
     code: "MSL975059",
@@ -1026,7 +1158,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to supervise and direct the placement of materials, such as soil, concrete and asphalt, at a construction site..",
-    elements: [],
+    elements: ["Prepare for on-site operations", "Establish on-site operations", "Supervise materials placement", "Analyse data and report to client", "Maintain workplace records", "Promote a safe work environment"],
   },
   {
     code: "MSL975060",
@@ -1035,7 +1167,15 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to prepare, maintain and preserve cells and cell lines for a variety of applications, such as large-scale culture, production of monoclonal antibodies, production of viral vaccines and amniocentesis studies..",
-    elements: [],
+    elements: [
+      "Interpret and schedule production requirements",
+      "Work safely according to the legal and regulatory framework",
+      "Assemble and maintain tissue culture equipment",
+      "Prepare and test cell or tissue culture media",
+      "Obtain, monitor and maintain tissue or cell lines",
+      "Preserve cells or tissues",
+      "Maintain records",
+    ],
   },
   {
     code: "MSL975061",
@@ -1043,7 +1183,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to isolate, purify, verify and manipulate biomolecules and their products..",
-    elements: [],
+    elements: ["Interpret and schedule test requirements", "Receive and handle samples", "Prepare equipment and reagents", "Extract, verify and manipulate biomolecules", "Report and communicate results"],
   },
   {
     code: "MSL975062",
@@ -1052,7 +1192,15 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to contribute to the culture, isolation and identification of microorganisms, such as bacteria, fungi, viruses, protozoans, algae and parasites, in order to investigate the physiology and pathology of animals, monitor the natural environment, and to assist in the production of foods, pharmaceutical goods and other manufactured materials..",
-    elements: [],
+    elements: [
+      "Receive samples and process associated request forms",
+      "Prepare for safe microbiological work and aseptic applications",
+      "Process samples for direct examination",
+      "Prepare pure cultures for microbiological work and aseptic applications",
+      "Perform procedures that can assist in the identification of microorganisms",
+      "Estimate the number and/or size of micro-organisms in samples",
+      "Maintain records of laboratory work",
+    ],
   },
   {
     code: "MSL975063",
@@ -1061,7 +1209,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to determine levels, function, activity and interactions of cellular and plasma components of blood, using tests and procedures identified with the discipline of laboratory haematology..",
-    elements: [],
+    elements: ["Process samples and associated request details", "Perform tests", "Maintain laboratory records"],
   },
   {
     code: "MSL975064",
@@ -1070,7 +1218,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to perform tests and procedures associated with the detection and monitoring of tissue and bodily fluid responses to normal physiological processes and disease through the identification and quantifying of chemical components..",
-    elements: [],
+    elements: ["Process samples and associated request forms", "Perform tests"],
   },
   {
     code: "MSL975065",
@@ -1078,7 +1226,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to analyse samples using electrophoretic techniques.",
-    elements: [],
+    elements: ["Establish client needs", "Prepare samples and standards", "Set up and optimise instrument", "Perform analysis", "Process, analyse and record data"],
   },
   {
     code: "MSL975066",
@@ -1086,7 +1234,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to analyse samples using routine chromatographic techniques..",
-    elements: [],
+    elements: ["Establish client needs", "Prepare samples and standards", "Set up and optimise instrument", "Perform analysis", "Process, analyse and record data"],
   },
   {
     code: "MSL975067",
@@ -1094,7 +1242,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to isolate analytes from complex matrices and perform multi-staged and multi-component analyses on them..",
-    elements: [],
+    elements: ["Develop an analysis plan with supervisor", "Reduce the complexity of the sample", "Apply quantification method", "Perform analysis", "Process, analyse and record data"],
   },
   {
     code: "MSL975068",
@@ -1102,7 +1250,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to analyse samples using specialised analytical instruments that require highly-developed technical skills to operate effectively..",
-    elements: [],
+    elements: ["Establish client needs", "Prepare samples and standards", "Set up and optimise instrument and sub-systems", "Perform analysis", "Process, analyse and record data"],
   },
   {
     code: "MSL975069",
@@ -1110,7 +1258,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to analyse samples using routine spectrometric techniques..",
-    elements: [],
+    elements: ["Establish client needs", "Prepare samples and standards", "Set up and optimise instrument", "Perform analysis"],
   },
   {
     code: "MSL975070",
@@ -1118,7 +1266,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to analyse samples using routine electrometric techniques..",
-    elements: [],
+    elements: ["Establish client needs", "Prepare samples and standards", "Set up and optimise instrument", "Perform analysis", "Process, analyse and record data"],
   },
   {
     code: "MSL975071",
@@ -1126,7 +1274,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to analyse the nutrient and ingredient composition of foods and the identification and quantification of both chemical and biological contaminants within raw and processed foods..",
-    elements: [],
+    elements: ["Establish client needs", "Prepare samples and standards", "Set up and optimise instrument", "Perform analysis", "Process, analyse and record data"],
   },
   {
     code: "MSL975072",
@@ -1134,7 +1282,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to prepare for and complete surgical cut-up of non-complex specimens as defined by the National Pathology Accreditation Advisory Council (NPAAC)..",
-    elements: [],
+    elements: ["Prepare equipment for specimen cut-up", "Interpret clinical information", "Determine and record macroscopic descriptions", "Dissect non-complex specimens"],
   },
   {
     code: "MSL975073",
@@ -1142,15 +1290,15 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to participate in laboratory investigations involving animals, plants and related environmental parameters..",
-    elements: [],
+    elements: ["Process specimens and documentation", "Participate in the identification and classification of species", "Maintain viability and integrity of specimens during experimentation", "Integrate laboratory and field data"],
   },
   {
     code: "MSL976006",
     title: "Evaluate and select appropriate test methods and/or procedures",
     industry: "MSL",
     industryName: "Laboratory Operations",
-    question: "I have experience, skills and knowledge required to evaluate and select test methods and/or procedures that are relevant to the current and evolving scope of the laboratory\u2019s operations..",
-    elements: [],
+    question: "I have experience, skills and knowledge required to evaluate and select test methods and/or procedures that are relevant to the current and evolving scope of the laboratory\\u2019s operations..",
+    elements: ["Determine sample characteristics and testing requirements", "Evaluate possible test methods and/or procedures", "Recommend appropriate test methods and/or procedures", "Confirm and document selected methods and/or procedures"],
   },
   {
     code: "MSL977009",
@@ -1158,7 +1306,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to validate test methods following defined protocols to ensure that they are based on sound scientific principles and are fit for the purpose for which they are to be used..",
-    elements: [],
+    elements: ["Confirm equipment has been validated", "Validate test method according to defined protocol", "Evaluate and record results"],
   },
   {
     code: "MSL977010",
@@ -1167,7 +1315,7 @@ export const UNITS = [
     industryName: "Laboratory Operations",
     question:
       "I have experience, skills and knowledge required to evaluate a product or application brief from a technical perspective and to contribute to the formulation and development of products or applications to meet the brief requirements..",
-    elements: [],
+    elements: ["Scope the development project", "Set scope of project", "Develop new product", "Contribute to development of procedures and materials"],
   },
   {
     code: "MSL977011",
@@ -1175,7 +1323,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to apply technical, instrumental and equipment knowledge and skills to troubleshoot testing equipment and/or testing issues related to production processes..",
-    elements: [],
+    elements: ["Identify abnormal equipment and/or process performance", "Identify causes of substandard performance", "Recommend corrective action"],
   },
   {
     code: "MSL977012",
@@ -1183,7 +1331,7 @@ export const UNITS = [
     industry: "MSL",
     industryName: "Laboratory Operations",
     question: "I have experience, skills and knowledge required to develop or adapt analyses, including methods and procedures, to meet workplace and/or regulatory requirements..",
-    elements: [],
+    elements: ["Determine gaps and deficiencies in present methods and procedures", "Research and propose alternatives", "Evaluate alternatives, develop analyses and recommend methods and procedures", "Document and report new methods and procedure"],
   },
   {
     code: "MSMENV272",
@@ -1191,7 +1339,7 @@ export const UNITS = [
     industry: "MSM",
     industryName: "Manufacturing",
     question: "I have experience, skills and knowledge required to comply with environmental regulations, identify environment issues and minimise the risks of negative impact on work and carry out improvements in own work area..",
-    elements: [],
+    elements: ["Identify current resource use and environmental issues", "Comply with environmental regulations", "Seek opportunities to improve environmental practices and resource efficiency"],
   },
   {
     code: "MSMENV472",
@@ -1199,7 +1347,7 @@ export const UNITS = [
     industry: "MSM",
     industryName: "Manufacturing",
     question: "I have experience, skills and knowledge required to effectively analyse the workplace in relation to environmentally sustainable work practices, and to implement improvements and monitor their effectiveness..",
-    elements: [],
+    elements: ["Investigate current practices in relation to resource usage", "Set targets for improvements", "Implement performance improvement strategies", "Monitor performance"],
   },
   {
     code: "MSMENV672",
@@ -1207,7 +1355,7 @@ export const UNITS = [
     industry: "MSM",
     industryName: "Manufacturing",
     question: "I have experience, skills and knowledge required to develop and implement a workplace sustainability policy, including the modification of the policy to suit changed circumstances..",
-    elements: [],
+    elements: ["Develop workplace sustainability policy", "Communicate the policy", "Implement the policy", "Review policy implementation"],
   },
   {
     code: "MSMSUP301",
@@ -1216,7 +1364,7 @@ export const UNITS = [
     industryName: "Manufacturing",
     question:
       "I have experience, skills and knowledge required to apply the hazard analysis and critical control point (HACCP) principles to the manufacture of products to be used in contact with food, beverages, pharmaceuticals or similar situations..",
-    elements: [],
+    elements: ["Apply a HAT to an existing process", "Develop/modify a HACCP", "Interpret HACCP/HAT to another worker"],
   },
   {
     code: "RIISTD401",
@@ -1224,7 +1372,7 @@ export const UNITS = [
     industry: "RII",
     industryName: "Resources and Infrastructure",
     question: "I have experience, skills and knowledge required to monitor laboratory operations and the quality of results in the extractive industry..",
-    elements: [],
+    elements: ["Prepare to supervise laboratory operations and monitor quality of test results", "Establish resource requirements and procure resources", "Manage personnel within work area", "Assess the quality of data/results"],
   },
   {
     code: "TAEDEL311",
@@ -1232,8 +1380,8 @@ export const UNITS = [
     industry: "TAE",
     industryName: "Training and Education",
     question:
-      "I have experience, skills and knowledge required to conduct individual and small group work skill instruction using existing support materials and demonstration of work skills as a training strategy; and assess the success of training and one\u2019s own training performance.",
-    elements: [],
+      "I have experience, skills and knowledge required to conduct individual and small group work skill instruction using existing support materials and demonstration of work skills as a training strategy; and assess the success of training and one\\u2019s own training performance.",
+    elements: ["Organise instruction and demonstration", "Conduct instruction and demonstration", "Check training performance", "Review training performance"],
   },
   {
     code: "TLIF3091",
@@ -1241,6 +1389,6 @@ export const UNITS = [
     industry: "TLI",
     industryName: "Transport and Logistics",
     question: "I have experience, skills and knowledge required to identify and apply an awareness of hazardous substances and dangerous goods requirements..",
-    elements: [],
+    elements: ["Apply appropriate legislation for transporting dangerous goods and hazardous substances", "Separate dangerous goods and hazardous substances", "Deal with incidents involving dangerous goods and hazardous substances"],
   },
 ];

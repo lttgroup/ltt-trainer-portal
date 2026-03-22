@@ -3,6 +3,244 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { UNITS } from "../lib/units";
 
+// ── Admin Experience Tab ──────────────────────────────────────────────────────
+
+function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile, onUpdate }) {
+  const [saving, setSaving] = useState({});
+  const [localExp, setLocalExp] = useState({});
+
+  useEffect(() => {
+    const mapped = {};
+    experienceData.forEach((e) => {
+      mapped[e.unit_code] = {
+        competency_confirmed: e.competency_confirmed,
+        holds_unit: e.holds_unit || false,
+        admin_notes: e.admin_notes || "",
+        professional_development: e.professional_development || "",
+        element_descriptions: e.element_descriptions || {},
+      };
+    });
+    setLocalExp(mapped);
+  }, [experienceData]);
+
+  const unitsToShow = assignedUnits
+    .map((a) => UNITS.find((u) => u.code === a.unit_code))
+    .filter(Boolean)
+    .sort((a, b) => a.code.localeCompare(b.code));
+
+  const completedCount = experienceData.filter((e) => {
+    const unit = UNITS.find((u) => u.code === e.unit_code);
+    if (!unit) return false;
+    if (unit.elements.length === 0) return !!e.professional_development?.trim();
+    const descs = e.element_descriptions || {};
+    return unit.elements.every((_, i) => descs[i]?.trim());
+  }).length;
+
+  const saveUnit = async (unitCode) => {
+    setSaving((prev) => ({ ...prev, [unitCode]: true }));
+    const data = localExp[unitCode] || {};
+    await supabase.from("industry_experience").upsert(
+      {
+        trainer_id: trainerId,
+        unit_code: unitCode,
+        unit_title: UNITS.find((u) => u.code === unitCode)?.title || "",
+        competency_confirmed: data.competency_confirmed,
+        holds_unit: data.holds_unit,
+        admin_notes: data.admin_notes,
+        reviewed_by: adminProfile?.full_name,
+        reviewed_at: new Date().toISOString(),
+      },
+      { onConflict: "trainer_id,unit_code" },
+    );
+    setSaving((prev) => ({ ...prev, [unitCode]: false }));
+    onUpdate();
+  };
+
+  const update = (unitCode, field, value) => {
+    setLocalExp((prev) => ({
+      ...prev,
+      [unitCode]: { ...prev[unitCode], [field]: value },
+    }));
+  };
+
+  if (assignedUnits.length === 0)
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
+        <p className="text-sm text-gray-400">No units assigned yet — use the Stream Assignment tab first</p>
+      </div>
+    );
+
+  return (
+    <div>
+      {/* Summary */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-5 flex items-center gap-6">
+        <div className="flex-1">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Section 6 — Industry Experience</p>
+          <p className="text-sm text-gray-600">
+            {completedCount} of {unitsToShow.length} units completed by trainer. Use the controls below to confirm competency and record held units.
+          </p>
+        </div>
+        <div className="flex gap-4 text-center flex-shrink-0">
+          <div>
+            <p className="text-xl font-bold" style={{ color: "#1c5ea8" }}>
+              {Object.values(localExp).filter((e) => e.competency_confirmed === true).length}
+            </p>
+            <p className="text-xs text-gray-400">Confirmed</p>
+          </div>
+          <div>
+            <p className="text-xl font-bold" style={{ color: "#c93535" }}>
+              {Object.values(localExp).filter((e) => e.competency_confirmed === false).length}
+            </p>
+            <p className="text-xs text-gray-400">Not confirmed</p>
+          </div>
+          <div>
+            <p className="text-xl font-bold" style={{ color: "#32ba9a" }}>
+              {Object.values(localExp).filter((e) => e.holds_unit).length}
+            </p>
+            <p className="text-xs text-gray-400">Holds unit</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {unitsToShow.map((unit) => {
+          const exp = localExp[unit.code] || {};
+          const submitted = experienceData.find((e) => e.unit_code === unit.code);
+          const descs = submitted?.element_descriptions || {};
+
+          return (
+            <div key={unit.code} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100" style={{ backgroundColor: "#f9fafb" }}>
+                <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
+                  {unit.code}
+                </span>
+                <span className="text-sm font-medium text-gray-800 flex-1">{unit.title}</span>
+                {exp.holds_unit && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>
+                    Holds unit
+                  </span>
+                )}
+                {exp.competency_confirmed === true && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#dbeafe", color: "#1c5ea8" }}>
+                    ✓ Competency confirmed
+                  </span>
+                )}
+                {exp.competency_confirmed === false && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>
+                    ✗ Not confirmed
+                  </span>
+                )}
+              </div>
+
+              <div className="p-5">
+                {/* Trainer's element descriptions */}
+                {!submitted ? (
+                  <p className="text-sm text-gray-400 italic mb-4">Trainer has not completed this unit yet</p>
+                ) : (
+                  <div className="mb-5">
+                    {unit.elements.length > 0 ? (
+                      <div className="space-y-3">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Trainer's experience descriptions</p>
+                        {unit.elements.map((element, idx) => (
+                          <div key={idx} className="rounded-lg p-3 border border-gray-100" style={{ backgroundColor: "#f9fafb" }}>
+                            <p className="text-xs font-medium text-gray-500 mb-1">
+                              <span className="inline-block mr-2 text-xs font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: "#f0f4ff", color: "#1c5ea8" }}>
+                                {idx + 1}
+                              </span>
+                              {element}
+                            </p>
+                            <p className="text-sm text-gray-700 leading-relaxed">{descs[idx] || <span className="italic text-gray-300">Not completed</span>}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg p-3 border border-gray-100" style={{ backgroundColor: "#f9fafb" }}>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Experience Description</p>
+                        <p className="text-sm text-gray-700">{descs[0] || <span className="italic text-gray-300">Not completed</span>}</p>
+                      </div>
+                    )}
+
+                    {submitted.professional_development && (
+                      <div className="mt-3 rounded-lg p-3 border border-gray-100" style={{ backgroundColor: "#f9fafb" }}>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Professional Development</p>
+                        <p className="text-sm text-gray-700">{submitted.professional_development}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Admin controls */}
+                <div className="border-t border-gray-100 pt-4">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Admin Assessment</p>
+                  <div className="grid grid-cols-3 gap-4">
+                    {/* Competency confirmation */}
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-2">Competency</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => update(unit.code, "competency_confirmed", true)}
+                          className="flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all"
+                          style={exp.competency_confirmed === true ? { backgroundColor: "#dbeafe", color: "#1c5ea8", borderColor: "#93c5fd" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
+                        >
+                          ✓ Confirmed
+                        </button>
+                        <button
+                          onClick={() => update(unit.code, "competency_confirmed", false)}
+                          className="flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all"
+                          style={exp.competency_confirmed === false ? { backgroundColor: "#fdeaea", color: "#c93535", borderColor: "#fca5a5" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
+                        >
+                          ✗ Not confirmed
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Holds unit */}
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-2">Holds Unit</p>
+                      <button
+                        onClick={() => update(unit.code, "holds_unit", !exp.holds_unit)}
+                        className="w-full py-1.5 rounded-lg text-xs font-semibold border transition-all"
+                        style={exp.holds_unit ? { backgroundColor: "#e6f9f4", color: "#0f7a5a", borderColor: "#6ee7b7" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}
+                      >
+                        {exp.holds_unit ? "✓ Holds unit" : "Mark as holds unit"}
+                      </button>
+                    </div>
+
+                    {/* Save */}
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-2">Action</p>
+                      <button
+                        onClick={() => saveUnit(unit.code)}
+                        disabled={saving[unit.code]}
+                        className="w-full py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
+                        style={{ backgroundColor: saving[unit.code] ? "#9ca3af" : "#1c5ea8" }}
+                      >
+                        {saving[unit.code] ? "Saving..." : "Save assessment"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Admin notes */}
+                  <div className="mt-3">
+                    <textarea
+                      value={exp.admin_notes || ""}
+                      onChange={(e) => update(unit.code, "admin_notes", e.target.value)}
+                      placeholder="Admin notes (optional)..."
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs text-gray-700 focus:outline-none focus:border-blue-400 resize-none"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const STATUS_STYLES = {
   Compliant: { bg: "#e6f9f4", color: "#0f7a5a" },
   Pending: { bg: "#fdf3e0", color: "#b8711a" },
@@ -690,50 +928,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
       {activeTab === "streams" && <StreamsTab trainerId={id} responses={questionnaireResponses} assignedUnits={assignedUnits} onAssignmentChange={fetchAll} />}
 
       {/* ── EXPERIENCE TAB ── */}
-      {activeTab === "experience" && (
-        <Section
-          title="Section 6 — Industry Experience"
-          action={
-            <span className="text-xs text-gray-400">
-              {experienceData.filter((e) => e.experience_description?.trim()).length} of {assignedUnits.length} completed
-            </span>
-          }
-        >
-          {assignedUnits.length === 0 ? (
-            <p className="text-sm text-gray-400">No units assigned yet — use the Stream Assignment tab to assign units</p>
-          ) : experienceData.length === 0 ? (
-            <p className="text-sm text-gray-400">Trainer has not completed Section 6 yet</p>
-          ) : (
-            <div className="space-y-4">
-              {experienceData.map((e) => (
-                <div key={e.id} className="border border-gray-100 rounded-lg overflow-hidden">
-                  <div className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-100" style={{ backgroundColor: "#f9fafb" }}>
-                    <span className="text-xs font-bold px-2 py-1 rounded font-mono" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
-                      {e.unit_code}
-                    </span>
-                    <span className="text-sm font-medium text-gray-800">{e.unit_title}</span>
-                    {e.competency_confirmed && (
-                      <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>
-                        ✓ Confirmed
-                      </span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 p-4">
-                    <div>
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Industry Experience</p>
-                      <p className="text-sm text-gray-700 leading-relaxed">{e.experience_description || <span className="text-gray-300 italic">Not completed</span>}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Professional Development</p>
-                      <p className="text-sm text-gray-700 leading-relaxed">{e.professional_development || <span className="text-gray-300 italic">Not provided</span>}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Section>
-      )}
+      {activeTab === "experience" && <ExperienceTab trainerId={id} assignedUnits={assignedUnits} experienceData={experienceData} adminProfile={adminProfile} onUpdate={fetchAll} />}
 
       {/* ── EVIDENCE TAB ── */}
       {activeTab === "evidence" && (
