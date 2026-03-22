@@ -272,31 +272,36 @@ export default function Questionnaire({ profile }) {
     <div>
       <div ref={topRef} />
 
-      {/* Progress header */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-sm font-semibold text-gray-800">Section 5 — Skills Questionnaire</h2>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {answeredCount} of {totalCount} units completed
-            </p>
+      {/* Section 5 header — matches Trainer Profile section style */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
+        <div className="flex items-center gap-3 px-6 py-4" style={{ backgroundColor: "#081a47" }}>
+          <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#fff" }}>
+            5
           </div>
-          <span className="text-2xl font-bold" style={{ color: pct === 100 ? "#32ba9a" : "#1c5ea8" }}>
+          <h3 className="text-sm font-semibold text-white flex-1">Section 5 — Skills Questionnaire</h3>
+          <span className="text-sm font-bold" style={{ color: pct === 100 ? "#32ba9a" : "rgba(255,255,255,0.7)" }}>
             {pct}%
           </span>
         </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all"
-            style={{
-              width: `${pct}%`,
-              backgroundColor: pct === 100 ? "#32ba9a" : "#1c5ea8",
-            }}
-          />
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-gray-400">
+              {answeredCount} of {totalCount} units completed
+            </p>
+          </div>
+          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${pct}%`,
+                backgroundColor: pct === 100 ? "#32ba9a" : "#1c5ea8",
+              }}
+            />
+          </div>
+          <p className="text-xs text-gray-400 mt-3">
+            Select <strong>Yes</strong> or <strong>No</strong> for each unit. Each industry section will collapse automatically once all units are answered. You must respond to every unit before submitting.
+          </p>
         </div>
-        <p className="text-xs text-gray-400 mt-3">
-          Select <strong>Yes</strong> or <strong>No</strong> for each unit. Each industry section will collapse automatically once all units are answered. You must respond to every unit before submitting.
-        </p>
       </div>
 
       {/* Incomplete warning */}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
@@ -139,10 +139,9 @@ function QualificationDropdown({ value, onChange, placeholder }) {
 }
 
 // Section 3 — Industry qualifications
-function IndustryQualifications({ trainerId }) {
+// saveQuals is called by the parent via ref when the main Save/Continue is clicked
+function IndustryQualifications({ trainerId, saveRef }) {
   const [rows, setRows] = useState([{ qualification_code: "", qualification_title: "", provider_name: "", provider_id: "", issue_date: "" }]);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!trainerId) return;
@@ -155,9 +154,21 @@ function IndustryQualifications({ trainerId }) {
       });
   }, [trainerId]);
 
+  // Expose save function to parent
+  useEffect(() => {
+    if (saveRef) {
+      saveRef.current = async () => {
+        if (!trainerId) return;
+        const upserts = rows.filter((r) => r.qualification_code || r.qualification_title).map((r) => ({ ...r, trainer_id: trainerId }));
+        if (upserts.length > 0) {
+          await supabase.from("industry_qualifications").upsert(upserts);
+        }
+      };
+    }
+  }, [rows, trainerId, saveRef]);
+
   const updateRow = (i, field, value) => {
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
-    setSaved(false);
   };
 
   const addRow = () => {
@@ -171,15 +182,6 @@ function IndustryQualifications({ trainerId }) {
         issue_date: "",
       },
     ]);
-  };
-
-  const saveQuals = async () => {
-    if (!trainerId) return;
-    setSaving(true);
-    const upserts = rows.filter((r) => r.qualification_code || r.qualification_title).map((r) => ({ ...r, trainer_id: trainerId }));
-    await supabase.from("industry_qualifications").upsert(upserts);
-    setSaved(true);
-    setSaving(false);
   };
 
   return (
@@ -233,12 +235,9 @@ function IndustryQualifications({ trainerId }) {
           </tbody>
         </table>
       </div>
-      <div className="flex items-center justify-between mt-3">
+      <div className="mt-3">
         <button onClick={addRow} className="text-xs font-medium flex items-center gap-1" style={{ color: "#1c5ea8" }}>
           + Add qualification
-        </button>
-        <button onClick={saveQuals} disabled={saving} className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">
-          {saving ? "Saving..." : saved ? "✓ Saved" : "Save"}
         </button>
       </div>
     </div>
@@ -252,6 +251,7 @@ export default function Profile({ profile }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const saveQualsRef = useRef(null);
 
   // Section 2 credential choice
   const [credentialChoice, setCredentialChoice] = useState(null);
@@ -347,6 +347,9 @@ export default function Profile({ profile }) {
 
     setSaving(true);
     setError("");
+
+    // Save Section 3 qualifications
+    if (saveQualsRef.current) await saveQualsRef.current();
 
     await supabase
       .from("trainers")
@@ -567,7 +570,7 @@ export default function Profile({ profile }) {
       {/* Section 3 */}
       <Section number="3" title="Section 3 — Industry Competencies">
         <p className="text-xs text-gray-400 mb-4">List all current industry-related qualifications you hold</p>
-        <IndustryQualifications trainerId={trainerId} />
+        <IndustryQualifications trainerId={trainerId} saveRef={saveQualsRef} />
       </Section>
 
       {/* Section 4 */}
@@ -579,7 +582,7 @@ export default function Profile({ profile }) {
           </label>
           <label className="flex gap-3 cursor-pointer">
             <input type="checkbox" checked={form.declaration_copies} onChange={(e) => updateForm("declaration_copies", e.target.checked)} className="mt-0.5 flex-shrink-0" />
-            <span className="text-sm text-gray-700">I have provided copies of all qualifications, records of results, statements of attainment and a verifiable USI transcript.</span>
+            <span className="text-sm text-gray-700">I have copies of all qualifications, records of results, statements of attainment and a verifiable USI transcript which I will upload as part of this process.</span>
           </label>
         </div>
         <div className="grid grid-cols-2 gap-4">
