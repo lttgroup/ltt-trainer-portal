@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { UNITS } from "../lib/units";
+import { generateProfilePDF } from "../lib/generateProfilePDF";
 
 // ── Admin Experience Tab ───────────────────────────────────────────────────────
 function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile, onUpdate }) {
@@ -28,15 +29,6 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
   }, [experienceData]);
 
   const unitsToShow = assignedUnits.map((a) => UNITS.find((u) => u.code === a.unit_code)).filter(Boolean).sort((a, b) => a.code.localeCompare(b.code));
-
-  const unitHasChanges = (unitCode) => {
-    const exp = localExp[unitCode];
-    if (!exp || !exp.trainer_updated_at) return false;
-    if (!exp.reviewed_at) return exp.competency_confirmed !== null; // reviewed but no timestamp recorded yet
-    return new Date(exp.trainer_updated_at) > new Date(exp.reviewed_at);
-  };
-
-  const changedUnits = unitsToShow.filter((u) => unitHasChanges(u.code));
   const completedCount = experienceData.filter((e) => {
     const unit = UNITS.find((u) => u.code === e.unit_code);
     if (!unit) return false;
@@ -44,35 +36,30 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
     return unit.elements.every((_, i) => (e.element_descriptions || {})[i]?.trim());
   }).length;
 
+  const unitHasChanges = (unitCode) => {
+    const exp = localExp[unitCode];
+    if (!exp || !exp.trainer_updated_at) return false;
+    if (!exp.reviewed_at) return exp.competency_confirmed !== null;
+    return new Date(exp.trainer_updated_at) > new Date(exp.reviewed_at);
+  };
+  const changedUnits = unitsToShow.filter((u) => unitHasChanges(u.code));
+
   const saveUnit = async (unitCode) => {
     setSaving((prev) => ({ ...prev, [unitCode]: true }));
     const data = localExp[unitCode] || {};
     const now = new Date().toISOString();
-    // Only save the assessment decision — never overwrite trainer content
-    const payload = {
-      competency_confirmed: data.competency_confirmed,
-      holds_unit: data.holds_unit ?? false,
-      quality_notes: data.quality_notes || null,
-      reviewed_by: adminProfile?.full_name || null,
-      reviewed_at: now,
-    };
+    const payload = { competency_confirmed: data.competency_confirmed, holds_unit: data.holds_unit ?? false, quality_notes: data.quality_notes || null, reviewed_by: adminProfile?.full_name || null, reviewed_at: now };
     const { data: updated, error } = await supabase.from("industry_experience").update(payload).eq("trainer_id", trainerId).eq("unit_code", unitCode).select();
     if (!error && (!updated || updated.length === 0)) {
-      // Row doesn't exist yet — insert
       await supabase.from("industry_experience").upsert({ trainer_id: trainerId, unit_code: unitCode, unit_title: UNITS.find((u) => u.code === unitCode)?.title || "", element_descriptions: {}, ...payload }, { onConflict: "trainer_id,unit_code" });
     }
-    // Update local reviewed_at so "changed" badge clears
     setLocalExp((prev) => ({ ...prev, [unitCode]: { ...prev[unitCode], reviewed_at: now } }));
     setSaving((prev) => ({ ...prev, [unitCode]: false }));
     setCollapsed((prev) => ({ ...prev, [unitCode]: true }));
-    // Scroll to next unit needing review
     setTimeout(() => {
       const allCodes = unitsToShow.map((u) => u.code);
-      const currentIdx = allCodes.indexOf(unitCode);
-      const nextCode = allCodes.slice(currentIdx + 1).find((code) => {
-        const e = localExp[code] || {};
-        return e.competency_confirmed === null || e.competency_confirmed === undefined || unitHasChanges(code);
-      }) || allCodes[currentIdx + 1];
+      const ci = allCodes.indexOf(unitCode);
+      const nextCode = allCodes.slice(ci + 1).find((code) => { const e = localExp[code] || {}; return e.competency_confirmed === null || e.competency_confirmed === undefined || unitHasChanges(code); }) || allCodes[ci + 1];
       if (nextCode) { const el = document.getElementById(`unit-card-${nextCode}`); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }
     }, 150);
     onUpdate();
@@ -89,7 +76,7 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
         <div className="flex-1">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Section 6 — Industry Experience</p>
           <p className="text-sm text-gray-600">{completedCount} of {unitsToShow.length} units completed by trainer.</p>
-          {changedUnits.length > 0 && <p className="text-xs font-semibold mt-1" style={{ color: "#7c3aed" }}>↺ {changedUnits.length} unit{changedUnits.length !== 1 ? "s" : ""} updated by trainer — need re-review only</p>}
+          {changedUnits.length > 0 && <p className="text-xs font-semibold mt-1" style={{ color: "#7c3aed" }}>↺ {changedUnits.length} unit{changedUnits.length !== 1 ? "s" : ""} updated — only these need re-review</p>}
         </div>
         <div className="flex gap-4 text-center flex-shrink-0">
           <div><p className="text-xl font-bold" style={{ color: "#16a34a" }}>{Object.values(localExp).filter((e) => e.competency_confirmed === true).length}</p><p className="text-xs text-gray-400">Approved</p></div>
@@ -124,8 +111,7 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
           else if (exp.competency_confirmed === false) { cardBorder = "#fca5a5"; collapsedBg = "#fef2f2"; }
 
           return (
-            <div key={unit.code} id={`unit-card-${unit.code}`} className="bg-white border rounded-xl overflow-hidden"
-              style={isCollapsed ? { borderColor: cardBorder } : { borderColor: "#e5e7eb" }}>
+            <div key={unit.code} id={`unit-card-${unit.code}`} className="bg-white border rounded-xl overflow-hidden" style={isCollapsed ? { borderColor: cardBorder } : { borderColor: "#e5e7eb" }}>
               <div className="flex items-center gap-3 px-5 py-3 cursor-pointer select-none"
                 style={{ backgroundColor: isCollapsed ? collapsedBg : "#f9fafb", borderBottom: isCollapsed ? "none" : "1px solid #f3f4f6" }}
                 onClick={() => setCollapsed((prev) => ({ ...prev, [unit.code]: !prev[unit.code] }))}>
@@ -137,14 +123,9 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
                 {!hasChanges && exp.competency_confirmed === false && <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>✗ Not Approved</span>}
                 <span className="text-gray-400 text-xs ml-1 flex-shrink-0">{isCollapsed ? "▾" : "▴"}</span>
               </div>
-
               {!isCollapsed && (
                 <div className="p-5">
-                  {hasChanges && (
-                    <div className="rounded-xl p-3 mb-4 border" style={{ backgroundColor: "#f5f3ff", borderColor: "#c4b5fd" }}>
-                      <p className="text-xs font-semibold" style={{ color: "#7c3aed" }}>↺ Trainer updated this unit since last review — please re-assess below</p>
-                    </div>
-                  )}
+                  {hasChanges && <div className="rounded-xl p-3 mb-4 border" style={{ backgroundColor: "#f5f3ff", borderColor: "#c4b5fd" }}><p className="text-xs font-semibold" style={{ color: "#7c3aed" }}>↺ Trainer updated this unit since last review — please re-assess</p></div>}
                   {!submitted ? <p className="text-sm text-gray-400 italic mb-4">Trainer has not completed this unit yet</p> : (
                     <div className="mb-5">
                       {unit.elements.length > 0 ? (
@@ -178,13 +159,9 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
                         <p className="text-xs font-medium text-gray-500 mb-2">Competency Decision</p>
                         <div className="flex gap-2">
                           <button onClick={() => update(unit.code, "competency_confirmed", true)} className="flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all"
-                            style={exp.competency_confirmed === true ? { backgroundColor: "#dcfce7", color: "#166534", borderColor: "#86efac" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>
-                            ✓ Approved
-                          </button>
+                            style={exp.competency_confirmed === true ? { backgroundColor: "#dcfce7", color: "#166534", borderColor: "#86efac" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>✓ Approved</button>
                           <button onClick={() => update(unit.code, "competency_confirmed", false)} className="flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all"
-                            style={exp.competency_confirmed === false ? { backgroundColor: "#fdeaea", color: "#c93535", borderColor: "#fca5a5" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>
-                            ✗ Not Approved
-                          </button>
+                            style={exp.competency_confirmed === false ? { backgroundColor: "#fdeaea", color: "#c93535", borderColor: "#fca5a5" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>✗ Not Approved</button>
                         </div>
                       </div>
                       <div>
@@ -196,10 +173,8 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
                       </div>
                       <div>
                         <p className="text-xs font-medium text-gray-500 mb-2">Action</p>
-                        <button onClick={() => saveUnit(unit.code)} disabled={saving[unit.code]} className="w-full py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
-                          style={{ backgroundColor: saving[unit.code] ? "#9ca3af" : "#1c5ea8" }}>
-                          {saving[unit.code] ? "Saving..." : "Save assessment"}
-                        </button>
+                        <button onClick={() => saveUnit(unit.code)} disabled={saving[unit.code]} className="w-full py-1.5 rounded-lg text-xs font-semibold text-white"
+                          style={{ backgroundColor: saving[unit.code] ? "#9ca3af" : "#1c5ea8" }}>{saving[unit.code] ? "Saving..." : "Save assessment"}</button>
                       </div>
                     </div>
                     <div className="mt-3">
@@ -334,6 +309,96 @@ function ApprovalButtons({ approved, onApprove, onReject, saving, approveLabel =
   );
 }
 
+// ── Section 5 — Questionnaire with filters ────────────────────────────────────
+function QuestionnaireTab({ questionnaireResponses, experienceData }) {
+  const [filter, setFilter] = useState("all");
+
+  const answeredCount = questionnaireResponses.filter((r) => r.response).length;
+
+  const filterButtons = [
+    { id: "all", label: "All", color: null },
+    { id: "approved", label: "✓ Approved", bg: "#dcfce7", color: "#166534" },
+    { id: "not_approved", label: "✗ Not Approved", bg: "#fdeaea", color: "#c93535" },
+    { id: "experience", label: "Experience", bg: "#dbeafe", color: "#1c5ea8" },
+    { id: "no_experience", label: "No Experience", bg: "#f3f4f6", color: "#6b7280" },
+  ];
+
+  const filteredResponses = questionnaireResponses.filter((r) => {
+    const exp = experienceData.find((e) => e.unit_code === r.unit_code);
+    const approved = r.response === "yes" && exp?.competency_confirmed === true;
+    const notApproved = r.response === "yes" && exp?.competency_confirmed === false;
+    const hasExp = r.response === "yes" && exp?.competency_confirmed == null;
+    const noExp = r.response !== "yes";
+    if (filter === "all") return true;
+    if (filter === "approved") return approved;
+    if (filter === "not_approved") return notApproved;
+    if (filter === "experience") return hasExp;
+    if (filter === "no_experience") return noExp;
+    return true;
+  });
+
+  const counts = {
+    all: questionnaireResponses.length,
+    approved: questionnaireResponses.filter((r) => r.response === "yes" && experienceData.find((e) => e.unit_code === r.unit_code)?.competency_confirmed === true).length,
+    not_approved: questionnaireResponses.filter((r) => r.response === "yes" && experienceData.find((e) => e.unit_code === r.unit_code)?.competency_confirmed === false).length,
+    experience: questionnaireResponses.filter((r) => r.response === "yes" && experienceData.find((e) => e.unit_code === r.unit_code)?.competency_confirmed == null).length,
+    no_experience: questionnaireResponses.filter((r) => r.response !== "yes").length,
+  };
+
+  if (questionnaireResponses.length === 0)
+    return <div className="bg-white border border-gray-200 rounded-xl p-8 text-center"><p className="text-sm text-gray-400">Trainer has not completed the questionnaire yet</p></div>;
+
+  return (
+    <div>
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        {filterButtons.map((btn) => (
+          <button key={btn.id} onClick={() => setFilter(btn.id)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all"
+            style={filter === btn.id
+              ? { backgroundColor: btn.bg || "#081a47", color: btn.color || "#fff", borderColor: btn.bg || "#081a47" }
+              : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#e5e7eb" }}>
+            {btn.label}
+            <span className="px-1.5 py-0.5 rounded-full text-xs font-bold"
+              style={{ backgroundColor: filter === btn.id ? "rgba(255,255,255,0.25)" : "#f3f4f6", color: filter === btn.id ? (btn.color || "#fff") : "#6b7280" }}>
+              {counts[btn.id]}
+            </span>
+          </button>
+        ))}
+        <span className="text-xs text-gray-400 ml-auto">{answeredCount} of {UNITS.length} answered</span>
+      </div>
+
+      {/* Unit grid */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4">
+        {filteredResponses.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-8">No units match this filter</p>
+        ) : (
+          <div className="grid grid-cols-6 gap-1.5">
+            {[...filteredResponses].sort((a, b) => a.unit_code.localeCompare(b.unit_code)).map((r) => {
+              const exp = experienceData.find((e) => e.unit_code === r.unit_code);
+              const approved = r.response === "yes" && exp?.competency_confirmed === true;
+              const notApproved = r.response === "yes" && exp?.competency_confirmed === false;
+              const hasExp = r.response === "yes" && exp?.competency_confirmed == null;
+              let bg, border, cc, pb, pc, pl;
+              if (approved) { bg = "#f0fdf4"; border = "#86efac"; cc = "#166534"; pb = "#dcfce7"; pc = "#166534"; pl = "✓ Approved"; }
+              else if (notApproved) { bg = "#fef2f2"; border = "#fca5a5"; cc = "#c93535"; pb = "#fdeaea"; pc = "#c93535"; pl = "✗ Not Appr."; }
+              else if (hasExp) { bg = "#eff6ff"; border = "#bfdbfe"; cc = "#1c5ea8"; pb = "#dbeafe"; pc = "#1c5ea8"; pl = "Experience"; }
+              else { bg = "#fafafa"; border = "#e5e7eb"; cc = "#9ca3af"; pb = "#f3f4f6"; pc = "#9ca3af"; pl = "No Exp."; }
+              return (
+                <div key={r.id} className="flex flex-col gap-1 rounded-lg px-2.5 py-2 border" style={{ backgroundColor: bg, borderColor: border }}>
+                  <span className="text-xs font-bold font-mono" style={{ color: cc }}>{r.unit_code}</span>
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-center" style={{ backgroundColor: pb, color: pc }}>{pl}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Streams Tab with filters ───────────────────────────────────────────────────
 function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAssignmentChange }) {
   const [streams, setStreams] = useState([]);
   const [streamUnits, setStreamUnits] = useState({});
@@ -341,8 +406,10 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [filterQual, setFilterQual] = useState("All");
+  const [filterStatus, setFilterStatus] = useState("all"); // all | approved | partial | limited | assigned
   const [loading, setLoading] = useState(true);
   const [expandedStream, setExpandedStream] = useState(null);
+
   const yesSet = new Set(responses.filter((r) => r.response === "yes").map((r) => r.unit_code));
   const assignedSet = new Set(assignedUnits.map((a) => a.unit_code));
 
@@ -372,9 +439,52 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
     if (codes.size) await supabase.from("assigned_units").insert([...codes].map((c) => ({ trainer_id: trainerId, unit_code: c })));
     setSaved(true); setSaving(false); onAssignmentChange();
   };
-  const getCov = (sid) => { const u = streamUnits[sid] || []; if (!u.length) return { pct: 0, yes: 0, total: 0 }; const y = u.filter((c) => yesSet.has(c)).length; return { pct: Math.round((y / u.length) * 100), yes: y, total: u.length }; };
+
+  const getStreamInfo = (sid) => {
+    const units = streamUnits[sid] || [];
+    const yes = units.filter((c) => yesSet.has(c)).length;
+    const pct = units.length ? Math.round((yes / units.length) * 100) : 0;
+    const allApproved = units.length > 0 && units.every((u) => experienceData.find((e) => e.unit_code === u && e.competency_confirmed === true));
+    const anyNotApproved = units.some((u) => experienceData.find((e) => e.unit_code === u && e.competency_confirmed === false));
+    const approvedCount = units.filter((u) => experienceData.find((e) => e.unit_code === u && e.competency_confirmed === true)).length;
+    const isAssigned = units.length > 0 && units.every((u) => assignedSet.has(u));
+    return { units, yes, pct, allApproved, anyNotApproved, approvedCount, isAssigned };
+  };
+
   const quals = [...new Set(streams.map((s) => s.qualification_code))].sort();
-  const filtered = filterQual === "All" ? streams : streams.filter((s) => s.qualification_code === filterQual);
+
+  // Stream status filter options with counts
+  const streamStatusCounts = {
+    all: streams.length,
+    approved: streams.filter((s) => getStreamInfo(s.id).allApproved).length,
+    assigned: streams.filter((s) => getStreamInfo(s.id).isAssigned && !getStreamInfo(s.id).allApproved).length,
+    full_exp: streams.filter((s) => { const i = getStreamInfo(s.id); return i.pct === 100 && !i.isAssigned; }).length,
+    partial: streams.filter((s) => { const i = getStreamInfo(s.id); return i.pct >= 60 && i.pct < 100; }).length,
+    limited: streams.filter((s) => getStreamInfo(s.id).pct < 60).length,
+  };
+
+  const streamStatusFilters = [
+    { id: "all", label: "All streams" },
+    { id: "approved", label: "✓ Fully Approved", bg: "#dcfce7", color: "#166534" },
+    { id: "assigned", label: "Assigned", bg: "#dbeafe", color: "#1c5ea8" },
+    { id: "full_exp", label: "Full Experience", bg: "#dbeafe", color: "#1c5ea8" },
+    { id: "partial", label: "Partial Experience", bg: "#fdf3e0", color: "#92500a" },
+    { id: "limited", label: "Limited Experience", bg: "#fdeaea", color: "#c93535" },
+  ];
+
+  const filtered = streams.filter((s) => {
+    const qualMatch = filterQual === "All" || s.qualification_code === filterQual;
+    if (!qualMatch) return false;
+    const i = getStreamInfo(s.id);
+    if (filterStatus === "all") return true;
+    if (filterStatus === "approved") return i.allApproved;
+    if (filterStatus === "assigned") return i.isAssigned && !i.allApproved;
+    if (filterStatus === "full_exp") return i.pct === 100 && !i.isAssigned;
+    if (filterStatus === "partial") return i.pct >= 60 && i.pct < 100;
+    if (filterStatus === "limited") return i.pct < 60;
+    return true;
+  });
+
   const grouped = {};
   filtered.forEach((s) => { if (!grouped[s.qualification_code]) grouped[s.qualification_code] = []; grouped[s.qualification_code].push(s); });
   const selCount = new Set([...selected].flatMap((sid) => streamUnits[sid] || [])).size;
@@ -387,70 +497,93 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
         <div className="flex-1"><p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "rgba(255,255,255,0.5)" }}>Stream Assignment</p><p className="text-sm text-white">Select streams for Section 6.</p></div>
         <div className="text-right flex-shrink-0"><p className="text-2xl font-bold text-white">{selected.size}</p><p className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>stream{selected.size !== 1 ? "s" : ""} selected</p>{selected.size > 0 && <p className="text-xs mt-1" style={{ color: "#65f6cc" }}>{selCount} units</p>}</div>
       </div>
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {["All", ...quals].map((q) => <button key={q} onClick={() => setFilterQual(q)} className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all" style={filterQual === q ? { backgroundColor: "#081a47", color: "#fff", borderColor: "#081a47" } : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#e5e7eb" }}>{q === "All" ? "All qualifications" : q}</button>)}
+
+      {/* Filters row */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        {/* Qualification filter */}
+        <select value={filterQual} onChange={(e) => setFilterQual(e.target.value)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white text-gray-700 focus:outline-none">
+          <option value="All">All qualifications</option>
+          {quals.map((q) => <option key={q} value={q}>{q}</option>)}
+        </select>
+
+        {/* Status filter chips */}
+        {streamStatusFilters.map((btn) => (
+          <button key={btn.id} onClick={() => setFilterStatus(btn.id)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all"
+            style={filterStatus === btn.id
+              ? { backgroundColor: btn.bg || "#081a47", color: btn.color || "#fff", borderColor: btn.bg || "#081a47" }
+              : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#e5e7eb" }}>
+            {btn.label}
+            <span className="px-1.5 py-0.5 rounded-full text-xs"
+              style={{ backgroundColor: filterStatus === btn.id ? "rgba(255,255,255,0.25)" : "#f3f4f6", color: filterStatus === btn.id ? (btn.color || "#fff") : "#6b7280" }}>
+              {streamStatusCounts[btn.id]}
+            </span>
+          </button>
+        ))}
+
+        <span className="text-xs text-gray-400 ml-auto">{filtered.length} of {streams.length} streams</span>
       </div>
-      {Object.entries(grouped).map(([qual, qualStreams]) => (
-        <div key={qual} className="mb-5">
-          <div className="flex items-center gap-3 mb-3"><span className="text-xs font-bold px-3 py-1.5 rounded-lg text-white" style={{ backgroundColor: "#16406f" }}>{qual}</span><div className="flex-1 h-px bg-gray-200" /></div>
-          <div className="grid grid-cols-4 gap-3">
-            {qualStreams.map((stream) => {
-              const cov = getCov(stream.id);
-              const isSel = selected.has(stream.id);
-              const codes = streamUnits[stream.id] || [];
-              const allApp = codes.length > 0 && codes.every((c) => experienceData.find((e) => e.unit_code === c && e.competency_confirmed === true));
-              const anyNotApp = codes.some((c) => experienceData.find((e) => e.unit_code === c && e.competency_confirmed === false));
-              const appCount = codes.filter((c) => experienceData.find((e) => e.unit_code === c && e.competency_confirmed === true)).length;
-              const isAssigned = codes.length > 0 && codes.every((c) => assignedSet.has(c));
-              let bg = "#fff", border = "#e5e7eb";
-              if (allApp) { bg = "#f0fdf4"; border = "#86efac"; }
-              else if (anyNotApp) { bg = "#fef2f2"; border = "#fca5a5"; }
-              else if (isSel) { bg = "#eff6ff"; border = "#1c5ea8"; }
-              else if (cov.pct === 100) { bg = "#f8faff"; border = "#bfdbfe"; }
-              let bar = cov.pct === 100 ? "#1c5ea8" : cov.pct >= 60 ? "#e8a020" : "#c93535";
-              if (allApp) bar = "#16a34a";
-              return (
-                <button key={stream.id} onClick={() => toggleStream(stream.id)} className="text-left rounded-xl p-4 transition-all border-2" style={{ borderColor: border, backgroundColor: bg }}>
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-gray-800 leading-snug">{stream.stream_name}</p><p className="text-xs text-gray-400 mt-0.5">{stream.total_units} units</p></div>
-                    <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: allApp ? "#16a34a" : isSel ? "#1c5ea8" : "#d1d5db", backgroundColor: allApp ? "#16a34a" : isSel ? "#1c5ea8" : "transparent" }}>
-                      {(allApp || isSel) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+
+      {Object.keys(grouped).length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-xl p-8 text-center"><p className="text-sm text-gray-400">No streams match this filter</p></div>
+      ) : (
+        Object.entries(grouped).map(([qual, qualStreams]) => (
+          <div key={qual} className="mb-5">
+            <div className="flex items-center gap-3 mb-3"><span className="text-xs font-bold px-3 py-1.5 rounded-lg text-white" style={{ backgroundColor: "#16406f" }}>{qual}</span><div className="flex-1 h-px bg-gray-200" /></div>
+            <div className="grid grid-cols-4 gap-3">
+              {qualStreams.map((stream) => {
+                const isSel = selected.has(stream.id);
+                const { units, yes, pct, allApproved, anyNotApproved, approvedCount, isAssigned } = getStreamInfo(stream.id);
+                let bg = "#fff", border = "#e5e7eb";
+                if (allApproved) { bg = "#f0fdf4"; border = "#86efac"; }
+                else if (anyNotApproved) { bg = "#fef2f2"; border = "#fca5a5"; }
+                else if (isSel) { bg = "#eff6ff"; border = "#1c5ea8"; }
+                else if (pct === 100) { bg = "#f8faff"; border = "#bfdbfe"; }
+                let bar = pct === 100 ? "#1c5ea8" : pct >= 60 ? "#e8a020" : "#c93535";
+                if (allApproved) bar = "#16a34a";
+                return (
+                  <button key={stream.id} onClick={() => toggleStream(stream.id)} className="text-left rounded-xl p-4 transition-all border-2" style={{ borderColor: border, backgroundColor: bg }}>
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-gray-800 leading-snug">{stream.stream_name}</p><p className="text-xs text-gray-400 mt-0.5">{stream.total_units} units</p></div>
+                      <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: allApproved ? "#16a34a" : isSel ? "#1c5ea8" : "#d1d5db", backgroundColor: allApproved ? "#16a34a" : isSel ? "#1c5ea8" : "transparent" }}>
+                        {(allApproved || isSel) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                      </div>
                     </div>
-                  </div>
-                  <div className="mb-1.5"><div className="flex justify-between mb-1"><span className="text-xs text-gray-400">Trainer experience</span><span className="text-xs font-semibold" style={{ color: bar }}>{cov.yes}/{cov.total}</span></div><div className="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${cov.pct}%`, backgroundColor: bar }} /></div></div>
-                  {codes.length > 0 && <div className="mb-1.5"><div className="flex justify-between mb-1"><span className="text-xs text-gray-400">Quality approved</span><span className="text-xs font-semibold" style={{ color: allApp ? "#16a34a" : "#6b7280" }}>{appCount}/{codes.length}</span></div><div className="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.round((appCount / codes.length) * 100)}%`, backgroundColor: allApp ? "#16a34a" : "#32ba9a" }} /></div></div>}
-                  <div className="flex gap-1.5 mt-2 flex-wrap">
-                    {allApp && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>✓ Approved</span>}
-                    {!allApp && cov.pct === 100 && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#dbeafe", color: "#1c5ea8" }}>Full experience</span>}
-                    {cov.pct >= 60 && cov.pct < 100 && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#fdf3e0", color: "#b8711a" }}>Partial</span>}
-                    {cov.pct < 60 && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>Limited</span>}
-                    {isAssigned && !allApp && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>Assigned</span>}
-                  </div>
-                  <button className="w-full mt-2 py-1 text-xs text-gray-400 hover:text-gray-600 text-center" onClick={(e) => { e.stopPropagation(); setExpandedStream(expandedStream === stream.id ? null : stream.id); }}>
-                    {expandedStream === stream.id ? "▲ Hide units" : "▼ Show units"}
+                    <div className="mb-1.5"><div className="flex justify-between mb-1"><span className="text-xs text-gray-400">Experience</span><span className="text-xs font-semibold" style={{ color: bar }}>{yes}/{units.length}</span></div><div className="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: bar }} /></div></div>
+                    {units.length > 0 && <div className="mb-1.5"><div className="flex justify-between mb-1"><span className="text-xs text-gray-400">Approved</span><span className="text-xs font-semibold" style={{ color: allApproved ? "#16a34a" : "#6b7280" }}>{approvedCount}/{units.length}</span></div><div className="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.round((approvedCount / units.length) * 100)}%`, backgroundColor: allApproved ? "#16a34a" : "#32ba9a" }} /></div></div>}
+                    <div className="flex gap-1.5 mt-2 flex-wrap">
+                      {allApproved && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>✓ Approved</span>}
+                      {!allApproved && pct === 100 && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#dbeafe", color: "#1c5ea8" }}>Full exp.</span>}
+                      {pct >= 60 && pct < 100 && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#fdf3e0", color: "#b8711a" }}>Partial</span>}
+                      {pct < 60 && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>Limited</span>}
+                      {isAssigned && !allApproved && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>Assigned</span>}
+                    </div>
+                    <button className="w-full mt-2 py-1 text-xs text-gray-400 hover:text-gray-600 text-center" onClick={(e) => { e.stopPropagation(); setExpandedStream(expandedStream === stream.id ? null : stream.id); }}>
+                      {expandedStream === stream.id ? "▲ Hide units" : "▼ Show units"}
+                    </button>
+                    {expandedStream === stream.id && (
+                      <div className="mt-2 pt-2 border-t border-gray-200 space-y-1" onClick={(e) => e.stopPropagation()}>
+                        {units.map((code) => {
+                          const exp = experienceData.find((e) => e.unit_code === code);
+                          const isApp = exp?.competency_confirmed === true, isNotApp = exp?.competency_confirmed === false, hasExp = yesSet.has(code);
+                          return (
+                            <div key={code} className="flex items-center gap-2 px-1 py-1 rounded" style={{ backgroundColor: isApp ? "#f0fdf4" : isNotApp ? "#fef2f2" : "#f9fafb" }}>
+                              <span className="text-xs font-bold font-mono flex-shrink-0" style={{ color: isApp ? "#166534" : isNotApp ? "#c93535" : hasExp ? "#1c5ea8" : "#9ca3af" }}>{code}</span>
+                              <span className="text-xs text-gray-500 flex-1 truncate">{UNITS.find((u) => u.code === code)?.title}</span>
+                              <span className="text-xs font-semibold" style={{ color: isApp ? "#166534" : isNotApp ? "#c93535" : hasExp ? "#1c5ea8" : "#9ca3af" }}>{isApp ? "✓" : isNotApp ? "✗" : hasExp ? "~" : "—"}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </button>
-                  {expandedStream === stream.id && (
-                    <div className="mt-2 pt-2 border-t border-gray-200 space-y-1" onClick={(e) => e.stopPropagation()}>
-                      {codes.map((code) => {
-                        const unit = UNITS.find((u) => u.code === code);
-                        const exp = experienceData.find((e) => e.unit_code === code);
-                        const isApp = exp?.competency_confirmed === true, isNotApp = exp?.competency_confirmed === false, hasExp = yesSet.has(code);
-                        return (
-                          <div key={code} className="flex items-center gap-2 px-1 py-1 rounded" style={{ backgroundColor: isApp ? "#f0fdf4" : isNotApp ? "#fef2f2" : "#f9fafb" }}>
-                            <span className="text-xs font-bold font-mono flex-shrink-0" style={{ color: isApp ? "#166534" : isNotApp ? "#c93535" : hasExp ? "#1c5ea8" : "#9ca3af" }}>{code}</span>
-                            <span className="text-xs text-gray-500 flex-1 truncate">{unit?.title}</span>
-                            <span className="text-xs font-semibold" style={{ color: isApp ? "#166534" : isNotApp ? "#c93535" : hasExp ? "#1c5ea8" : "#9ca3af" }}>{isApp ? "✓" : isNotApp ? "✗" : hasExp ? "~" : "—"}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        ))
+      )}
+
       <div className="flex items-center justify-between pt-2 pb-4">
         <p className="text-xs text-gray-400">{selected.size === 0 ? "No streams selected" : `${selCount} units across ${selected.size} stream${selected.size !== 1 ? "s" : ""}`}</p>
         <button onClick={handleSave} disabled={saving} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white" style={{ backgroundColor: saving ? "#9ca3af" : "#1c5ea8" }}>{saving ? "Saving..." : saved ? "✓ Saved" : "Save Stream Assignment"}</button>
@@ -459,6 +592,7 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
   );
 }
 
+// ── Main component ─────────────────────────────────────────────────────────────
 export default function TrainerDetail({ profile: adminProfile }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -471,6 +605,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
   const [evidenceFiles, setEvidenceFiles] = useState([]);
   const [assignedUnits, setAssignedUnits] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [exportingPDF, setExportingPDF] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingS1, setSavingS1] = useState(false);
   const [savingS4, setSavingS4] = useState(false);
@@ -495,11 +630,29 @@ export default function TrainerDetail({ profile: adminProfile }) {
     setTrainer(td); setTrainerProfile(pd); setQuestionnaireResponses(resp || []); setExperienceData(exp || []); setIndustryQuals(quals || []); setEvidenceFiles(files || []); setAssignedUnits(assigned || []); setLoading(false);
   };
 
-  // Individual section approval functions
-  const approveSection = async (field, value, setSaving) => {
-    setSaving(true);
+  const handleExportPDF = async () => {
+    setExportingPDF(true);
+    try {
+      await generateProfilePDF({
+        trainer,
+        trainerProfile,
+        industryQuals,
+        evidenceFiles,
+        questResponses: questionnaireResponses,
+        experienceData,
+        assignedUnits,
+      });
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      alert("PDF export failed. Make sure jsPDF is installed: npm install jspdf");
+    }
+    setExportingPDF(false);
+  };
+
+  const approveSection = async (field, value, setSavingFn) => {
+    setSavingFn(true);
     await supabase.from("trainer_profiles").upsert({ trainer_id: id, [field]: value, reviewed_by: adminProfile?.full_name, reviewed_at: new Date().toISOString() }, { onConflict: "trainer_id" });
-    await fetchAll(); setSaving(false);
+    await fetchAll(); setSavingFn(false);
   };
 
   const updateCredentialApproval = async (approved) => {
@@ -570,10 +723,14 @@ export default function TrainerDetail({ profile: adminProfile }) {
     <div>
       <button onClick={() => navigate("/trainers")} className="flex items-center gap-2 text-sm mb-5" style={{ color: "#1c5ea8" }}>← Back to trainers</button>
 
+      {/* Header */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-5 flex items-center gap-5">
         <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>{initials}</div>
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-1"><h2 className="text-xl font-semibold text-gray-800">{trainer.full_name}</h2><span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: statusStyle.bg, color: statusStyle.color }}>{trainer.compliance_status || "Incomplete"}</span></div>
+          <div className="flex items-center gap-3 mb-1">
+            <h2 className="text-xl font-semibold text-gray-800">{trainer.full_name}</h2>
+            <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: statusStyle.bg, color: statusStyle.color }}>{trainer.compliance_status || "Incomplete"}</span>
+          </div>
           <p className="text-sm text-gray-400">{trainer.email}</p>
           <p className="text-sm text-gray-400">{trainer.position || "Position not set"} · {trainer.employment_status || "Employment not set"}</p>
           <div className="flex items-center gap-3 mt-3">
@@ -581,19 +738,38 @@ export default function TrainerDetail({ profile: adminProfile }) {
             <span className="text-xs font-semibold text-gray-500">{overallPct}% overall</span>
           </div>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => { setNewStatus("Compliant"); setShowStatusModal(true); }} className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ backgroundColor: trainer.compliance_status === "Compliant" ? "#16a34a" : "#6b7280" }}>{trainer.compliance_status === "Compliant" ? "✓ Compliant" : "Mark Compliant"}</button>
-          <button onClick={() => { setNewStatus("Under Review"); setShowStatusModal(true); }} className="px-4 py-2 rounded-lg text-sm font-semibold border transition-all" style={trainer.compliance_status === "Under Review" ? { backgroundColor: "#e6f0ff", color: "#1c5ea8", borderColor: "#93c5fd" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>{trainer.compliance_status === "Under Review" ? "🔍 Under Review" : "Under Review"}</button>
-          <button onClick={() => { setNewStatus("Incomplete"); setShowStatusModal(true); }} className="px-4 py-2 rounded-lg text-sm font-semibold border transition-all" style={trainer.compliance_status === "Incomplete" ? { backgroundColor: "#fdeaea", color: "#c93535", borderColor: "#fca5a5" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>Incomplete</button>
+        <div className="flex flex-col gap-2 items-end">
+          <div className="flex gap-2">
+            <button onClick={() => { setNewStatus("Compliant"); setShowStatusModal(true); }} className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+              style={{ backgroundColor: trainer.compliance_status === "Compliant" ? "#16a34a" : "#6b7280" }}>{trainer.compliance_status === "Compliant" ? "✓ Compliant" : "Mark Compliant"}</button>
+            <button onClick={() => { setNewStatus("Under Review"); setShowStatusModal(true); }} className="px-4 py-2 rounded-lg text-sm font-semibold border transition-all"
+              style={trainer.compliance_status === "Under Review" ? { backgroundColor: "#e6f0ff", color: "#1c5ea8", borderColor: "#93c5fd" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>
+              {trainer.compliance_status === "Under Review" ? "🔍 Under Review" : "Under Review"}
+            </button>
+            <button onClick={() => { setNewStatus("Incomplete"); setShowStatusModal(true); }} className="px-4 py-2 rounded-lg text-sm font-semibold border transition-all"
+              style={trainer.compliance_status === "Incomplete" ? { backgroundColor: "#fdeaea", color: "#c93535", borderColor: "#fca5a5" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>Incomplete</button>
+          </div>
+          {/* PDF Export */}
+          <button onClick={handleExportPDF} disabled={exportingPDF}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border transition-all"
+            style={{ backgroundColor: "white", color: "#081a47", borderColor: "#e5e7eb" }}>
+            {exportingPDF ? (
+              <><span className="animate-spin">⟳</span> Generating PDF...</>
+            ) : (
+              <><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M1 10v1.5A1.5 1.5 0 002.5 13h9a1.5 1.5 0 001.5-1.5V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg> Export PDF</>
+            )}
+          </button>
         </div>
       </div>
 
+      {/* Progress cards */}
       <div className="grid grid-cols-3 gap-4 mb-5">
         <CompletionCard title="Sections 1–4 — Profile" value={profilePct} sub={profilePct === 0 ? "Not started" : profilePct === 100 ? "Complete" : "In progress"} icon="📄" />
         <CompletionCard title="Section 5 — Questionnaire" value={questPct} sub={`${answeredCount} of ${UNITS.length} units answered`} icon="📋" />
         <CompletionCard title="Section 6 — Experience" value={expPct ?? 0} sub={expPct === null ? "Awaiting stream assignment" : `${experienceData.filter((e) => e.competency_confirmed !== null).length} of ${assignedUnits.length} units assessed`} icon="🔬" />
       </div>
 
+      {/* Tabs */}
       <div className="flex gap-1 mb-5 bg-gray-100 p-1 rounded-xl">
         {TABS.map((tab) => {
           const ti = getTabIcon(tab.id);
@@ -610,9 +786,9 @@ export default function TrainerDetail({ profile: adminProfile }) {
         })}
       </div>
 
+      {/* Profile & Credentials tab */}
       {activeTab === "profile" && (
         <>
-          {/* Section 1 — own approval */}
           <Section title="Section 1 — Personal Details" statusBadge={<SectionStatusBadge status={s1Status} />}>
             <div className="grid grid-cols-3 gap-x-6 gap-y-4">
               <DetailCell label="Full Name" value={trainer.full_name} />
@@ -623,12 +799,10 @@ export default function TrainerDetail({ profile: adminProfile }) {
               <DetailCell label="State" value={trainer.state} />
             </div>
             <ApprovalButtons approved={s1Approved === true ? true : s1Approved === false ? false : null}
-              onApprove={() => approveSection("s1_approved", true, setSavingS1)}
-              onReject={() => approveSection("s1_approved", false, setSavingS1)}
+              onApprove={() => approveSection("s1_approved", true, setSavingS1)} onReject={() => approveSection("s1_approved", false, setSavingS1)}
               saving={savingS1} approveLabel="Approve Section 1" rejectLabel="Not Approved" />
           </Section>
 
-          {/* Section 2 — training credentials */}
           <Section title="Section 2 — Training Credentials" statusBadge={<SectionStatusBadge status={credStatus} />}>
             {trainerProfile?.tae_qualification || trainerProfile?.under_direction_qualification ? (
               <>
@@ -641,15 +815,13 @@ export default function TrainerDetail({ profile: adminProfile }) {
                   </div>
                 )}
                 {trainerProfile.under_direction_qualification && (
-                  <>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3 mt-2 pt-2 border-t border-gray-100">Under Direction</p>
+                  <><p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3 mt-2 pt-2 border-t border-gray-100">Under Direction</p>
                     <div className="grid grid-cols-4 gap-x-6 gap-y-4 mb-4">
                       <DetailCell label="Qualification" value={trainerProfile.under_direction_qualification} />
                       <DetailCell label="Provider Name" value={trainerProfile.under_direction_provider} />
                       <DetailCell label="Provider ID" value={trainerProfile.under_direction_provider_id} />
                       <DetailCell label="Commencement" value={trainerProfile.under_direction_commencement} />
-                    </div>
-                  </>
+                    </div></>
                 )}
                 <div className="pt-3 border-t border-gray-100">
                   <div className="flex items-center justify-between mb-2">
@@ -665,7 +837,6 @@ export default function TrainerDetail({ profile: adminProfile }) {
             ) : <p className="text-sm text-gray-400">Trainer has not submitted their profile yet</p>}
           </Section>
 
-          {/* Section 3 — industry quals */}
           <Section title="Section 3 — Industry Competencies" statusBadge={<SectionStatusBadge status={qualsStatus} />}
             action={<span className="text-xs text-white opacity-60">{industryQuals.length} qualification{industryQuals.length !== 1 ? "s" : ""}</span>}>
             {industryQuals.length === 0 ? <p className="text-sm text-gray-400">No industry qualifications submitted yet</p> : (
@@ -684,14 +855,12 @@ export default function TrainerDetail({ profile: adminProfile }) {
                   <FileList files={industryFiles} emptyMessage="No certificates uploaded yet" />
                 </div>
                 <ApprovalButtons approved={trainerProfile?.industry_quals_approved === true ? true : trainerProfile?.industry_quals_approved === false ? false : null}
-                  onApprove={() => approveSection("industry_quals_approved", true, setSavingQuals)}
-                  onReject={() => approveSection("industry_quals_approved", false, setSavingQuals)}
+                  onApprove={() => approveSection("industry_quals_approved", true, setSavingQuals)} onReject={() => approveSection("industry_quals_approved", false, setSavingQuals)}
                   saving={savingQuals} approveLabel="Approve Industry Quals" rejectLabel="Not Approved" />
               </>
             )}
           </Section>
 
-          {/* Section 4 — own approval */}
           <Section title="Section 4 — Credentials Declaration" statusBadge={<SectionStatusBadge status={s4Status} />}>
             {trainerProfile ? (
               <div className="grid grid-cols-4 gap-x-6 gap-y-4">
@@ -702,41 +871,23 @@ export default function TrainerDetail({ profile: adminProfile }) {
               </div>
             ) : <p className="text-sm text-gray-400">Trainer has not submitted their declaration yet</p>}
             <ApprovalButtons approved={s4Approved === true ? true : s4Approved === false ? false : null}
-              onApprove={() => approveSection("s4_approved", true, setSavingS4)}
-              onReject={() => approveSection("s4_approved", false, setSavingS4)}
+              onApprove={() => approveSection("s4_approved", true, setSavingS4)} onReject={() => approveSection("s4_approved", false, setSavingS4)}
               saving={savingS4} approveLabel="Approve Section 4" rejectLabel="Not Approved" />
           </Section>
         </>
       )}
 
       {activeTab === "questionnaire" && (
-        <Section title="Section 5 — Skills Questionnaire" action={<span className="text-xs text-white opacity-60">{answeredCount} of {UNITS.length} answered</span>}>
-          {questionnaireResponses.length === 0 ? <p className="text-sm text-gray-400">Trainer has not completed the questionnaire yet</p> : (
-            <div className="grid grid-cols-6 gap-1.5">
-              {[...questionnaireResponses].sort((a, b) => a.unit_code.localeCompare(b.unit_code)).map((r) => {
-                const exp = experienceData.find((e) => e.unit_code === r.unit_code);
-                const app = r.response === "yes" && exp?.competency_confirmed === true;
-                const notApp = r.response === "yes" && exp?.competency_confirmed === false;
-                const hasExp = r.response === "yes" && exp?.competency_confirmed == null;
-                let bg, border, cc, pb, pc, pl;
-                if (app) { bg = "#f0fdf4"; border = "#86efac"; cc = "#166534"; pb = "#dcfce7"; pc = "#166534"; pl = "✓ Approved"; }
-                else if (notApp) { bg = "#fef2f2"; border = "#fca5a5"; cc = "#c93535"; pb = "#fdeaea"; pc = "#c93535"; pl = "✗ Not Approved"; }
-                else if (hasExp) { bg = "#eff6ff"; border = "#bfdbfe"; cc = "#1c5ea8"; pb = "#dbeafe"; pc = "#1c5ea8"; pl = "Experience"; }
-                else { bg = "#fafafa"; border = "#e5e7eb"; cc = "#9ca3af"; pb = "#f3f4f6"; pc = "#9ca3af"; pl = "No Experience"; }
-                return (
-                  <div key={r.id} className="flex flex-col gap-1 rounded-lg px-2.5 py-2 border" style={{ backgroundColor: bg, borderColor: border }}>
-                    <span className="text-xs font-bold font-mono" style={{ color: cc }}>{r.unit_code}</span>
-                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-center" style={{ backgroundColor: pb, color: pc }}>{pl}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Section>
+        <QuestionnaireTab questionnaireResponses={questionnaireResponses} experienceData={experienceData} />
       )}
 
-      {activeTab === "streams" && <StreamsTab trainerId={id} responses={questionnaireResponses} assignedUnits={assignedUnits} experienceData={experienceData} onAssignmentChange={fetchAll} />}
-      {activeTab === "experience" && <ExperienceTab trainerId={id} assignedUnits={assignedUnits} experienceData={experienceData} adminProfile={adminProfile} onUpdate={fetchAll} />}
+      {activeTab === "streams" && (
+        <StreamsTab trainerId={id} responses={questionnaireResponses} assignedUnits={assignedUnits} experienceData={experienceData} onAssignmentChange={fetchAll} />
+      )}
+
+      {activeTab === "experience" && (
+        <ExperienceTab trainerId={id} assignedUnits={assignedUnits} experienceData={experienceData} adminProfile={adminProfile} onUpdate={fetchAll} />
+      )}
 
       {activeTab === "evidence" && (
         <Section title="Evidence Documents" action={<span className="text-xs text-white opacity-60">{evidenceFiles.length} file{evidenceFiles.length !== 1 ? "s" : ""}</span>}>
