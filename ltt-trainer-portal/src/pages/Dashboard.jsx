@@ -28,9 +28,7 @@ function TrainerRow({ trainer, onClick }) {
         <p className="text-sm font-medium text-gray-800 truncate">{trainer.full_name}</p>
         <p className="text-xs text-gray-400 truncate">{trainer.position} · {trainer.employment_status}</p>
       </div>
-      <span className="text-xs font-semibold px-3 py-1 rounded-full flex-shrink-0" style={{ backgroundColor: style.bg, color: style.color }}>
-        {trainer.compliance_status || "Incomplete"}
-      </span>
+      <span className="text-xs font-semibold px-3 py-1 rounded-full flex-shrink-0" style={{ backgroundColor: style.bg, color: style.color }}>{trainer.compliance_status || "Incomplete"}</span>
     </div>
   );
 }
@@ -85,9 +83,9 @@ function SectionCard({ number, title, status, sub, actionLabel, onAction, locked
   };
   const s = styles[status] || styles.incomplete;
   return (
-    <div className="bg-white rounded-xl border p-5 flex items-start gap-4 transition-all"
+    <div className="bg-white rounded-xl border p-4 flex items-center gap-4 transition-all"
       style={{ borderColor: s.border, backgroundColor: s.bg, opacity: locked ? 0.5 : 1 }}>
-      <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+      <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
         style={{ backgroundColor: s.iconBg, color: s.iconColor }}>{s.icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold" style={{ color: s.titleColor }}>{title}</p>
@@ -121,7 +119,6 @@ function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses,
   const profileRejected = profileStatus === "Rejected";
   const profilePending = profileStatus === "Submitted" || profileStatus === "Under Review";
 
-  // Section statuses
   const s1Done = !!(trainerData.full_name && trainerData.state && trainerData.position && trainerData.employment_status && trainerData.phone);
   const s1Status = profileApproved ? "approved" : profileRejected ? "rejected" : profilePending ? "pending" : s1Done ? "complete" : "incomplete";
 
@@ -152,29 +149,30 @@ function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses,
     : approvedCount > 0 ? "pending"
     : "incomplete";
 
+  // Action buttons — show for all non-approved, non-locked statuses including pending
   const sections = [
     {
       number: "1", title: "Section 1 — Trainer Details", status: s1Status,
-      sub: s1Status === "approved" ? "Details verified" : s1Status === "rejected" ? "Details need attention" : s1Status === "pending" ? "Awaiting quality review" : s1Done ? "Complete — ready to submit" : "Complete your personal and employment details",
-      actionLabel: s1Status === "incomplete" || s1Status === "complete" ? "Go to Profile" : null,
+      sub: s1Status === "approved" ? "Details verified" : s1Status === "rejected" ? "Details need attention — check your profile" : s1Status === "pending" ? "Awaiting quality review" : s1Done ? "Complete — ready to submit" : "Complete your personal and employment details",
+      actionLabel: s1Status !== "approved" ? "Go to Profile" : null,
       onAction: () => navigate("/profile"),
     },
     {
       number: "2", title: "Section 2 — Training Credentials", status: s2Status,
       sub: s2Status === "approved" ? "TAE credentials verified" : s2Status === "rejected" ? "Credentials not approved — check your profile" : s2Status === "pending" ? "Awaiting quality review" : s2Done ? "Complete — ready to submit" : "Enter your TAE qualification and upload evidence",
-      actionLabel: s2Status === "incomplete" || s2Status === "complete" ? "Go to Profile" : null,
+      actionLabel: s2Status !== "approved" ? "Go to Profile" : null,
       onAction: () => navigate("/profile"),
     },
     {
       number: "3", title: "Section 3 — Industry Competencies", status: s3Status,
       sub: s3Status === "approved" ? "Industry qualifications verified" : s3Status === "rejected" ? "Not approved — upload updated evidence" : s3Status === "pending" ? "Awaiting quality review" : "List your industry qualifications and upload certificates",
-      actionLabel: s3Status !== "pending" && s3Status !== "approved" ? "Go to Profile" : null,
+      actionLabel: s3Status !== "approved" ? "Go to Profile" : null,
       onAction: () => navigate("/profile"),
     },
     {
       number: "4", title: "Section 4 — Credentials Declaration", status: s4Status,
-      sub: s4Status === "approved" ? "Declaration verified" : s4Status === "rejected" ? "Declaration needs attention" : s4Status === "pending" ? "Awaiting quality review" : s4Done ? "Complete — ready to submit" : "Complete your credentials declaration and sign",
-      actionLabel: s4Status === "incomplete" || s4Status === "complete" ? "Go to Profile" : null,
+      sub: s4Status === "approved" ? "Declaration verified" : s4Status === "rejected" ? "Declaration needs attention — check your profile" : s4Status === "pending" ? "Awaiting quality review" : s4Done ? "Complete — ready to submit" : "Complete your credentials declaration and sign",
+      actionLabel: s4Status !== "approved" ? "Go to Profile" : null,
       onAction: () => navigate("/profile"),
     },
     {
@@ -191,53 +189,64 @@ function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses,
         : notApprovedCount > 0 ? `${notApprovedCount} unit${notApprovedCount !== 1 ? "s" : ""} not approved — review feedback and update your evidence`
         : compliance === "Pending" ? `Submitted — ${approvedCount} of ${assignedCount} units approved`
         : `${approvedCount} of ${assignedCount} units approved`,
-      actionLabel: !s6Locked && !s6AllApproved ? (compliance === "Pending" && notApprovedCount === 0 ? null : "Go to Experience") : null,
+      actionLabel: !s6Locked && !s6AllApproved ? "Go to Experience" : null,
       onAction: () => navigate("/experience"),
     },
   ];
 
   const approvedSections = sections.filter((s) => s.status === "approved").length;
   const actionSections = sections.filter((s) => ["rejected", "updated", "incomplete", "complete"].includes(s.status) && !s.locked).length;
+  const pendingSections = sections.filter((s) => s.status === "pending").length;
 
   return (
     <div className="mb-6">
-      {/* Collapsible header */}
-      <button
-        onClick={() => setCollapsed((c) => !c)}
-        className="w-full flex items-center justify-between mb-4 group"
-      >
-        <div className="flex items-center gap-3">
-          <h3 className="text-sm font-semibold text-gray-700">Your Onboarding Progress</h3>
-          {/* Summary badges — visible when collapsed */}
-          {collapsed && (
+      {/* Styled collapsible container header */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <button
+          onClick={() => setCollapsed((c) => !c)}
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm font-semibold text-gray-800">Your Onboarding Progress</h3>
+            {/* Summary badges — always visible */}
             <div className="flex items-center gap-2">
               {approvedSections > 0 && (
                 <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>
-                  ✓ {approvedSections} complete
+                  ✓ {approvedSections} approved
+                </span>
+              )}
+              {pendingSections > 0 && (
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#fdf3e0", color: "#92500a" }}>
+                  ⏳ {pendingSections} awaiting review
                 </span>
               )}
               {actionSections > 0 && (
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#fdf3e0", color: "#92500a" }}>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>
                   ⚠ {actionSections} action required
                 </span>
               )}
             </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {!collapsed && <span className="text-xs text-gray-400">{approvedSections} of {sections.length} sections approved</span>}
-          <span className="text-xs text-gray-400 group-hover:text-gray-600 transition-colors">
-            {collapsed ? "▾ expand" : "▴ collapse"}
-          </span>
-        </div>
-      </button>
+          </div>
+          {/* Chevron arrow */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400">{sections.filter((s) => s.status === "approved").length} of {sections.length} sections approved</span>
+            <svg
+              width="16" height="16" viewBox="0 0 16 16" fill="none"
+              className="transition-transform duration-200 flex-shrink-0"
+              style={{ transform: collapsed ? "rotate(0deg)" : "rotate(180deg)", color: "#9ca3af" }}
+            >
+              <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        </button>
 
-      {/* Sections — hidden when collapsed */}
-      {!collapsed && (
-        <div className="space-y-3">
-          {sections.map((s) => <SectionCard key={s.number} {...s} />)}
-        </div>
-      )}
+        {/* Sections — hidden when collapsed */}
+        {!collapsed && (
+          <div className="px-5 pb-5 space-y-3 border-t border-gray-100 pt-4">
+            {sections.map((s) => <SectionCard key={s.number} {...s} />)}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -299,7 +308,6 @@ export default function Dashboard({ profile }) {
 
   return (
     <div>
-      {/* Welcome banner */}
       <div className="rounded-xl p-7 mb-6 relative overflow-hidden" style={{ backgroundColor: "#081a47" }}>
         <div className="relative z-10">
           <h2 className="text-xl font-semibold text-white mb-1">Welcome back, {profile?.full_name?.split(" ")[0] || "there"} 👋</h2>
