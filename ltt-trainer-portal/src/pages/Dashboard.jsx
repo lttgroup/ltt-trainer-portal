@@ -120,16 +120,29 @@ function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses,
   const profilePending = profileStatus === "Submitted" || profileStatus === "Under Review";
 
   const s1Done = !!(trainerData.full_name && trainerData.state && trainerData.position && trainerData.employment_status && trainerData.phone);
-  const s1Status = profileApproved ? "approved" : profileRejected ? "rejected" : profilePending ? "pending" : s1Done ? "complete" : "incomplete";
-
+const s1Status =
+  trainerProfile?.s1_approved === true ? "approved"
+  : trainerProfile?.s1_approved === false ? "rejected"
+  : profilePending ? "pending"
+  : s1Done ? "complete"
+  : "incomplete";
   const s2Done = !!(trainerProfile?.tae_qualification || trainerProfile?.under_direction_qualification);
-  const s2Status = profileApproved ? "approved" : profileRejected ? "rejected" : profilePending ? "pending" : s2Done ? "complete" : "incomplete";
+const s2Status =
+  profileApproved ? "approved"
+  : profileRejected ? "rejected"
+  : profilePending ? "pending"
+  : s2Done ? "complete"
+  : "incomplete";
 
   const s3Status = industryQualsApproved === true ? "approved" : industryQualsApproved === false ? "rejected" : profilePending ? "pending" : "incomplete";
 
   const s4Done = !!(trainerProfile?.declaration_credentials && trainerProfile?.declaration_copies && trainerProfile?.declaration_signature && trainerProfile?.declaration_date);
-  const s4Status = profileApproved ? "approved" : profileRejected ? "rejected" : profilePending ? "pending" : s4Done ? "complete" : "incomplete";
-
+const s4Status =
+  trainerProfile?.s4_approved === true ? "approved"
+  : trainerProfile?.s4_approved === false ? "rejected"
+  : profilePending ? "pending"
+  : s4Done ? "complete"
+  : "incomplete";
   const answeredCount = questResponses.length;
   const totalUnits = 150;
   const questDone = answeredCount === totalUnits;
