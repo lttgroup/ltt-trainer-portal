@@ -4,14 +4,13 @@ import { supabase } from "../lib/supabase";
 import { UNITS } from "../lib/units";
 
 // ── Single unit card ───────────────────────────────────────────────────────────
-function UnitExperienceCard({ unit, exp, approvalStatus, qualityNotes, onUpdateElement, onUpdatePD, onUpdateHasPD, onComplete, isFirst }) {
+function UnitExperienceCard({ unit, exp, approvalStatus, hasLocalChanges, qualityNotes, onUpdateElement, onUpdatePD, onUpdateHasPD, onComplete, isFirst }) {
   const [openElement, setOpenElement] = useState(isFirst ? 0 : null);
   const [collapsed, setCollapsed] = useState(false);
 
   const elementsComplete = unit.elements.length > 0
     ? unit.elements.every((_, i) => exp.element_descriptions?.[i]?.trim())
     : !!exp.element_descriptions?.[0]?.trim();
-
   const pdComplete = exp.has_pd === false || (exp.has_pd === true && exp.professional_development?.trim());
   const unitComplete = elementsComplete && pdComplete;
 
@@ -23,33 +22,33 @@ function UnitExperienceCard({ unit, exp, approvalStatus, qualityNotes, onUpdateE
   }, [unitComplete]);
 
   const handleElementChange = (idx, value) => onUpdateElement(unit.code, idx, value);
-
   const handleElementBlur = (idx) => {
     if (exp.element_descriptions?.[idx]?.trim()) {
-      const nextIncomplete = unit.elements.findIndex((_, i) => i > idx && !exp.element_descriptions?.[i]?.trim());
-      setOpenElement(nextIncomplete !== -1 ? nextIncomplete : null);
+      const next = unit.elements.findIndex((_, i) => i > idx && !exp.element_descriptions?.[i]?.trim());
+      setOpenElement(next !== -1 ? next : null);
     }
   };
-
   const handleHasPD = (value) => {
     onUpdateHasPD(unit.code, value);
     if (!value) setTimeout(() => { setCollapsed(true); onComplete(); }, 300);
   };
-
   const handlePDBlur = () => {
     if (exp.professional_development?.trim()) setTimeout(() => { setCollapsed(true); onComplete(); }, 400);
   };
 
-  if (collapsed) {
-    let colBg = "#f0fdf4", colBorder = "#bbf7d0", colCode = "#1c5ea8", colCodeBg = "#e6f0ff";
-    let pillBg = "#e6f9f4", pillColor = "#0f7a5a", pillLabel = "✓ Complete";
-    if (approvalStatus === true) { colBg = "#f0fdf4"; colBorder = "#86efac"; pillBg = "#dcfce7"; pillColor = "#166534"; pillLabel = "✓ Quality Approved"; }
-    else if (approvalStatus === false) { colBg = "#fef2f2"; colBorder = "#fca5a5"; pillBg = "#fdeaea"; pillColor = "#c93535"; pillLabel = "✗ Not Approved"; }
+  // Determine display status
+  // If local changes exist, show "updated" regardless of approval
+  const displayStatus = hasLocalChanges ? "updated" : approvalStatus;
 
+  if (collapsed) {
+    let colBg = "#f0fdf4", colBorder = "#bbf7d0", pillBg = "#e6f9f4", pillColor = "#0f7a5a", pillLabel = "✓ Complete";
+    if (displayStatus === "updated") { colBg = "#faf5ff"; colBorder = "#c4b5fd"; pillBg = "#ede9fe"; pillColor = "#7c3aed"; pillLabel = "↺ Updated — awaiting review"; }
+    else if (displayStatus === true) { colBg = "#f0fdf4"; colBorder = "#86efac"; pillBg = "#dcfce7"; pillColor = "#166534"; pillLabel = "✓ Quality Approved"; }
+    else if (displayStatus === false) { colBg = "#fef2f2"; colBorder = "#fca5a5"; pillBg = "#fdeaea"; pillColor = "#c93535"; pillLabel = "✗ Not Approved"; }
     return (
       <div className="bg-white border rounded-xl overflow-hidden cursor-pointer transition-all" style={{ borderColor: colBorder, backgroundColor: colBg }} onClick={() => setCollapsed(false)}>
         <div className="flex items-center gap-3 px-5 py-3">
-          <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: colCodeBg, color: colCode }}>{unit.code}</span>
+          <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>{unit.code}</span>
           <span className="text-sm font-medium text-gray-700 flex-1">{unit.title}</span>
           <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: pillBg, color: pillColor }}>{pillLabel}</span>
           <span className="text-xs text-gray-400 ml-1">▼ expand</span>
@@ -59,42 +58,55 @@ function UnitExperienceCard({ unit, exp, approvalStatus, qualityNotes, onUpdateE
   }
 
   return (
-    <div className="bg-white border rounded-xl overflow-hidden transition-all" style={{ borderColor: unitComplete ? "#bbf7d0" : "#e5e7eb" }}>
+    <div className="bg-white border rounded-xl overflow-hidden transition-all"
+      style={{ borderColor: displayStatus === "updated" ? "#c4b5fd" : unitComplete ? "#bbf7d0" : "#e5e7eb" }}>
       {(() => {
         let hBg = unitComplete ? "#dcfce7" : "#f9fafb";
         let hBorder = unitComplete ? "#bbf7d0" : "#f3f4f6";
-        if (approvalStatus === true) { hBg = "#dcfce7"; hBorder = "#86efac"; }
-        if (approvalStatus === false) { hBg = "#fef2f2"; hBorder = "#fca5a5"; }
+        if (displayStatus === "updated") { hBg = "#f5f3ff"; hBorder = "#c4b5fd"; }
+        else if (displayStatus === true) { hBg = "#dcfce7"; hBorder = "#86efac"; }
+        else if (displayStatus === false) { hBg = "#fef2f2"; hBorder = "#fca5a5"; }
         return (
           <div className="flex items-center gap-3 px-5 py-3 border-b" style={{ backgroundColor: hBg, borderColor: hBorder }}>
             <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>{unit.code}</span>
             <span className="text-sm font-medium text-gray-800 flex-1">{unit.title}</span>
-            {approvalStatus === true && <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>✓ Approved</span>}
-            {approvalStatus === false && <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>✗ Not Approved</span>}
-            {approvalStatus == null && !elementsComplete && <span className="text-xs text-gray-400 flex-shrink-0">{unit.elements.filter((_, i) => exp.element_descriptions?.[i]?.trim()).length}/{unit.elements.length} elements</span>}
-            {approvalStatus == null && unitComplete && <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>✓ Complete</span>}
+            {displayStatus === "updated" && <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#ede9fe", color: "#7c3aed" }}>↺ Updated</span>}
+            {displayStatus === true && <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>✓ Approved</span>}
+            {displayStatus === false && <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>✗ Not Approved</span>}
+            {displayStatus == null && !elementsComplete && <span className="text-xs text-gray-400 flex-shrink-0">{unit.elements.filter((_, i) => exp.element_descriptions?.[i]?.trim()).length}/{unit.elements.length} elements</span>}
+            {displayStatus == null && unitComplete && <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>✓ Complete</span>}
           </div>
         );
       })()}
 
       <div className="p-5">
-        {approvalStatus === false && (
+        {/* Updated notice */}
+        {displayStatus === "updated" && (
+          <div className="rounded-xl p-4 mb-5 border" style={{ backgroundColor: "#f5f3ff", borderColor: "#c4b5fd" }}>
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#7c3aed" }}>
+                <span className="text-white font-bold text-xs">↺</span>
+              </div>
+              <p className="text-sm font-semibold" style={{ color: "#6d28d9" }}>You have unsaved changes — save and resubmit for quality review.</p>
+            </div>
+          </div>
+        )}
+        {/* Not approved feedback */}
+        {displayStatus === false && (
           <div className="rounded-xl p-4 mb-5 border" style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5" }}>
             <div className="flex items-start gap-3">
               <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#c93535" }}><span className="text-white font-bold text-xs">!</span></div>
               <div className="flex-1">
                 <p className="text-sm font-semibold mb-1" style={{ color: "#c93535" }}>Not Approved — Additional evidence required</p>
-                {qualityNotes ? (
-                  <><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Quality team feedback:</p><p className="text-sm text-gray-700 leading-relaxed italic">"{qualityNotes}"</p></>
-                ) : (
-                  <p className="text-xs text-gray-500">Please review your experience descriptions below and contact your compliance officer if you can provide additional evidence.</p>
+                {qualityNotes ? (<><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Quality team feedback:</p><p className="text-sm text-gray-700 leading-relaxed italic">"{qualityNotes}"</p></>) : (
+                  <p className="text-xs text-gray-500">Please review your experience descriptions and contact your compliance officer if you can provide additional evidence.</p>
                 )}
               </div>
             </div>
           </div>
         )}
-
-        {approvalStatus === true && (
+        {/* Approved notice */}
+        {displayStatus === true && (
           <div className="rounded-xl p-4 mb-5 border" style={{ backgroundColor: "#f0fdf4", borderColor: "#86efac" }}>
             <div className="flex items-center gap-3">
               <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#16a34a" }}>
@@ -169,7 +181,6 @@ export default function Experience({ profile }) {
   const [trainerId, setTrainerId] = useState(null);
   const [assignedUnits, setAssignedUnits] = useState(null);
   const [experience, setExperience] = useState({});
-  // savedExperience tracks what was last fetched from DB — used to detect actual changes
   const [savedExperience, setSavedExperience] = useState({});
   const [approval, setApproval] = useState({});
   const [qualityNotes, setQualityNotes] = useState({});
@@ -185,21 +196,16 @@ export default function Experience({ profile }) {
 
   const fetchData = async () => {
     if (!profile) return;
-
     const { data: trainers } = await supabase.from("trainers").select("id, compliance_status").eq("email", profile.email).order("created_at", { ascending: false }).limit(1);
     const trainer = trainers?.[0] || null;
     if (!trainer) { setError("No trainer record found. Please contact your compliance officer."); setLoading(false); return; }
-
     setTrainerId(trainer.id);
     if (["Pending", "Under Review", "Compliant"].includes(trainer.compliance_status)) setAlreadySubmitted(true);
-
     const { data: responses } = await supabase.from("questionnaire_responses").select("unit_code, response").eq("trainer_id", trainer.id);
     if (!responses || responses.length === 0) { setQuestionnaireSubmitted(false); setLoading(false); return; }
     setQuestionnaireSubmitted(true);
-
     const { data: assigned } = await supabase.from("assigned_units").select("unit_code").eq("trainer_id", trainer.id);
     setAssignedUnits(assigned || []);
-
     const { data: expData } = await supabase.from("industry_experience").select("*").eq("trainer_id", trainer.id);
     if (expData) {
       const mapped = {};
@@ -212,20 +218,18 @@ export default function Experience({ profile }) {
         if (e.quality_notes) notesMapped[e.unit_code] = e.quality_notes;
       });
       setExperience(mapped);
-      setSavedExperience(mapped); // snapshot of what's in DB
+      setSavedExperience(mapped);
       setApproval(approvalMapped);
       setQualityNotes(notesMapped);
     }
     setLoading(false);
   };
 
-  // Check if a unit's content has actually changed vs what's in the DB
   const hasUnitChanged = (unitCode, currentData, savedData) => {
     const saved = savedData[unitCode];
-    if (!saved) return true; // new unit — treat as changed
-    const curr = currentData;
-    if (curr.professional_development !== saved.professional_development) return true;
-    const currDescs = curr.element_descriptions || {};
+    if (!saved) return true;
+    if ((currentData.professional_development || "") !== (saved.professional_development || "")) return true;
+    const currDescs = currentData.element_descriptions || {};
     const savedDescs = saved.element_descriptions || {};
     const allKeys = new Set([...Object.keys(currDescs), ...Object.keys(savedDescs)]);
     for (const k of allKeys) {
@@ -234,36 +238,29 @@ export default function Experience({ profile }) {
     return false;
   };
 
+  // Which units have unsaved local changes
+  const changedUnits = Object.keys(experience).filter((code) => hasUnitChanged(code, experience[code], savedExperience));
+
   const updateElement = (unitCode, idx, value) => {
     setExperience((prev) => ({ ...prev, [unitCode]: { ...prev[unitCode], element_descriptions: { ...(prev[unitCode]?.element_descriptions || {}), [idx]: value } } }));
     setSaved(false);
   };
-
-  const updatePD = (unitCode, value) => {
-    setExperience((prev) => ({ ...prev, [unitCode]: { ...prev[unitCode], professional_development: value } }));
-    setSaved(false);
-  };
-
-  const updateHasPD = (unitCode, value) => {
-    setExperience((prev) => ({ ...prev, [unitCode]: { ...prev[unitCode], has_pd: value, professional_development: value ? prev[unitCode]?.professional_development || "" : "" } }));
-    setSaved(false);
-  };
+  const updatePD = (unitCode, value) => { setExperience((prev) => ({ ...prev, [unitCode]: { ...prev[unitCode], professional_development: value } })); setSaved(false); };
+  const updateHasPD = (unitCode, value) => { setExperience((prev) => ({ ...prev, [unitCode]: { ...prev[unitCode], has_pd: value, professional_development: value ? prev[unitCode]?.professional_development || "" : "" } })); setSaved(false); };
 
   const handleUnitComplete = (unitCode) => {
     const units = unitsToShow;
-    const currentIdx = units.findIndex((u) => u.code === unitCode);
-    const nextUnit = units[currentIdx + 1];
-    if (nextUnit && unitRefs.current[nextUnit.code]) {
-      setTimeout(() => { unitRefs.current[nextUnit.code].scrollIntoView({ behavior: "smooth", block: "start" }); }, 350);
-    }
+    const idx = units.findIndex((u) => u.code === unitCode);
+    const next = units[idx + 1];
+    if (next && unitRefs.current[next.code]) setTimeout(() => { unitRefs.current[next.code].scrollIntoView({ behavior: "smooth", block: "start" }); }, 350);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (opts = {}) => {
     if (!trainerId) return;
     setSaving(true);
     setError("");
+    const now = new Date().toISOString();
 
-    // ── KEY FIX: only reset competency_confirmed for units that actually changed ──
     const upserts = Object.entries(experience).map(([unitCode, data]) => {
       const changed = hasUnitChanged(unitCode, data, savedExperience);
       return {
@@ -272,49 +269,51 @@ export default function Experience({ profile }) {
         unit_title: UNITS.find((u) => u.code === unitCode)?.title || "",
         professional_development: data.has_pd ? data.professional_development : "",
         element_descriptions: data.element_descriptions || {},
-        // Only reset approval if this unit's content actually changed
-        // If unchanged, preserve existing approval by not including the field
-        ...(changed ? { competency_confirmed: null } : {}),
+        // Only reset approval + record timestamp for actually changed units
+        ...(changed ? { competency_confirmed: null, trainer_updated_at: now } : {}),
       };
     });
 
     if (upserts.length > 0) {
       const { error: saveError } = await supabase.from("industry_experience").upsert(upserts, { onConflict: "trainer_id,unit_code" });
       if (saveError) { setError("Failed to save. Please try again."); setSaving(false); return; }
-
-      // Update local approval state — only clear approval for changed units
+      // Only clear approval locally for changed units
       setApproval((prev) => {
         const updated = { ...prev };
-        Object.entries(experience).forEach(([unitCode, data]) => {
-          if (hasUnitChanged(unitCode, data, savedExperience)) {
-            updated[unitCode] = null;
-          }
-        });
+        Object.keys(experience).forEach((unitCode) => { if (hasUnitChanged(unitCode, experience[unitCode], savedExperience)) updated[unitCode] = null; });
         return updated;
       });
-
-      // Update savedExperience snapshot to current state
       setSavedExperience({ ...experience });
     }
 
     setSaved(true);
     setSaving(false);
 
-    // Notify admin only if this is an update to already-submitted work
+    // Notify admin if this is an update to already-submitted work
     const { data: trainerRow } = await supabase.from("trainers").select("compliance_status").eq("id", trainerId).single();
-    if (trainerRow && ["Pending", "Under Review", "Compliant"].includes(trainerRow.compliance_status)) {
-      // Only notify if something actually changed
-      const anyChanged = Object.entries(experience).some(([unitCode, data]) => hasUnitChanged(unitCode, data, savedExperience));
-      if (anyChanged) {
-        const { data: existing } = await supabase.from("notifications").select("id").eq("trainer_id", trainerId).eq("type", "experience_updated").eq("read", false).maybeSingle();
-        if (existing) {
-          await supabase.from("notifications").update({ message: `${profile?.full_name || "A trainer"} has updated their industry experience — please re-review.`, created_at: new Date().toISOString() }).eq("id", existing.id);
-        } else {
-          await supabase.from("notifications").insert({ trainer_id: trainerId, trainer_name: profile?.full_name || "A trainer", type: "experience_updated", message: `${profile?.full_name || "A trainer"} has updated their industry experience — please re-review.`, read: false });
-        }
-        window.dispatchEvent(new Event("ltt:assessment-saved"));
+    const isUpdate = trainerRow && ["Pending", "Under Review", "Compliant"].includes(trainerRow.compliance_status);
+    const anyChanged = Object.keys(experience).some((code) => hasUnitChanged(code, experience[code], savedExperience));
+
+    if (isUpdate && (anyChanged || opts.forceNotify)) {
+      const { data: existing } = await supabase.from("notifications").select("id").eq("trainer_id", trainerId).eq("type", "experience_updated").eq("read", false).maybeSingle();
+      const msg = `${profile?.full_name || "A trainer"} has updated their industry experience — please re-review.`;
+      if (existing) {
+        await supabase.from("notifications").update({ message: msg, created_at: now }).eq("id", existing.id);
+      } else {
+        await supabase.from("notifications").insert({ trainer_id: trainerId, trainer_name: profile?.full_name || "A trainer", type: "experience_updated", message: msg, read: false });
       }
+      window.dispatchEvent(new Event("ltt:assessment-saved"));
     }
+  };
+
+  // Resubmit — saves changes and sends notification
+  const handleResubmit = async () => {
+    setSubmitting(true);
+    await handleSave({ forceNotify: true });
+    // Update profile status back to Submitted so admin knows to re-review
+    await supabase.from("trainer_profiles").update({ profile_status: "Submitted", submitted_at: new Date().toISOString() }).eq("trainer_id", trainerId);
+    setSubmitting(false);
+    setSaved(true);
   };
 
   const handleSubmit = async () => {
@@ -340,42 +339,35 @@ export default function Experience({ profile }) {
   }).length;
 
   const pct = unitsToShow.length > 0 ? Math.round((completedCount / unitsToShow.length) * 100) : 0;
+  const approvedCount = Object.values(approval).filter((v) => v === true).length;
+  const notApprovedCount = Object.values(approval).filter((v) => v === false).length;
+  const totalAssigned = assignedUnits?.length || 0;
+  const allQualApproved = totalAssigned > 0 && approvedCount === totalAssigned;
 
   if (loading) return <div className="flex items-center justify-center py-20"><p className="text-sm text-gray-400">Loading...</p></div>;
 
   return (
     <div>
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
-        {(() => {
-          const approvedCount = Object.values(approval).filter((v) => v === true).length;
-          const notApprovedCount = Object.values(approval).filter((v) => v === false).length;
-          const totalAssigned = assignedUnits?.length || 0;
-          const allQualApproved = totalAssigned > 0 && approvedCount === totalAssigned;
-          const s6BgColor = allQualApproved ? "#166534" : "#081a47";
-          return (
-            <div className="flex items-center gap-3 px-6 py-4" style={{ backgroundColor: s6BgColor }}>
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.2)", color: "#fff" }}>{allQualApproved ? "✓" : "6"}</div>
-              <h3 className="text-sm font-semibold text-white flex-1">Section 6 — Industry Experience, Skills and Currency</h3>
-              {allQualApproved && <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.2)", color: "#fff" }}>Quality Approved</span>}
-              {!allQualApproved && unitsToShow.length > 0 && <span className="text-sm font-bold" style={{ color: pct === 100 ? "#32ba9a" : "rgba(255,255,255,0.7)" }}>{pct}%</span>}
-              {notApprovedCount > 0 && <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>{notApprovedCount} not approved</span>}
-            </div>
-          );
-        })()}
+        <div className="flex items-center gap-3 px-6 py-4" style={{ backgroundColor: allQualApproved ? "#166534" : "#081a47" }}>
+          <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.2)", color: "#fff" }}>{allQualApproved ? "✓" : "6"}</div>
+          <h3 className="text-sm font-semibold text-white flex-1">Section 6 — Industry Experience, Skills and Currency</h3>
+          {allQualApproved && <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.2)", color: "#fff" }}>Quality Approved</span>}
+          {!allQualApproved && unitsToShow.length > 0 && <span className="text-sm font-bold" style={{ color: pct === 100 ? "#32ba9a" : "rgba(255,255,255,0.7)" }}>{pct}%</span>}
+          {notApprovedCount > 0 && <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>{notApprovedCount} not approved</span>}
+          {changedUnits.length > 0 && <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#ede9fe", color: "#7c3aed" }}>↺ {changedUnits.length} unsaved changes</span>}
+        </div>
         <div className="px-6 py-4">
-          {!questionnaireSubmitted ? (
-            <p className="text-xs text-gray-400">Complete Section 5 — Skills Questionnaire before proceeding.</p>
-          ) : assignedUnits && assignedUnits.length > 0 ? (
-            <>
-              <p className="text-xs text-gray-400 mb-2">{completedCount} of {unitsToShow.length} units completed</p>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#32ba9a" : "#1c5ea8" }} />
-              </div>
-              <p className="text-xs text-gray-400 mt-3">Work through each unit — describe your experience for every element, then indicate whether you have completed relevant professional development. Completed units collapse automatically.</p>
-            </>
-          ) : (
-            <p className="text-xs text-gray-400">Your Skills Questionnaire has been submitted. Your compliance officer is reviewing your responses and will assign units for this section.</p>
-          )}
+          {!questionnaireSubmitted ? <p className="text-xs text-gray-400">Complete Section 5 — Skills Questionnaire before proceeding.</p>
+            : assignedUnits && assignedUnits.length > 0 ? (
+              <>
+                <p className="text-xs text-gray-400 mb-2">{completedCount} of {unitsToShow.length} units completed</p>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#32ba9a" : "#1c5ea8" }} />
+                </div>
+                <p className="text-xs text-gray-400 mt-3">Work through each unit — describe your experience for every element, then indicate whether you have completed relevant professional development.</p>
+              </>
+            ) : <p className="text-xs text-gray-400">Your compliance officer is reviewing your responses and will assign units for this section.</p>}
         </div>
       </div>
 
@@ -404,6 +396,7 @@ export default function Experience({ profile }) {
                 unit={unit}
                 exp={experience[unit.code] || {}}
                 approvalStatus={approval[unit.code]}
+                hasLocalChanges={changedUnits.includes(unit.code)}
                 qualityNotes={qualityNotes[unit.code] || ""}
                 onUpdateElement={updateElement}
                 onUpdatePD={updatePD}
@@ -424,9 +417,16 @@ export default function Experience({ profile }) {
               {saving ? "Saving..." : saved ? "✓ Saved" : "Save Draft"}
             </button>
             {alreadySubmitted ? (
-              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold" style={{ backgroundColor: "#fdf3e0", color: "#92500a", border: "1px solid #f5d78a" }}>
-                <span>⏳</span> Awaiting Quality Review
-              </div>
+              // Show resubmit button if there are changes, otherwise show awaiting status
+              changedUnits.length > 0 ? (
+                <button onClick={handleResubmit} disabled={submitting} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: submitting ? "#9ca3af" : "#7c3aed" }}>
+                  {submitting ? "Submitting..." : "↺ Save & Resubmit for Review"}
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold" style={{ backgroundColor: "#fdf3e0", color: "#92500a", border: "1px solid #f5d78a" }}>
+                  <span>⏳</span> Awaiting Quality Review
+                </div>
+              )
             ) : (
               <button onClick={handleSubmit} disabled={submitting} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: submitting ? "#9ca3af" : "#32ba9a" }}>
                 {submitting ? "Submitting..." : "Submit for Quality Review ✓"}

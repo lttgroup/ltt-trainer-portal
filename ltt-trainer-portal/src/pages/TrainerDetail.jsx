@@ -13,30 +13,70 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
     const mapped = {};
     const initialCollapsed = {};
     experienceData.forEach((e) => {
-      mapped[e.unit_code] = { competency_confirmed: e.competency_confirmed, holds_unit: e.holds_unit || false, quality_notes: e.quality_notes || "", professional_development: e.professional_development || "", element_descriptions: e.element_descriptions || {} };
-      if (e.competency_confirmed !== null && e.competency_confirmed !== undefined) initialCollapsed[e.unit_code] = true;
+      mapped[e.unit_code] = {
+        competency_confirmed: e.competency_confirmed,
+        holds_unit: e.holds_unit || false,
+        quality_notes: e.quality_notes || "",
+        professional_development: e.professional_development || "",
+        element_descriptions: e.element_descriptions || {},
+        trainer_updated_at: e.trainer_updated_at || null,
+        reviewed_at: e.reviewed_at || null,
+      };
+      if (e.competency_confirmed !== null && e.competency_confirmed !== undefined) {
+        initialCollapsed[e.unit_code] = true;
+      }
     });
     setLocalExp(mapped);
     setCollapsed((prev) => ({ ...initialCollapsed, ...prev }));
   }, [experienceData]);
 
-  const unitsToShow = assignedUnits.map((a) => UNITS.find((u) => u.code === a.unit_code)).filter(Boolean).sort((a, b) => a.code.localeCompare(b.code));
-  const completedCount = experienceData.filter((e) => { const unit = UNITS.find((u) => u.code === e.unit_code); if (!unit) return false; if (unit.elements.length === 0) return !!e.professional_development?.trim(); const descs = e.element_descriptions || {}; return unit.elements.every((_, i) => descs[i]?.trim()); }).length;
+  const unitsToShow = assignedUnits
+    .map((a) => UNITS.find((u) => u.code === a.unit_code))
+    .filter(Boolean)
+    .sort((a, b) => a.code.localeCompare(b.code));
+
+  const completedCount = experienceData.filter((e) => {
+    const unit = UNITS.find((u) => u.code === e.unit_code);
+    if (!unit) return false;
+    if (unit.elements.length === 0) return !!e.professional_development?.trim();
+    const descs = e.element_descriptions || {};
+    return unit.elements.every((_, i) => descs[i]?.trim());
+  }).length;
+
+  // A unit has "pending changes" if trainer_updated_at is newer than reviewed_at
+  const unitHasChanges = (unitCode) => {
+    const exp = localExp[unitCode];
+    if (!exp) return false;
+    if (!exp.trainer_updated_at) return false;
+    if (!exp.reviewed_at) return exp.competency_confirmed !== null; // was reviewed but no reviewed_at recorded
+    return new Date(exp.trainer_updated_at) > new Date(exp.reviewed_at);
+  };
+
+  const changedUnits = unitsToShow.filter((u) => unitHasChanges(u.code));
 
   const saveUnit = async (unitCode) => {
     setSaving((prev) => ({ ...prev, [unitCode]: true }));
     const data = localExp[unitCode] || {};
-    const payload = { competency_confirmed: data.competency_confirmed, holds_unit: data.holds_unit ?? false, quality_notes: data.quality_notes || null, reviewed_by: adminProfile?.full_name || null, reviewed_at: new Date().toISOString() };
+    const now = new Date().toISOString();
+    const payload = {
+      competency_confirmed: data.competency_confirmed,
+      holds_unit: data.holds_unit ?? false,
+      quality_notes: data.quality_notes || null,
+      reviewed_by: adminProfile?.full_name || null,
+      reviewed_at: now,
+    };
     const { data: updated, error: updateError } = await supabase.from("industry_experience").update(payload).eq("trainer_id", trainerId).eq("unit_code", unitCode).select();
     if (!updateError && (!updated || updated.length === 0)) {
       await supabase.from("industry_experience").upsert({ trainer_id: trainerId, unit_code: unitCode, unit_title: UNITS.find((u) => u.code === unitCode)?.title || "", element_descriptions: {}, ...payload }, { onConflict: "trainer_id,unit_code" });
     }
+    // Update local reviewed_at so the "changed" badge goes away
+    setLocalExp((prev) => ({ ...prev, [unitCode]: { ...prev[unitCode], reviewed_at: now } }));
     setSaving((prev) => ({ ...prev, [unitCode]: false }));
     setCollapsed((prev) => ({ ...prev, [unitCode]: true }));
     setTimeout(() => {
       const allCodes = unitsToShow.map((u) => u.code);
       const currentIdx = allCodes.indexOf(unitCode);
-      const nextCode = allCodes.slice(currentIdx + 1).find((code) => { const e = localExp[code] || {}; return e.competency_confirmed === null || e.competency_confirmed === undefined; }) || allCodes[currentIdx + 1];
+      const nextCode = allCodes.slice(currentIdx + 1).find((code) => { const e = localExp[code] || {}; return e.competency_confirmed === null || e.competency_confirmed === undefined || unitHasChanges(code); }) || allCodes[currentIdx + 1];
       if (nextCode) { const el = document.getElementById(`unit-card-${nextCode}`); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }
     }, 150);
     onUpdate();
@@ -50,17 +90,36 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
 
   return (
     <div>
+      {/* Summary */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 mb-5 flex items-center gap-6">
         <div className="flex-1">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Section 6 — Industry Experience</p>
           <p className="text-sm text-gray-600">{completedCount} of {unitsToShow.length} units completed by trainer.</p>
+          {changedUnits.length > 0 && (
+            <p className="text-xs font-semibold mt-1" style={{ color: "#7c3aed" }}>↺ {changedUnits.length} unit{changedUnits.length !== 1 ? "s" : ""} updated by trainer — require re-review</p>
+          )}
         </div>
         <div className="flex gap-4 text-center flex-shrink-0">
-          <div><p className="text-xl font-bold" style={{ color: "#1c5ea8" }}>{Object.values(localExp).filter((e) => e.competency_confirmed === true).length}</p><p className="text-xs text-gray-400">Confirmed</p></div>
-          <div><p className="text-xl font-bold" style={{ color: "#c93535" }}>{Object.values(localExp).filter((e) => e.competency_confirmed === false).length}</p><p className="text-xs text-gray-400">Not confirmed</p></div>
+          <div><p className="text-xl font-bold" style={{ color: "#16a34a" }}>{Object.values(localExp).filter((e) => e.competency_confirmed === true).length}</p><p className="text-xs text-gray-400">Approved</p></div>
+          <div><p className="text-xl font-bold" style={{ color: "#c93535" }}>{Object.values(localExp).filter((e) => e.competency_confirmed === false).length}</p><p className="text-xs text-gray-400">Not approved</p></div>
+          <div><p className="text-xl font-bold" style={{ color: "#7c3aed" }}>{changedUnits.length}</p><p className="text-xs text-gray-400">Changes pending</p></div>
           <div><p className="text-xl font-bold" style={{ color: "#32ba9a" }}>{Object.values(localExp).filter((e) => e.holds_unit).length}</p><p className="text-xs text-gray-400">Holds unit</p></div>
         </div>
       </div>
+
+      {/* Changed units banner */}
+      {changedUnits.length > 0 && (
+        <div className="rounded-xl p-4 mb-5 border" style={{ backgroundColor: "#f5f3ff", borderColor: "#c4b5fd" }}>
+          <div className="flex items-center gap-3">
+            <span className="text-lg">↺</span>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: "#6d28d9" }}>Trainer has updated {changedUnits.length} unit{changedUnits.length !== 1 ? "s" : ""} since last review</p>
+              <p className="text-xs text-gray-500 mt-0.5">These units are highlighted below. Previous approvals for unchanged units are preserved.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-4">
         {unitsToShow.map((unit) => {
           const exp = localExp[unit.code] || {};
@@ -68,21 +127,39 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
           const descs = submitted?.element_descriptions || {};
           const isCollapsed = collapsed[unit.code];
           const isAssessed = exp.competency_confirmed !== undefined && exp.competency_confirmed !== null;
+          const hasChanges = unitHasChanges(unit.code);
+
+          // Border/bg colour: purple if changed, blue if approved, red if not approved, else default
+          let cardBorder = "#e5e7eb";
+          let collapsedBg = "#f9fafb";
+          if (hasChanges) { cardBorder = "#c4b5fd"; collapsedBg = "#f5f3ff"; }
+          else if (isAssessed && exp.competency_confirmed) { cardBorder = "#bfdbfe"; collapsedBg = "#eff6ff"; }
+          else if (isAssessed) { cardBorder = "#fca5a5"; collapsedBg = "#fef2f2"; }
+
           return (
             <div key={unit.code} id={`unit-card-${unit.code}`} className="bg-white border border-gray-200 rounded-xl overflow-hidden"
-              style={isCollapsed ? { borderColor: isAssessed && exp.competency_confirmed ? "#bfdbfe" : isAssessed ? "#fca5a5" : "#e5e7eb" } : {}}>
+              style={isCollapsed ? { borderColor: cardBorder } : {}}>
               <div className="flex items-center gap-3 px-5 py-3 cursor-pointer select-none"
-                style={{ backgroundColor: isCollapsed ? (exp.competency_confirmed === true ? "#eff6ff" : exp.competency_confirmed === false ? "#fef2f2" : "#f9fafb") : "#f9fafb", borderBottom: isCollapsed ? "none" : "1px solid #f3f4f6" }}
+                style={{ backgroundColor: isCollapsed ? collapsedBg : "#f9fafb", borderBottom: isCollapsed ? "none" : "1px solid #f3f4f6" }}
                 onClick={() => setCollapsed((prev) => ({ ...prev, [unit.code]: !prev[unit.code] }))}>
                 <span className="text-xs font-bold px-2.5 py-1 rounded font-mono flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>{unit.code}</span>
                 <span className="text-sm font-medium text-gray-800 flex-1">{unit.title}</span>
+                {hasChanges && <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#ede9fe", color: "#7c3aed" }}>↺ Updated</span>}
                 {exp.holds_unit && <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#e6f9f4", color: "#0f7a5a" }}>Holds unit</span>}
-                {exp.competency_confirmed === true && <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#dbeafe", color: "#1c5ea8" }}>✓ Confirmed</span>}
-                {exp.competency_confirmed === false && <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>✗ Not confirmed</span>}
+                {!hasChanges && exp.competency_confirmed === true && <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>✓ Approved</span>}
+                {!hasChanges && exp.competency_confirmed === false && <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>✗ Not Approved</span>}
                 <span className="text-gray-400 text-xs ml-1 flex-shrink-0">{isCollapsed ? "▾ expand" : "▴ collapse"}</span>
               </div>
+
               {!isCollapsed && (
                 <div className="p-5">
+                  {/* Changed notice */}
+                  {hasChanges && (
+                    <div className="rounded-xl p-3 mb-4 border" style={{ backgroundColor: "#f5f3ff", borderColor: "#c4b5fd" }}>
+                      <p className="text-xs font-semibold" style={{ color: "#7c3aed" }}>↺ Trainer updated this unit since last review — please re-assess below</p>
+                    </div>
+                  )}
+
                   {!submitted ? <p className="text-sm text-gray-400 italic mb-4">Trainer has not completed this unit yet</p> : (
                     <div className="mb-5">
                       {unit.elements.length > 0 ? (
@@ -109,18 +186,30 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
                       )}
                     </div>
                   )}
+
+                  {/* Admin controls */}
                   <div className="border-t border-gray-100 pt-4">
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Quality Assessment</p>
                     <div className="grid grid-cols-3 gap-4">
+                      {/* Competency — Approved (green) / Not Approved (red) */}
                       <div>
-                        <p className="text-xs font-medium text-gray-500 mb-2">Competency</p>
+                        <p className="text-xs font-medium text-gray-500 mb-2">Competency Decision</p>
                         <div className="flex gap-2">
                           <button onClick={() => update(unit.code, "competency_confirmed", true)} className="flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all"
-                            style={exp.competency_confirmed === true ? { backgroundColor: "#dbeafe", color: "#1c5ea8", borderColor: "#93c5fd" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>✓ Confirmed</button>
+                            style={exp.competency_confirmed === true
+                              ? { backgroundColor: "#dcfce7", color: "#166534", borderColor: "#86efac" }
+                              : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>
+                            ✓ Approved
+                          </button>
                           <button onClick={() => update(unit.code, "competency_confirmed", false)} className="flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all"
-                            style={exp.competency_confirmed === false ? { backgroundColor: "#fdeaea", color: "#c93535", borderColor: "#fca5a5" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>✗ Not confirmed</button>
+                            style={exp.competency_confirmed === false
+                              ? { backgroundColor: "#fdeaea", color: "#c93535", borderColor: "#fca5a5" }
+                              : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>
+                            ✗ Not Approved
+                          </button>
                         </div>
                       </div>
+                      {/* Holds unit */}
                       <div>
                         <p className="text-xs font-medium text-gray-500 mb-2">Holds Unit</p>
                         <button onClick={() => update(unit.code, "holds_unit", !exp.holds_unit)} className="w-full py-1.5 rounded-lg text-xs font-semibold border transition-all"
@@ -128,14 +217,18 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
                           {exp.holds_unit ? "✓ Holds unit" : "Mark as holds unit"}
                         </button>
                       </div>
+                      {/* Save */}
                       <div>
                         <p className="text-xs font-medium text-gray-500 mb-2">Action</p>
                         <button onClick={() => saveUnit(unit.code)} disabled={saving[unit.code]} className="w-full py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
-                          style={{ backgroundColor: saving[unit.code] ? "#9ca3af" : "#1c5ea8" }}>{saving[unit.code] ? "Saving..." : "Save assessment"}</button>
+                          style={{ backgroundColor: saving[unit.code] ? "#9ca3af" : "#1c5ea8" }}>
+                          {saving[unit.code] ? "Saving..." : "Save assessment"}
+                        </button>
                       </div>
                     </div>
                     <div className="mt-3">
-                      <textarea value={exp.quality_notes || ""} onChange={(e) => update(unit.code, "quality_notes", e.target.value)} placeholder="Quality notes (optional)..."
+                      <textarea value={exp.quality_notes || ""} onChange={(e) => update(unit.code, "quality_notes", e.target.value)}
+                        placeholder="Quality notes (optional — visible to trainer if not approved)..."
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs text-gray-700 focus:outline-none focus:border-blue-400 resize-none" rows={2} />
                     </div>
                   </div>
@@ -156,18 +249,14 @@ const STATUS_STYLES = {
   "Under Review": { bg: "#e6f0ff", color: "#1c5ea8" },
 };
 
-// ── Section header status badge ────────────────────────────────────────────────
 function SectionStatusBadge({ status }) {
   if (status === "approved") return <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>✓ Approved</span>;
   if (status === "rejected") return <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>✗ Not Approved</span>;
   if (status === "pending") return <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#fdf3e0", color: "#92500a" }}>⏳ Awaiting Approval</span>;
   if (status === "submitted") return <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>Submitted</span>;
-  return <span className="text-xs text-gray-400">Not submitted</span>;
+  return <span className="text-xs text-gray-400 opacity-70">Not submitted</span>;
 }
 
-// ── Brand-consistent section wrapper ──────────────────────────────────────────
-// All section headers use the same dark brand colour with a subtle left accent
-// to distinguish them, rather than different header colours per section.
 function Section({ title, children, action, statusBadge }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
@@ -222,11 +311,7 @@ function calcProfilePct(trainer, trainerProfile) {
   const fields = [trainer?.full_name, trainer?.state, trainer?.position, trainer?.employment_status, trainer?.phone, trainerProfile?.tae_qualification, trainerProfile?.tae_provider, trainerProfile?.tae_issue_date, trainerProfile?.declaration_credentials, trainerProfile?.declaration_copies, trainerProfile?.declaration_signature, trainerProfile?.declaration_date];
   return Math.round((fields.filter(Boolean).length / fields.length) * 100);
 }
-
-function calcQuestionnairePct(responses) {
-  return Math.round((responses.filter((r) => r.response).length / UNITS.length) * 100);
-}
-
+function calcQuestionnairePct(responses) { return Math.round((responses.filter((r) => r.response).length / UNITS.length) * 100); }
 function calcExperiencePct(responses, experienceData, assignedUnits) {
   if (!assignedUnits || assignedUnits.length === 0) return null;
   const assessed = assignedUnits.filter((a) => experienceData.find((e) => e.unit_code === a.unit_code && e.competency_confirmed !== null)).length;
@@ -268,7 +353,7 @@ function FileList({ files, emptyMessage }) {
   );
 }
 
-// Neutral until selected — green when approved, red when rejected
+// Neutral until selected, green when approved, red when rejected
 function ApprovalButtons({ approved, onApprove, onReject, saving, approveLabel = "Approve", rejectLabel = "Not Approved" }) {
   return (
     <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
@@ -299,7 +384,6 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
   const assignedSet = new Set(assignedUnits.map((a) => a.unit_code));
 
   useEffect(() => { fetchStreams(); }, []);
-
   useEffect(() => {
     if (Object.keys(streamUnits).length === 0) return;
     const preSelected = new Set();
@@ -329,7 +413,6 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
   };
 
   const getStreamCoverage = (streamId) => { const units = streamUnits[streamId] || []; if (units.length === 0) return { pct: 0, yes: 0, total: 0 }; const yes = units.filter((u) => yesSet.has(u)).length; return { pct: Math.round((yes / units.length) * 100), yes, total: units.length }; };
-
   const quals = [...new Set(streams.map((s) => s.qualification_code))].sort();
   const filtered = filterQual === "All" ? streams : streams.filter((s) => s.qualification_code === filterQual);
   const grouped = {};
@@ -341,30 +424,15 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
   return (
     <div>
       <div className="rounded-xl p-5 mb-5 flex items-center gap-6" style={{ backgroundColor: "#081a47" }}>
-        <div className="flex-1">
-          <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "rgba(255,255,255,0.5)" }}>Stream Assignment</p>
-          <p className="text-sm text-white">Select the streams this trainer should complete for Section 6.</p>
-        </div>
-        <div className="text-right flex-shrink-0">
-          <p className="text-2xl font-bold text-white">{selected.size}</p>
-          <p className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>stream{selected.size !== 1 ? "s" : ""} selected</p>
-          {selected.size > 0 && <p className="text-xs mt-1" style={{ color: "#65f6cc" }}>{selectedUnitCount} units assigned</p>}
-        </div>
+        <div className="flex-1"><p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "rgba(255,255,255,0.5)" }}>Stream Assignment</p><p className="text-sm text-white">Select the streams this trainer should complete for Section 6.</p></div>
+        <div className="text-right flex-shrink-0"><p className="text-2xl font-bold text-white">{selected.size}</p><p className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>stream{selected.size !== 1 ? "s" : ""} selected</p>{selected.size > 0 && <p className="text-xs mt-1" style={{ color: "#65f6cc" }}>{selectedUnitCount} units assigned</p>}</div>
       </div>
       <div className="flex items-center gap-2 mb-4 flex-wrap">
-        {["All", ...quals].map((q) => (
-          <button key={q} onClick={() => setFilterQual(q)} className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all"
-            style={filterQual === q ? { backgroundColor: "#081a47", color: "#fff", borderColor: "#081a47" } : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#e5e7eb" }}>
-            {q === "All" ? "All qualifications" : q}
-          </button>
-        ))}
+        {["All", ...quals].map((q) => (<button key={q} onClick={() => setFilterQual(q)} className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all" style={filterQual === q ? { backgroundColor: "#081a47", color: "#fff", borderColor: "#081a47" } : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#e5e7eb" }}>{q === "All" ? "All qualifications" : q}</button>))}
       </div>
       {Object.entries(grouped).map(([qual, qualStreams]) => (
         <div key={qual} className="mb-5">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-xs font-bold px-3 py-1.5 rounded-lg text-white" style={{ backgroundColor: "#16406f" }}>{qual}</span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
+          <div className="flex items-center gap-3 mb-3"><span className="text-xs font-bold px-3 py-1.5 rounded-lg text-white" style={{ backgroundColor: "#16406f" }}>{qual}</span><div className="flex-1 h-px bg-gray-200" /></div>
           <div className="grid grid-cols-4 gap-3">
             {qualStreams.map((stream) => {
               const cov = getStreamCoverage(stream.id);
@@ -386,25 +454,13 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
               return (
                 <button key={stream.id} onClick={() => toggleStream(stream.id)} className="text-left rounded-xl p-4 transition-all border-2" style={{ borderColor: cardBorder, backgroundColor: cardBg }}>
                   <div className="flex items-start justify-between gap-2 mb-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 leading-snug">{stream.stream_name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{stream.total_units} units</p>
-                    </div>
-                    <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5"
-                      style={{ borderColor: allApproved ? "#16a34a" : isSelected ? "#1c5ea8" : "#d1d5db", backgroundColor: allApproved ? "#16a34a" : isSelected ? "#1c5ea8" : "transparent" }}>
+                    <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-gray-800 leading-snug">{stream.stream_name}</p><p className="text-xs text-gray-400 mt-0.5">{stream.total_units} units</p></div>
+                    <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5" style={{ borderColor: allApproved ? "#16a34a" : isSelected ? "#1c5ea8" : "#d1d5db", backgroundColor: allApproved ? "#16a34a" : isSelected ? "#1c5ea8" : "transparent" }}>
                       {(allApproved || isSelected) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
                     </div>
                   </div>
-                  <div className="mb-1.5">
-                    <div className="flex justify-between mb-1"><span className="text-xs text-gray-400">Trainer experience</span><span className="text-xs font-semibold" style={{ color: barColor }}>{cov.yes}/{cov.total} units</span></div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${cov.pct}%`, backgroundColor: barColor }} /></div>
-                  </div>
-                  {streamUnitCodes.length > 0 && (
-                    <div className="mb-1.5">
-                      <div className="flex justify-between mb-1"><span className="text-xs text-gray-400">Quality approved</span><span className="text-xs font-semibold" style={{ color: allApproved ? "#16a34a" : "#6b7280" }}>{approvedCount}/{streamUnitCodes.length} units</span></div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${Math.round((approvedCount / streamUnitCodes.length) * 100)}%`, backgroundColor: allApproved ? "#16a34a" : "#32ba9a" }} /></div>
-                    </div>
-                  )}
+                  <div className="mb-1.5"><div className="flex justify-between mb-1"><span className="text-xs text-gray-400">Trainer experience</span><span className="text-xs font-semibold" style={{ color: barColor }}>{cov.yes}/{cov.total} units</span></div><div className="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${cov.pct}%`, backgroundColor: barColor }} /></div></div>
+                  {streamUnitCodes.length > 0 && (<div className="mb-1.5"><div className="flex justify-between mb-1"><span className="text-xs text-gray-400">Quality approved</span><span className="text-xs font-semibold" style={{ color: allApproved ? "#16a34a" : "#6b7280" }}>{approvedCount}/{streamUnitCodes.length} units</span></div><div className="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${Math.round((approvedCount / streamUnitCodes.length) * 100)}%`, backgroundColor: allApproved ? "#16a34a" : "#32ba9a" }} /></div></div>)}
                   <div className="flex gap-1.5 mt-2 flex-wrap">
                     {allApproved && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>✓ Quality Approved</span>}
                     {!allApproved && cov.pct === 100 && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#dbeafe", color: "#1c5ea8" }}>✓ Full experience</span>}
@@ -412,8 +468,7 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
                     {cov.pct < 60 && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>Limited experience</span>}
                     {isAssigned && !allApproved && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>Assigned</span>}
                   </div>
-                  <button className="w-full mt-2 py-1 text-xs text-gray-400 hover:text-gray-600 transition-colors text-center"
-                    onClick={(e) => { e.stopPropagation(); setExpandedStream(expandedStream === stream.id ? null : stream.id); }}>
+                  <button className="w-full mt-2 py-1 text-xs text-gray-400 hover:text-gray-600 transition-colors text-center" onClick={(e) => { e.stopPropagation(); setExpandedStream(expandedStream === stream.id ? null : stream.id); }}>
                     {expandedStream === stream.id ? "▲ Hide units" : "▼ Show units"}
                   </button>
                   {expandedStream === stream.id && (
@@ -426,17 +481,12 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
                         const hasExp = yesSet.has(code);
                         return (
                           <div key={code} className="flex items-center gap-2 px-1 py-1 rounded" style={{ backgroundColor: isApproved ? "#f0fdf4" : isNotApproved ? "#fef2f2" : "#f9fafb" }}>
-                            <span className="text-xs font-bold font-mono flex-shrink-0" style={{ color: isApproved ? "#166634" : isNotApproved ? "#c93535" : hasExp ? "#1c5ea8" : "#9ca3af" }}>{code}</span>
+                            <span className="text-xs font-bold font-mono flex-shrink-0" style={{ color: isApproved ? "#166534" : isNotApproved ? "#c93535" : hasExp ? "#1c5ea8" : "#9ca3af" }}>{code}</span>
                             <span className="text-xs text-gray-500 flex-1 truncate">{unit?.title}</span>
-                            <span className="text-xs font-semibold flex-shrink-0" style={{ color: isApproved ? "#166634" : isNotApproved ? "#c93535" : hasExp ? "#1c5ea8" : "#9ca3af" }}>
-                              {isApproved ? "✓" : isNotApproved ? "✗" : hasExp ? "~" : "—"}
-                            </span>
+                            <span className="text-xs font-semibold flex-shrink-0" style={{ color: isApproved ? "#166534" : isNotApproved ? "#c93535" : hasExp ? "#1c5ea8" : "#9ca3af" }}>{isApproved ? "✓" : isNotApproved ? "✗" : hasExp ? "~" : "—"}</span>
                           </div>
                         );
                       })}
-                      <div className="flex gap-3 pt-1 text-xs text-gray-400">
-                        <span style={{ color: "#166634" }}>✓ Approved</span><span style={{ color: "#c93535" }}>✗ Not approved</span><span style={{ color: "#1c5ea8" }}>~ Experience</span><span>— None</span>
-                      </div>
                     </div>
                   )}
                 </button>
@@ -447,9 +497,7 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
       ))}
       <div className="flex items-center justify-between pt-2 pb-4">
         <p className="text-xs text-gray-400">{selected.size === 0 ? "No streams selected" : `${selectedUnitCount} units will be assigned across ${selected.size} stream${selected.size !== 1 ? "s" : ""}`}</p>
-        <button onClick={handleSave} disabled={saving} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: saving ? "#9ca3af" : "#1c5ea8" }}>
-          {saving ? "Saving..." : saved ? "✓ Saved" : "Save Stream Assignment"}
-        </button>
+        <button onClick={handleSave} disabled={saving} className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: saving ? "#9ca3af" : "#1c5ea8" }}>{saving ? "Saving..." : saved ? "✓ Saved" : "Save Stream Assignment"}</button>
       </div>
     </div>
   );
@@ -468,6 +516,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
   const [evidenceFiles, setEvidenceFiles] = useState([]);
   const [savingCredApproval, setSavingCredApproval] = useState(false);
   const [savingQualsApproval, setSavingQualsApproval] = useState(false);
+  const [savingS1S4Approval, setSavingS1S4Approval] = useState(false);
   const [assignedUnits, setAssignedUnits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -490,16 +539,29 @@ export default function TrainerDetail({ profile: adminProfile }) {
     setTrainer(trainerData); setTrainerProfile(profileData); setQuestionnaireResponses(responses || []); setExperienceData(expData || []); setIndustryQuals(quals || []); setEvidenceFiles(files || []); setAssignedUnits(assigned || []); setLoading(false);
   };
 
-  const updateQualsApproval = async (approved) => {
-    setSavingQualsApproval(true);
-    await supabase.from("trainer_profiles").upsert({ trainer_id: id, industry_quals_approved: approved, reviewed_by: adminProfile?.full_name, reviewed_at: new Date().toISOString() }, { onConflict: "trainer_id" });
-    await fetchAll(); setSavingQualsApproval(false);
+  // Section 1 & 4 — personal details + declaration
+  const updateS1S4Approval = async (approved) => {
+    setSavingS1S4Approval(true);
+    await supabase.from("trainer_profiles").upsert(
+      { trainer_id: id, s1s4_approved: approved, reviewed_by: adminProfile?.full_name, reviewed_at: new Date().toISOString() },
+      { onConflict: "trainer_id" }
+    );
+    await fetchAll();
+    setSavingS1S4Approval(false);
   };
 
+  // Section 2 — TAE credentials
   const updateCredentialApproval = async (approved) => {
     setSavingCredApproval(true);
     await supabase.from("trainer_profiles").update({ profile_status: approved ? "Approved" : "Rejected", reviewed_by: adminProfile?.full_name, reviewed_at: new Date().toISOString() }).eq("trainer_id", id);
     await fetchAll(); setSavingCredApproval(false);
+  };
+
+  // Section 3 — industry quals
+  const updateQualsApproval = async (approved) => {
+    setSavingQualsApproval(true);
+    await supabase.from("trainer_profiles").upsert({ trainer_id: id, industry_quals_approved: approved, reviewed_by: adminProfile?.full_name, reviewed_at: new Date().toISOString() }, { onConflict: "trainer_id" });
+    await fetchAll(); setSavingQualsApproval(false);
   };
 
   const updateStatus = async (status) => {
@@ -518,28 +580,33 @@ export default function TrainerDetail({ profile: adminProfile }) {
   const answeredCount = questionnaireResponses.filter((r) => r.response).length;
   const overallPct = Math.round((profilePct + questPct + (expPct ?? 0)) / 3);
 
-  // Derived approval states for section headers and tab icons
+  // Derive approval statuses for section headers and tab icons
   const profileStatus = trainerProfile?.profile_status;
+  const s1s4Approved = trainerProfile?.s1s4_approved;
+  const s1s4ApprovalStatus = s1s4Approved === true ? "approved" : s1s4Approved === false ? "rejected" : (trainer?.full_name || trainerProfile?.declaration_signature) ? "pending" : null;
   const credApprovalStatus = profileStatus === "Approved" ? "approved" : profileStatus === "Rejected" ? "rejected" : (trainerProfile?.tae_qualification || trainerProfile?.under_direction_qualification) ? "pending" : null;
   const qualsApprovalStatus = trainerProfile?.industry_quals_approved === true ? "approved" : trainerProfile?.industry_quals_approved === false ? "rejected" : industryQuals.length > 0 ? "pending" : null;
 
   const expAllApproved = assignedUnits.length > 0 && assignedUnits.every((a) => experienceData.find((e) => e.unit_code === a.unit_code && e.competency_confirmed === true));
   const expAnyRejected = experienceData.some((e) => e.competency_confirmed === false);
-  const expHasUpdates = experienceData.some((e) => e.competency_confirmed === null && Object.values(e.element_descriptions || {}).some((v) => v?.trim()));
+  const expHasUpdates = experienceData.some((e) => e.trainer_updated_at && e.reviewed_at ? new Date(e.trainer_updated_at) > new Date(e.reviewed_at) : e.trainer_updated_at && e.competency_confirmed !== null);
 
   const getTabIcon = (tabId) => {
     if (tabId === "profile") {
-      if (credApprovalStatus === "approved" && qualsApprovalStatus === "approved") return { icon: "✓", color: "#16a34a" };
-      if (credApprovalStatus === "rejected" || qualsApprovalStatus === "rejected") return { icon: "✗", color: "#c93535" };
-      if (credApprovalStatus === "pending" || qualsApprovalStatus === "pending") return { icon: "⚠", color: "#e8a020" };
+      const allApproved = s1s4ApprovalStatus === "approved" && credApprovalStatus === "approved" && qualsApprovalStatus === "approved";
+      const anyRejected = s1s4ApprovalStatus === "rejected" || credApprovalStatus === "rejected" || qualsApprovalStatus === "rejected";
+      const anyPending = s1s4ApprovalStatus === "pending" || credApprovalStatus === "pending" || qualsApprovalStatus === "pending";
+      if (allApproved) return { icon: "✓", color: "#16a34a" };
+      if (anyRejected) return { icon: "✗", color: "#c93535" };
+      if (anyPending) return { icon: "⚠", color: "#e8a020" };
       return null;
     }
     if (tabId === "questionnaire") return questPct === 100 ? { icon: "✓", color: "#16a34a" } : null;
     if (tabId === "streams") return assignedUnits.length > 0 ? { icon: "✓", color: "#16a34a" } : null;
     if (tabId === "experience") {
+      if (expHasUpdates) return { icon: "↺", color: "#7c3aed" };
       if (expAllApproved) return { icon: "✓", color: "#16a34a" };
-      if (expAnyRejected && !expHasUpdates) return { icon: "✗", color: "#c93535" };
-      if (expHasUpdates) return { icon: "⚠", color: "#e8a020" };
+      if (expAnyRejected) return { icon: "✗", color: "#c93535" };
       return null;
     }
     if (tabId === "evidence") return evidenceFiles.length > 0 ? { icon: "✓", color: "#16a34a" } : null;
@@ -566,7 +633,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
     <div>
       <button onClick={() => navigate("/trainers")} className="flex items-center gap-2 text-sm mb-5 transition-colors" style={{ color: "#1c5ea8" }}>← Back to trainers</button>
 
-      {/* Header card */}
+      {/* Header */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-5 flex items-center gap-5">
         <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>{initials}</div>
         <div className="flex-1">
@@ -628,8 +695,8 @@ export default function TrainerDetail({ profile: adminProfile }) {
       {/* ── PROFILE & CREDENTIALS TAB ── */}
       {activeTab === "profile" && (
         <>
-          {/* Section 1 — personal details, 3 columns */}
-          <Section title="Section 1 — Personal Details">
+          {/* Section 1 — personal details with approval */}
+          <Section title="Section 1 — Personal Details" statusBadge={<SectionStatusBadge status={s1s4ApprovalStatus} />}>
             <div className="grid grid-cols-3 gap-x-6 gap-y-4">
               <DetailCell label="Full Name" value={trainer.full_name} />
               <DetailCell label="Email" value={trainer.email} />
@@ -638,11 +705,22 @@ export default function TrainerDetail({ profile: adminProfile }) {
               <DetailCell label="Employment Status" value={trainer.employment_status} />
               <DetailCell label="State" value={trainer.state} />
             </div>
+            {/* Note: Sections 1 & 4 share the same approval — button shown here, reflected on Section 4 too */}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-xs text-gray-400 mb-3">Approval of Sections 1 & 4 confirms personal details and declaration are verified.</p>
+              <ApprovalButtons
+                approved={s1s4Approved === true ? true : s1s4Approved === false ? false : null}
+                onApprove={() => updateS1S4Approval(true)}
+                onReject={() => updateS1S4Approval(false)}
+                saving={savingS1S4Approval}
+                approveLabel="Approve Sections 1 & 4"
+                rejectLabel="Not Approved"
+              />
+            </div>
           </Section>
 
-          {/* Section 2 — training credentials with approval status in header */}
-          <Section title="Section 2 — Training Credentials"
-            statusBadge={<SectionStatusBadge status={credApprovalStatus} />}>
+          {/* Section 2 — training credentials */}
+          <Section title="Section 2 — Training Credentials" statusBadge={<SectionStatusBadge status={credApprovalStatus} />}>
             {trainerProfile?.tae_qualification || trainerProfile?.under_direction_qualification ? (
               <>
                 {trainerProfile.tae_qualification && (
@@ -680,39 +758,18 @@ export default function TrainerDetail({ profile: adminProfile }) {
                   rejectLabel="Not Approved"
                 />
               </>
-            ) : (
-              <p className="text-sm text-gray-400">Trainer has not submitted their profile yet</p>
-            )}
+            ) : <p className="text-sm text-gray-400">Trainer has not submitted their profile yet</p>}
           </Section>
 
-          {/* Section 3 — industry quals with approval status in header */}
-          <Section title="Section 3 — Industry Competencies"
-            statusBadge={<SectionStatusBadge status={qualsApprovalStatus} />}
+          {/* Section 3 — industry quals */}
+          <Section title="Section 3 — Industry Competencies" statusBadge={<SectionStatusBadge status={qualsApprovalStatus} />}
             action={<span className="text-xs text-white opacity-60">{industryQuals.length} qualification{industryQuals.length !== 1 ? "s" : ""}</span>}>
-            {industryQuals.length === 0 ? (
-              <p className="text-sm text-gray-400">No industry qualifications submitted yet</p>
-            ) : (
+            {industryQuals.length === 0 ? <p className="text-sm text-gray-400">No industry qualifications submitted yet</p> : (
               <>
                 <div className="overflow-x-auto mb-4">
                   <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        {["Code", "Title", "Provider Name", "Provider ID", "Issue Date"].map((h) => (
-                          <th key={h} className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-200">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {industryQuals.map((q, i) => (
-                        <tr key={i} className="border-b border-gray-100 last:border-0">
-                          <td className="px-3 py-2.5 font-mono text-xs text-gray-700">{q.qualification_code || "—"}</td>
-                          <td className="px-3 py-2.5 text-sm text-gray-800">{q.qualification_title || "—"}</td>
-                          <td className="px-3 py-2.5 text-sm text-gray-600">{q.provider_name || "—"}</td>
-                          <td className="px-3 py-2.5 text-sm text-gray-600">{q.provider_id || "—"}</td>
-                          <td className="px-3 py-2.5 text-sm text-gray-600">{q.issue_date || "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
+                    <thead><tr className="bg-gray-50">{["Code", "Title", "Provider Name", "Provider ID", "Issue Date"].map((h) => (<th key={h} className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-200">{h}</th>))}</tr></thead>
+                    <tbody>{industryQuals.map((q, i) => (<tr key={i} className="border-b border-gray-100 last:border-0"><td className="px-3 py-2.5 font-mono text-xs text-gray-700">{q.qualification_code || "—"}</td><td className="px-3 py-2.5 text-sm text-gray-800">{q.qualification_title || "—"}</td><td className="px-3 py-2.5 text-sm text-gray-600">{q.provider_name || "—"}</td><td className="px-3 py-2.5 text-sm text-gray-600">{q.provider_id || "—"}</td><td className="px-3 py-2.5 text-sm text-gray-600">{q.issue_date || "—"}</td></tr>))}</tbody>
                   </table>
                 </div>
                 <div className="pt-3 border-t border-gray-100">
@@ -734,8 +791,8 @@ export default function TrainerDetail({ profile: adminProfile }) {
             )}
           </Section>
 
-          {/* Section 4 — declaration, 1 row */}
-          <Section title="Section 4 — Credentials Declaration">
+          {/* Section 4 — declaration (shares S1 approval) */}
+          <Section title="Section 4 — Credentials Declaration" statusBadge={<SectionStatusBadge status={s1s4ApprovalStatus} />}>
             {trainerProfile ? (
               <div className="grid grid-cols-4 gap-x-6 gap-y-4">
                 <DetailCell label="Credentials Declared" value={trainerProfile.declaration_credentials ? "✓ Confirmed" : "Not confirmed"} />
@@ -743,20 +800,16 @@ export default function TrainerDetail({ profile: adminProfile }) {
                 <DetailCell label="Signature" value={trainerProfile.declaration_signature} />
                 <DetailCell label="Date" value={trainerProfile.declaration_date} />
               </div>
-            ) : (
-              <p className="text-sm text-gray-400">Trainer has not submitted their declaration yet</p>
-            )}
+            ) : <p className="text-sm text-gray-400">Trainer has not submitted their declaration yet</p>}
+            <p className="text-xs text-gray-400 mt-4">Sections 1 & 4 share a combined approval — see Section 1 above to approve or reject.</p>
           </Section>
         </>
       )}
 
       {/* ── QUESTIONNAIRE TAB ── */}
       {activeTab === "questionnaire" && (
-        <Section title="Section 5 — Skills Questionnaire"
-          action={<span className="text-xs text-white opacity-60">{answeredCount} of {UNITS.length} answered</span>}>
-          {questionnaireResponses.length === 0 ? (
-            <p className="text-sm text-gray-400">Trainer has not completed the questionnaire yet</p>
-          ) : (
+        <Section title="Section 5 — Skills Questionnaire" action={<span className="text-xs text-white opacity-60">{answeredCount} of {UNITS.length} answered</span>}>
+          {questionnaireResponses.length === 0 ? <p className="text-sm text-gray-400">Trainer has not completed the questionnaire yet</p> : (
             <div className="grid grid-cols-6 gap-1.5">
               {[...questionnaireResponses].sort((a, b) => a.unit_code.localeCompare(b.unit_code)).map((r) => {
                 const expEntry = experienceData.find((e) => e.unit_code === r.unit_code);
@@ -785,16 +838,12 @@ export default function TrainerDetail({ profile: adminProfile }) {
 
       {/* ── EVIDENCE TAB ── */}
       {activeTab === "evidence" && (
-        <Section title="Evidence Documents"
-          action={<span className="text-xs text-white opacity-60">{evidenceFiles.length} file{evidenceFiles.length !== 1 ? "s" : ""}</span>}>
+        <Section title="Evidence Documents" action={<span className="text-xs text-white opacity-60">{evidenceFiles.length} file{evidenceFiles.length !== 1 ? "s" : ""}</span>}>
           {evidenceFiles.length === 0 ? <p className="text-sm text-gray-400">No evidence files uploaded yet</p> : (
             <div className="divide-y divide-gray-100">
               {evidenceFiles.map((f) => (
                 <div key={f.id} className="flex items-center justify-between py-2.5">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg">📎</span>
-                    <div><p className="text-sm font-medium text-gray-800">{f.file_name}</p><p className="text-xs text-gray-400">{f.document_type}</p></div>
-                  </div>
+                  <div className="flex items-center gap-3"><span className="text-lg">📎</span><div><p className="text-sm font-medium text-gray-800">{f.file_name}</p><p className="text-xs text-gray-400">{f.document_type}</p></div></div>
                   <button className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100"
                     onClick={async () => { const { data } = await supabase.storage.from("evidence-files").createSignedUrl(f.file_path, 60); if (data) window.open(data.signedUrl, "_blank"); }}>View</button>
                 </div>
