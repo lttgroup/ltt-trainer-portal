@@ -9,10 +9,12 @@ const STATUS_STYLES = {
   "Under Review": { bg: "#e6f0ff", color: "#1c5ea8" },
 };
 
+const AU_STATES = ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"];
+
 function StatusPill({ status }) {
   const s = STATUS_STYLES[status] || STATUS_STYLES["Incomplete"];
   return (
-    <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: s.bg, color: s.color }}>
+    <span className="text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap" style={{ backgroundColor: s.bg, color: s.color }}>
       {status || "Incomplete"}
     </span>
   );
@@ -30,6 +32,34 @@ function ProgressBar({ value }) {
   );
 }
 
+// Calculate profile completion % from trainer + trainer_profiles data
+function calcProfilePct(trainer, profile) {
+  const fields = [
+    trainer?.full_name,
+    trainer?.state,
+    trainer?.position,
+    trainer?.employment_status,
+    trainer?.phone,
+    profile?.tae_qualification,
+    profile?.tae_provider,
+    profile?.tae_issue_date,
+    profile?.declaration_credentials,
+    profile?.declaration_copies,
+    profile?.declaration_signature,
+    profile?.declaration_date,
+  ];
+  return Math.round((fields.filter(Boolean).length / fields.length) * 100);
+}
+
+// Extract short credential label from tae_qualification string
+function credentialLabel(taeQual, underDir) {
+  const qual = taeQual || underDir;
+  if (!qual) return null;
+  // Extract code (first word) e.g. "TAE40122 Certificate IV..."
+  const code = qual.split(" ")[0];
+  return code || qual.slice(0, 12);
+}
+
 function InviteModal({ onClose, onSuccess }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -40,26 +70,20 @@ function InviteModal({ onClose, onSuccess }) {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
       const { data: trainer, error: trainerError } = await supabase
         .from("trainers")
-        .insert({
-          full_name: name,
-          email: email,
-          compliance_status: "Incomplete",
-        })
+        .insert({ full_name: name, email, compliance_status: "Incomplete" })
         .select()
         .single();
-
       if (trainerError) throw trainerError;
-
       onSuccess(trainer);
     } catch (err) {
-      setError(err.message || "Failed to create trainer. Please try again.");
+      setError(err.message || "Failed to create trainer.");
       setLoading(false);
     }
   };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
@@ -68,30 +92,22 @@ function InviteModal({ onClose, onSuccess }) {
             <h2 className="text-lg font-semibold text-gray-800">Invite Trainer</h2>
             <p className="text-sm text-gray-400 mt-0.5">Add a new trainer to the register</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">
-            ✕
-          </button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
         </div>
-
         {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5">{error}</div>}
-
         <form onSubmit={handleInvite} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Full Name</label>
             <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Jessica Brown" className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" />
           </div>
-
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Email Address</label>
             <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="trainer@ltt.edu.au" className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" />
           </div>
-
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">
-              Cancel
-            </button>
-            <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors" style={{ backgroundColor: "#1c5ea8" }}>
-              {loading ? "Sending invite..." : "Send Invite"}
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">Cancel</button>
+            <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white" style={{ backgroundColor: "#1c5ea8" }}>
+              {loading ? "Sending..." : "Send Invite"}
             </button>
           </div>
         </form>
@@ -100,33 +116,60 @@ function InviteModal({ onClose, onSuccess }) {
   );
 }
 
-export default function Trainers() {
+export default function Trainers({ showInviteOnLoad = false }) {
   const navigate = useNavigate();
   const [trainers, setTrainers] = useState([]);
+  const [profileMap, setProfileMap] = useState({}); // trainer.id -> trainer_profiles row
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [showInvite, setShowInvite] = useState(false);
+  const [stateFilter, setStateFilter] = useState("All");
+  const [credFilter, setCredFilter] = useState("");
+  const [showInvite, setShowInvite] = useState(showInviteOnLoad);
 
-  useEffect(() => {
-    fetchTrainers();
-  }, []);
+  useEffect(() => { fetchTrainers(); }, []);
 
   const fetchTrainers = async () => {
-    const { data, error } = await supabase.from("trainers").select("*").order("full_name", { ascending: true });
-    if (!error && data) setTrainers(data);
+    // Fetch trainers + their profiles in parallel
+    const [{ data: trainerData }, { data: profileData }] = await Promise.all([
+      supabase.from("trainers").select("*").order("full_name", { ascending: true }),
+      supabase.from("trainer_profiles").select("trainer_id, tae_qualification, tae_provider, tae_provider_id, tae_issue_date, under_direction_qualification, under_direction_provider, under_direction_provider_id, declaration_credentials, declaration_copies, declaration_signature, declaration_date"),
+    ]);
+    if (trainerData) setTrainers(trainerData);
+    if (profileData) {
+      const map = {};
+      profileData.forEach((p) => { map[p.trainer_id] = p; });
+      setProfileMap(map);
+    }
     setLoading(false);
   };
 
   const handleInviteSuccess = (newTrainer) => {
-    setTrainers((prev) => [newTrainer, ...prev]);
+    setTrainers((prev) => [...prev, newTrainer].sort((a, b) => (a.full_name || "").localeCompare(b.full_name || "")));
     setShowInvite(false);
   };
 
+  // Unique states present in data for filter dropdown
+  const statesInData = [...new Set(trainers.map((t) => t.state).filter(Boolean))].sort();
+
   const filtered = trainers.filter((t) => {
-    const matchSearch = t.full_name?.toLowerCase().includes(search.toLowerCase()) || t.email?.toLowerCase().includes(search.toLowerCase());
+    const profile = profileMap[t.id];
+    const qual = profile?.tae_qualification || profile?.under_direction_qualification || "";
+    const provider = profile?.tae_provider || profile?.under_direction_provider || "";
+
+    const matchSearch =
+      !search ||
+      t.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+      t.email?.toLowerCase().includes(search.toLowerCase()) ||
+      qual.toLowerCase().includes(search.toLowerCase()) ||
+      provider.toLowerCase().includes(search.toLowerCase()) ||
+      (profile?.tae_provider_id || "").toLowerCase().includes(search.toLowerCase());
+
     const matchStatus = statusFilter === "All" || t.compliance_status === statusFilter;
-    return matchSearch && matchStatus;
+    const matchState = stateFilter === "All" || t.state === stateFilter;
+    const matchCred = !credFilter || qual.toLowerCase().includes(credFilter.toLowerCase()) || provider.toLowerCase().includes(credFilter.toLowerCase());
+
+    return matchSearch && matchStatus && matchState && matchCred;
   });
 
   return (
@@ -134,12 +177,20 @@ export default function Trainers() {
       {showInvite && <InviteModal onClose={() => setShowInvite(false)} onSuccess={handleInviteSuccess} />}
 
       {/* Filter bar */}
-      <div className="flex items-center gap-3 mb-5">
-        <div className="relative flex-1 max-w-xs">
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
+        {/* Search */}
+        <div className="relative flex-1 min-w-48">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">⌕</span>
-          <input type="text" placeholder="Search trainers..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-8 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-400 bg-white" />
+          <input
+            type="text"
+            placeholder="Search name, email, credential..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-8 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-400 bg-white"
+          />
         </div>
 
+        {/* Status filter */}
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none">
           <option value="All">All statuses</option>
           <option value="Compliant">Compliant</option>
@@ -148,36 +199,84 @@ export default function Trainers() {
           <option value="Under Review">Under Review</option>
         </select>
 
-        <button onClick={() => setShowInvite(true)} className="ml-auto px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ backgroundColor: "#1c5ea8" }}>
+        {/* State filter */}
+        <select value={stateFilter} onChange={(e) => setStateFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none">
+          <option value="All">All states</option>
+          {(statesInData.length > 0 ? statesInData : AU_STATES).map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+
+        {/* Credential filter */}
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🎓</span>
+          <input
+            type="text"
+            placeholder="Filter by credential..."
+            value={credFilter}
+            onChange={(e) => setCredFilter(e.target.value)}
+            className="pl-8 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-400 bg-white w-48"
+          />
+        </div>
+
+        {/* Active filter chips */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {stateFilter !== "All" && (
+            <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
+              {stateFilter}
+              <button onClick={() => setStateFilter("All")} className="ml-1 hover:text-red-500">✕</button>
+            </span>
+          )}
+          {credFilter && (
+            <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
+              "{credFilter}"
+              <button onClick={() => setCredFilter("")} className="ml-1 hover:text-red-500">✕</button>
+            </span>
+          )}
+        </div>
+
+        <button onClick={() => setShowInvite(true)} className="ml-auto px-4 py-2 rounded-lg text-sm font-semibold text-white whitespace-nowrap" style={{ backgroundColor: "#1c5ea8" }}>
           + Invite Trainer
         </button>
       </div>
 
+      {/* Results count */}
+      {!loading && (
+        <p className="text-xs text-gray-400 mb-3">
+          {filtered.length} trainer{filtered.length !== 1 ? "s" : ""}
+          {(search || statusFilter !== "All" || stateFilter !== "All" || credFilter) ? " matching filters" : " total"}
+        </p>
+      )}
+
       {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Trainer</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Position</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Employment</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Profile</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Status</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400 whitespace-nowrap">Trainer</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400 whitespace-nowrap">State</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400 whitespace-nowrap">Position</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400 whitespace-nowrap">Employment</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400 whitespace-nowrap">TAE Credential</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400 whitespace-nowrap">Provider</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400 whitespace-nowrap">Provider ID</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400 whitespace-nowrap">Profile</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400 whitespace-nowrap">Status</th>
               <th className="px-5 py-3" />
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={6} className="text-center py-12 text-sm text-gray-400">
-                  Loading...
-                </td>
-              </tr>
+              <tr><td colSpan={10} className="text-center py-12 text-sm text-gray-400">Loading...</td></tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-12">
-                  <p className="text-sm text-gray-400 mb-3">{search || statusFilter !== "All" ? "No trainers match your search" : "No trainers yet"}</p>
-                  {!search && statusFilter === "All" && (
+                <td colSpan={10} className="text-center py-12">
+                  <p className="text-sm text-gray-400 mb-3">
+                    {search || statusFilter !== "All" || stateFilter !== "All" || credFilter
+                      ? "No trainers match your filters"
+                      : "No trainers yet"}
+                  </p>
+                  {!search && statusFilter === "All" && stateFilter === "All" && !credFilter && (
                     <button onClick={() => setShowInvite(true)} className="text-sm font-semibold px-4 py-2 rounded-lg text-white" style={{ backgroundColor: "#1c5ea8" }}>
                       Invite your first trainer
                     </button>
@@ -186,45 +285,92 @@ export default function Trainers() {
               </tr>
             ) : (
               filtered.map((trainer) => {
+                const profile = profileMap[trainer.id];
+                const pct = calcProfilePct(trainer, profile);
                 const initials = trainer.full_name
-                  ? trainer.full_name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .toUpperCase()
+                  ? trainer.full_name.split(" ").map((n) => n[0]).join("").toUpperCase()
                   : "?";
+
+                // TAE credential info
+                const taeQual = profile?.tae_qualification || "";
+                const underQual = profile?.under_direction_qualification || "";
+                const credCode = credentialLabel(taeQual, underQual);
+                const provider = profile?.tae_provider || profile?.under_direction_provider || "";
+                const providerId = profile?.tae_provider_id || profile?.under_direction_provider_id || "";
+                const isUnderDir = !taeQual && !!underQual;
+
                 return (
-                  <tr key={trainer.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => navigate(`/trainers/${trainer.id}`)}>
-                    {" "}
+                  <tr
+                    key={trainer.id}
+                    className="border-b border-gray-100 last:border-0 hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/trainers/${trainer.id}`)}
+                  >
+                    {/* Trainer name + email */}
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>
                           {initials}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-800">{trainer.full_name}</p>
+                          <p className="text-sm font-medium text-gray-800 whitespace-nowrap">{trainer.full_name}</p>
                           <p className="text-xs text-gray-400">{trainer.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-sm text-gray-600">{trainer.position || "—"}</td>
-                    <td className="px-5 py-4 text-sm text-gray-600">{trainer.employment_status || "—"}</td>
-                    <td className="px-5 py-4 w-40">
-                      <ProgressBar value={0} />
+
+                    {/* State */}
+                    <td className="px-5 py-4">
+                      {trainer.state ? (
+                        <span className="text-xs font-semibold px-2 py-1 rounded" style={{ backgroundColor: "#f3f4f6", color: "#374151" }}>{trainer.state}</span>
+                      ) : <span className="text-sm text-gray-300">—</span>}
                     </td>
+
+                    {/* Position */}
+                    <td className="px-5 py-4 text-sm text-gray-600 whitespace-nowrap">{trainer.position || "—"}</td>
+
+                    {/* Employment */}
+                    <td className="px-5 py-4 text-sm text-gray-600 whitespace-nowrap">{trainer.employment_status || "—"}</td>
+
+                    {/* TAE Credential */}
+                    <td className="px-5 py-4">
+                      {credCode ? (
+                        <div>
+                          <span className="text-xs font-bold font-mono px-2 py-0.5 rounded" style={{ backgroundColor: isUnderDir ? "#fdf3e0" : "#e6f0ff", color: isUnderDir ? "#92500a" : "#1c5ea8" }}>
+                            {credCode}
+                          </span>
+                          {isUnderDir && <p className="text-xs text-gray-400 mt-0.5">Under direction</p>}
+                        </div>
+                      ) : <span className="text-sm text-gray-300">—</span>}
+                    </td>
+
+                    {/* Provider */}
+                    <td className="px-5 py-4 text-sm text-gray-600 whitespace-nowrap">{provider || "—"}</td>
+
+                    {/* Provider ID */}
+                    <td className="px-5 py-4">
+                      {providerId ? (
+                        <span className="text-xs font-mono text-gray-600">{providerId}</span>
+                      ) : <span className="text-sm text-gray-300">—</span>}
+                    </td>
+
+                    {/* Profile % */}
+                    <td className="px-5 py-4 w-36">
+                      <ProgressBar value={pct} />
+                    </td>
+
+                    {/* Status */}
                     <td className="px-5 py-4">
                       <StatusPill status={trainer.compliance_status} />
                     </td>
+
+                    {/* View button */}
                     <td className="px-5 py-4 text-right">
                       <button
-                        className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/trainers/${trainer.id}`);
-                        }}
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 whitespace-nowrap"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/trainers/${trainer.id}`); }}
                       >
                         View
-                      </button>{" "}
+                      </button>
                     </td>
                   </tr>
                 );
