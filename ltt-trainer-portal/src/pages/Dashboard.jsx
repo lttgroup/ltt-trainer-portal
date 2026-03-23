@@ -72,86 +72,128 @@ function PendingReviewPanel({ pendingTrainers, notifications, onMarkRead, onNavi
   );
 }
 
-function SectionCard({ number, title, status, sub, actionLabel, onAction, locked }) {
+// ── Section Card with optional rejection note banner ──────────────────────────
+function SectionCard({ number, title, status, sub, actionLabel, onAction, locked, rejectionNote, reviewedBy }) {
   const styles = {
     complete:   { bg: "#f0fdf4", border: "#86efac", iconBg: "#16a34a", icon: "✓", iconColor: "#fff", titleColor: "#166534" },
     approved:   { bg: "#f0fdf4", border: "#86efac", iconBg: "#16a34a", icon: "✓", iconColor: "#fff", titleColor: "#166534" },
     pending:    { bg: "#fffdf5", border: "#f5d78a", iconBg: "#e8a020", icon: "⏳", iconColor: "#fff", titleColor: "#92500a" },
     rejected:   { bg: "#fef2f2", border: "#fca5a5", iconBg: "#c93535", icon: "✗", iconColor: "#fff", titleColor: "#c93535" },
-    updated:    { bg: "#faf5ff", border: "#c4b5fd", iconBg: "#7c3aed", icon: "⚠", iconColor: "#fff", titleColor: "#6d28d9" },
+    updated:    { bg: "#faf5ff", border: "#c4b5fd", iconBg: "#7c3aed", icon: "↺", iconColor: "#fff", titleColor: "#6d28d9" },
     incomplete: { bg: "#f9fafb", border: "#e5e7eb", iconBg: "#e5e7eb", icon: number, iconColor: "#6b7280", titleColor: "#374151" },
   };
   const s = styles[status] || styles.incomplete;
+  const isRejected = status === "rejected";
+
   return (
-    <div className="bg-white rounded-xl border p-4 flex items-center gap-4 transition-all"
-      style={{ borderColor: s.border, backgroundColor: s.bg, opacity: locked ? 0.5 : 1 }}>
-      <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-        style={{ backgroundColor: s.iconBg, color: s.iconColor }}>{s.icon}</div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold" style={{ color: s.titleColor }}>{title}</p>
-        <p className="text-xs text-gray-500 mt-0.5">{sub}</p>
+    <div className="rounded-xl border overflow-hidden transition-all" style={{ borderColor: s.border, backgroundColor: s.bg, opacity: locked ? 0.5 : 1 }}>
+      <div className="p-5 flex items-start gap-4">
+        <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" style={{ backgroundColor: s.iconBg, color: s.iconColor }}>{s.icon}</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold" style={{ color: s.titleColor }}>{title}</p>
+          <p className="text-xs text-gray-500 mt-0.5">{sub}</p>
+        </div>
+        {actionLabel && !locked && (
+          <button onClick={onAction} className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors" style={{ backgroundColor: isRejected ? "#c93535" : "#1c5ea8" }}>
+            {actionLabel}
+          </button>
+        )}
+        {locked && <span className="flex-shrink-0 text-xs text-gray-400">🔒 Locked</span>}
       </div>
-      {actionLabel && !locked && (
-        <button onClick={onAction} className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors" style={{ backgroundColor: "#1c5ea8" }}>
-          {actionLabel}
-        </button>
+
+      {/* Rejection note — shown prominently when admin has flagged a section */}
+      {isRejected && rejectionNote && (
+        <div className="mx-4 mb-4 rounded-lg p-3 border" style={{ backgroundColor: "#fff5f5", borderColor: "#fca5a5" }}>
+          <div className="flex items-start gap-2">
+            <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: "#c93535" }}>
+              <span className="text-white text-xs font-bold">!</span>
+            </div>
+            <div>
+              <p className="text-xs font-semibold mb-1" style={{ color: "#c93535" }}>
+                Action required{reviewedBy ? ` — feedback from ${reviewedBy}` : ""}
+              </p>
+              <p className="text-sm text-gray-700 leading-relaxed">"{rejectionNote}"</p>
+            </div>
+          </div>
+        </div>
       )}
-      {locked && <span className="flex-shrink-0 text-xs text-gray-400">🔒 Locked</span>}
+
+      {/* Rejection note missing — generic guidance */}
+      {isRejected && !rejectionNote && (
+        <div className="mx-4 mb-4 rounded-lg p-3 border" style={{ backgroundColor: "#fff5f5", borderColor: "#fca5a5" }}>
+          <p className="text-xs font-semibold" style={{ color: "#c93535" }}>
+            This section requires attention. Please review and update, then contact your compliance officer.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Collapsible Trainer Progress Dashboard ─────────────────────────────────────
+// ── Trainer Progress Dashboard ─────────────────────────────────────────────────
 function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses, expData, assignedUnits, navigate }) {
-  const [collapsed, setCollapsed] = useState(false);
-
   if (!trainerData)
     return (
-      <div className="bg-white border border-gray-200 rounded-xl p-8 text-center mb-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
         <p className="text-sm text-gray-400">No trainer record found. Contact your compliance officer.</p>
       </div>
     );
 
   const compliance = trainerData.compliance_status || "Incomplete";
   const profileStatus = trainerProfile?.profile_status || "Draft";
+  const reviewNotes = trainerProfile?.review_notes || "";
+  const reviewedBy = trainerProfile?.reviewed_by || "";
+
+  // ── Per-section approval from the new individual fields ──────────────────────
+  const s1Approved = trainerProfile?.s1_approved;        // true | false | null
+  const s4Approved = trainerProfile?.s4_approved;        // true | false | null
+  const credApproved = profileStatus === "Approved";     // Section 2 — credential
+  const credRejected = profileStatus === "Rejected";
   const industryQualsApproved = trainerProfile?.industry_quals_approved;
-  const profileApproved = profileStatus === "Approved";
-  const profileRejected = profileStatus === "Rejected";
-  const profilePending = profileStatus === "Submitted" || profileStatus === "Under Review";
 
-  const s1Done = !!(trainerData.full_name && trainerData.state && trainerData.position && trainerData.employment_status && trainerData.phone);
-const s1Status =
-  trainerProfile?.s1_approved === true ? "approved"
-  : trainerProfile?.s1_approved === false ? "rejected"
-  : profilePending ? "pending"
-  : s1Done ? "complete"
-  : "incomplete";
+  // Completion checks
+  const s1Done = !!(trainerData.full_name && trainerData.state && trainerData.position && trainerData.employment_status);
   const s2Done = !!(trainerProfile?.tae_qualification || trainerProfile?.under_direction_qualification);
-const s2Status =
-  profileApproved ? "approved"
-  : profileRejected ? "rejected"
-  : profilePending ? "pending"
-  : s2Done ? "complete"
-  : "incomplete";
+  const s4Done = !!(trainerProfile?.declaration_credentials && trainerProfile?.declaration_signature);
 
-  const s3Status = industryQualsApproved === true ? "approved" : industryQualsApproved === false ? "rejected" : profilePending ? "pending" : "incomplete";
+  // ── Section 1 status ──────────────────────────────────────────────────────────
+  const s1Status =
+    s1Approved === true  ? "approved"
+    : s1Approved === false ? "rejected"
+    : profileStatus === "Submitted" ? "pending"
+    : s1Done ? "complete"
+    : "incomplete";
 
-  const s4Done = !!(trainerProfile?.declaration_credentials && trainerProfile?.declaration_copies && trainerProfile?.declaration_signature && trainerProfile?.declaration_date);
-const s4Status =
-  trainerProfile?.s4_approved === true ? "approved"
-  : trainerProfile?.s4_approved === false ? "rejected"
-  : profilePending ? "pending"
-  : s4Done ? "complete"
-  : "incomplete";
-  const answeredCount = questResponses.length;
-  const totalUnits = 150;
-  const questDone = answeredCount === totalUnits;
-  const questStatus = questDone ? "complete" : "incomplete";
+  // ── Section 2 status ──────────────────────────────────────────────────────────
+  const s2Status =
+    credApproved ? "approved"
+    : credRejected ? "rejected"
+    : profileStatus === "Submitted" ? "pending"
+    : s2Done ? "complete"
+    : "incomplete";
 
+  // ── Section 3 status ──────────────────────────────────────────────────────────
+  const s3Status =
+    industryQualsApproved === true  ? "approved"
+    : industryQualsApproved === false ? "rejected"
+    : profileStatus === "Submitted" ? "pending"
+    : "incomplete";
+
+  // ── Section 4 status ──────────────────────────────────────────────────────────
+  const s4Status =
+    s4Approved === true  ? "approved"
+    : s4Approved === false ? "rejected"
+    : profileStatus === "Submitted" ? "pending"
+    : s4Done ? "complete"
+    : "incomplete";
+
+  // ── Section 6 status ──────────────────────────────────────────────────────────
   const assignedCount = assignedUnits.length;
   const approvedCount = expData.filter((e) => e.competency_confirmed === true).length;
   const notApprovedCount = expData.filter((e) => e.competency_confirmed === false).length;
-  const updatedCount = expData.filter((e) => e.competency_confirmed === null && Object.values(e.element_descriptions || {}).some((v) => v?.trim())).length;
+  const updatedCount = expData.filter(
+    (e) => e.competency_confirmed === null && Object.values(e.element_descriptions || {}).some((v) => v?.trim())
+  ).length;
   const s6Locked = assignedCount === 0;
   const s6AllApproved = assignedCount > 0 && approvedCount === assignedCount;
   const s6Status =
@@ -162,108 +204,150 @@ const s4Status =
     : approvedCount > 0 ? "pending"
     : "incomplete";
 
-  // Action buttons — show for all non-approved, non-locked statuses including pending
+  // Any section rejected?
+  const anyRejected = [s1Status, s2Status, s3Status, s4Status].includes("rejected");
+
+  // ── Section 5 status ──────────────────────────────────────────────────────────
+  const answeredCount = questResponses.length;
+  const questDone = answeredCount === 150;
+  const questStatus = questDone ? "complete" : "incomplete";
+
+  // Global "Under Review" alert banner — shown when compliance officer has flagged
+  const showUnderReviewBanner = compliance === "Under Review" && anyRejected;
+
   const sections = [
     {
-      number: "1", title: "Section 1 — Trainer Details", status: s1Status,
-      sub: s1Status === "approved" ? "Details verified" : s1Status === "rejected" ? "Details need attention — check your profile" : s1Status === "pending" ? "Awaiting quality review" : s1Done ? "Complete — ready to submit" : "Complete your personal and employment details",
-      actionLabel: s1Status !== "approved" ? "Go to Profile" : null,
+      number: "1",
+      title: "Section 1 — Personal Details",
+      status: s1Status,
+      sub:
+        s1Status === "approved" ? "Personal details verified"
+        : s1Status === "rejected" ? "Your personal details require attention — please update your profile"
+        : s1Status === "pending" ? "Submitted — awaiting review"
+        : s1Done ? "Complete — awaiting submission"
+        : "Complete your personal details in your profile",
+      actionLabel: s1Status === "incomplete" || s1Status === "complete" || s1Status === "rejected" ? "Go to Profile" : null,
       onAction: () => navigate("/profile"),
+      // Section 1 rejection note comes from review_notes (shared with profile review)
+      rejectionNote: s1Status === "rejected" ? reviewNotes : null,
+      reviewedBy: s1Status === "rejected" ? reviewedBy : null,
     },
     {
-      number: "2", title: "Section 2 — Training Credentials", status: s2Status,
-      sub: s2Status === "approved" ? "TAE credentials verified" : s2Status === "rejected" ? "Credentials not approved — check your profile" : s2Status === "pending" ? "Awaiting quality review" : s2Done ? "Complete — ready to submit" : "Enter your TAE qualification and upload evidence",
-      actionLabel: s2Status !== "approved" ? "Go to Profile" : null,
+      number: "2",
+      title: "Section 2 — Training Credentials",
+      status: s2Status,
+      sub:
+        s2Status === "approved" ? "TAE credentials verified by quality team"
+        : s2Status === "rejected" ? "Your credentials were not approved — action required"
+        : s2Status === "pending" ? "Submitted — awaiting quality review"
+        : s2Done ? "Complete — awaiting quality review"
+        : "Enter your TAE qualification or enrolment details",
+      actionLabel: s2Status === "incomplete" || s2Status === "complete" || s2Status === "rejected" ? "Go to Profile" : null,
       onAction: () => navigate("/profile"),
+      rejectionNote: s2Status === "rejected" ? reviewNotes : null,
+      reviewedBy: s2Status === "rejected" ? reviewedBy : null,
     },
     {
-      number: "3", title: "Section 3 — Industry Competencies", status: s3Status,
-      sub: s3Status === "approved" ? "Industry qualifications verified" : s3Status === "rejected" ? "Not approved — upload updated evidence" : s3Status === "pending" ? "Awaiting quality review" : "List your industry qualifications and upload certificates",
-      actionLabel: s3Status !== "approved" ? "Go to Profile" : null,
+      number: "3",
+      title: "Section 3 — Industry Competencies",
+      status: s3Status,
+      sub:
+        s3Status === "approved" ? "Industry qualifications verified"
+        : s3Status === "rejected" ? "Your industry qualifications were not approved — action required"
+        : s3Status === "pending" ? "Submitted — awaiting review"
+        : "List your industry qualifications and upload certificates",
+      actionLabel: s3Status !== "pending" && s3Status !== "approved" ? "Go to Profile" : null,
       onAction: () => navigate("/profile"),
+      rejectionNote: s3Status === "rejected" ? reviewNotes : null,
+      reviewedBy: s3Status === "rejected" ? reviewedBy : null,
     },
     {
-      number: "4", title: "Section 4 — Credentials Declaration", status: s4Status,
-      sub: s4Status === "approved" ? "Declaration verified" : s4Status === "rejected" ? "Declaration needs attention — check your profile" : s4Status === "pending" ? "Awaiting quality review" : s4Done ? "Complete — ready to submit" : "Complete your credentials declaration and sign",
-      actionLabel: s4Status !== "approved" ? "Go to Profile" : null,
+      number: "4",
+      title: "Section 4 — Credentials Declaration",
+      status: s4Status,
+      sub:
+        s4Status === "approved" ? "Declaration confirmed and verified"
+        : s4Status === "rejected" ? "Your declaration requires attention — please review"
+        : s4Status === "pending" ? "Submitted — awaiting review"
+        : s4Done ? "Complete — awaiting submission"
+        : "Complete and sign your credentials declaration",
+      actionLabel: s4Status === "incomplete" || s4Status === "complete" || s4Status === "rejected" ? "Go to Profile" : null,
       onAction: () => navigate("/profile"),
+      rejectionNote: s4Status === "rejected" ? reviewNotes : null,
+      reviewedBy: s4Status === "rejected" ? reviewedBy : null,
     },
     {
-      number: "5", title: "Section 5 — Skills Questionnaire", status: questStatus,
-      sub: questDone ? `All ${totalUnits} units answered` : answeredCount > 0 ? `${answeredCount} of ${totalUnits} units answered` : "Answer Yes/No/Hold for all 150 units of competency",
+      number: "5",
+      title: "Section 5 — Skills Questionnaire",
+      status: questStatus,
+      sub: questDone ? `All 150 units answered` : answeredCount > 0 ? `${answeredCount} of 150 units answered` : "Answer Yes/No/Hold for all 150 units of competency",
       actionLabel: !questDone ? (answeredCount > 0 ? "Continue" : "Start") : null,
       onAction: () => navigate("/questionnaire"),
     },
     {
-      number: "6", title: "Section 6 — Industry Experience", status: s6Locked ? "incomplete" : s6Status, locked: s6Locked,
-      sub: s6Locked ? "Awaiting unit assignment from your compliance officer"
+      number: "6",
+      title: "Section 6 — Industry Experience",
+      status: s6Locked ? "incomplete" : s6Status,
+      locked: s6Locked,
+      sub: s6Locked
+        ? "Awaiting unit assignment from your compliance officer"
         : s6AllApproved ? `All ${assignedCount} units quality approved`
-        : notApprovedCount > 0 && updatedCount > 0 ? `${notApprovedCount} unit${notApprovedCount !== 1 ? "s" : ""} not approved — updated evidence submitted`
+        : notApprovedCount > 0 && updatedCount > 0 ? `${notApprovedCount} unit${notApprovedCount !== 1 ? "s" : ""} not approved — updated evidence submitted, awaiting re-review`
         : notApprovedCount > 0 ? `${notApprovedCount} unit${notApprovedCount !== 1 ? "s" : ""} not approved — review feedback and update your evidence`
         : compliance === "Pending" ? `Submitted — ${approvedCount} of ${assignedCount} units approved`
         : `${approvedCount} of ${assignedCount} units approved`,
-      actionLabel: !s6Locked && !s6AllApproved ? "Go to Experience" : null,
+      actionLabel: !s6Locked && !s6AllApproved
+        ? (compliance === "Pending" && notApprovedCount === 0 ? null : "Go to Experience")
+        : null,
       onAction: () => navigate("/experience"),
     },
   ];
 
   const approvedSections = sections.filter((s) => s.status === "approved").length;
-  const actionSections = sections.filter((s) => ["rejected", "updated", "incomplete", "complete"].includes(s.status) && !s.locked).length;
-  const pendingSections = sections.filter((s) => s.status === "pending").length;
 
   return (
     <div className="mb-6">
-      {/* Styled collapsible container header */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <button
-          onClick={() => setCollapsed((c) => !c)}
-          className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <h3 className="text-sm font-semibold text-gray-800">Your Onboarding Progress</h3>
-            {/* Summary badges — always visible */}
-            <div className="flex items-center gap-2">
-              {approvedSections > 0 && (
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>
-                  ✓ {approvedSections} approved
-                </span>
-              )}
-              {pendingSections > 0 && (
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#fdf3e0", color: "#92500a" }}>
-                  ⏳ {pendingSections} awaiting review
-                </span>
-              )}
-              {actionSections > 0 && (
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>
-                  ⚠ {actionSections} action required
-                </span>
+      {/* Under review alert banner */}
+      {showUnderReviewBanner && (
+        <div className="rounded-xl p-4 mb-4 border" style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5" }}>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#c93535" }}>
+              <span className="text-white font-bold text-sm">!</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold mb-1" style={{ color: "#c93535" }}>
+                Your profile is under review — action required
+              </p>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Your compliance officer has reviewed your profile and found sections that need attention.
+                Review the feedback below, update the relevant sections, and resubmit.
+              </p>
+              {reviewNotes && (
+                <div className="mt-2 p-2.5 rounded-lg" style={{ backgroundColor: "#fff5f5", border: "1px solid #fca5a5" }}>
+                  <p className="text-xs font-semibold text-gray-500 mb-1">Notes from compliance officer{reviewedBy ? ` (${reviewedBy})` : ""}:</p>
+                  <p className="text-sm text-gray-700 italic">"{reviewNotes}"</p>
+                </div>
               )}
             </div>
           </div>
-          {/* Chevron arrow */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400">{sections.filter((s) => s.status === "approved").length} of {sections.length} sections approved</span>
-            <svg
-              width="16" height="16" viewBox="0 0 16 16" fill="none"
-              className="transition-transform duration-200 flex-shrink-0"
-              style={{ transform: collapsed ? "rotate(0deg)" : "rotate(180deg)", color: "#9ca3af" }}
-            >
-              <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-        </button>
+        </div>
+      )}
 
-        {/* Sections — hidden when collapsed */}
-        {!collapsed && (
-          <div className="px-5 pb-5 space-y-3 border-t border-gray-100 pt-4">
-            {sections.map((s) => <SectionCard key={s.number} {...s} />)}
-          </div>
-        )}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-gray-700">Your Onboarding Progress</h3>
+        <span className="text-xs text-gray-400">{approvedSections} of {sections.length} sections approved</span>
+      </div>
+
+      <div className="space-y-3">
+        {sections.map((s) => (
+          <SectionCard key={s.number} {...s} />
+        ))}
       </div>
     </div>
   );
 }
 
+// ── Main Dashboard ─────────────────────────────────────────────────────────────
 export default function Dashboard({ profile }) {
   const navigate = useNavigate();
   const isAdmin = profile?.role === "admin" || profile?.role === "compliance_officer";
@@ -273,6 +357,7 @@ export default function Dashboard({ profile }) {
   const [notifications, setNotifications] = useState([]);
   const [stats, setStats] = useState({ total: 0, compliant: 0, pending: 0, incomplete: 0 });
   const [loading, setLoading] = useState(true);
+
   const [trainerData, setTrainerData] = useState(null);
   const [trainerProfile, setTrainerProfile] = useState(null);
   const [questResponses, setQuestResponses] = useState([]);
@@ -321,6 +406,7 @@ export default function Dashboard({ profile }) {
 
   return (
     <div>
+      {/* Welcome banner */}
       <div className="rounded-xl p-7 mb-6 relative overflow-hidden" style={{ backgroundColor: "#081a47" }}>
         <div className="relative z-10">
           <h2 className="text-xl font-semibold text-white mb-1">Welcome back, {profile?.full_name?.split(" ")[0] || "there"} 👋</h2>
@@ -334,8 +420,20 @@ export default function Dashboard({ profile }) {
             <div className="mt-4">
               {trainerData && (
                 <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
-                  style={{ backgroundColor: trainerData.compliance_status === "Compliant" ? "#32ba9a" : trainerData.compliance_status === "Pending" ? "#e8a020" : "rgba(255,255,255,0.15)", color: trainerData.compliance_status === "Compliant" ? "#081a47" : "#fff" }}>
-                  {trainerData.compliance_status === "Compliant" ? "✓ Profile Compliant" : trainerData.compliance_status === "Pending" ? "⏳ Awaiting Quality Review" : trainerData.compliance_status === "Under Review" ? "🔍 Under Review" : "⚠ Profile Incomplete"}
+                  style={{
+                    backgroundColor:
+                      trainerData.compliance_status === "Compliant" ? "#32ba9a"
+                      : trainerData.compliance_status === "Pending" ? "#e8a020"
+                      : trainerData.compliance_status === "Under Review" ? "#fdeaea"
+                      : "rgba(255,255,255,0.15)",
+                    color: trainerData.compliance_status === "Compliant" ? "#081a47"
+                      : trainerData.compliance_status === "Under Review" ? "#c93535"
+                      : "#fff",
+                  }}>
+                  {trainerData.compliance_status === "Compliant" ? "✓ Profile Compliant"
+                    : trainerData.compliance_status === "Pending" ? "⏳ Awaiting Quality Review"
+                    : trainerData.compliance_status === "Under Review" ? "⚠ Profile Under Review — Action Required"
+                    : "⚠ Profile Incomplete"}
                 </span>
               )}
             </div>
@@ -345,6 +443,7 @@ export default function Dashboard({ profile }) {
         <div className="absolute right-[60px] bottom-[-80px] w-40 h-40 rounded-full" style={{ backgroundColor: "rgba(101,246,204,0.08)" }} />
       </div>
 
+      {/* Stats — admin only */}
       {isAdmin && (
         <div className="grid grid-cols-4 gap-4 mb-6">
           <StatCard label="Total Trainers" value={stats.total} sub="On register" color="#081a47" />
@@ -354,12 +453,24 @@ export default function Dashboard({ profile }) {
         </div>
       )}
 
+      {/* Trainer progress — trainer only */}
       {!isAdmin && !loading && (
-        <TrainerProgressDashboard trainerData={trainerData} trainerProfile={trainerProfile} questResponses={questResponses} expData={expData} assignedUnits={assignedUnits} navigate={navigate} />
+        <TrainerProgressDashboard
+          trainerData={trainerData}
+          trainerProfile={trainerProfile}
+          questResponses={questResponses}
+          expData={expData}
+          assignedUnits={assignedUnits}
+          navigate={navigate}
+        />
       )}
 
-      {isAdmin && !loading && <PendingReviewPanel pendingTrainers={pendingTrainers} notifications={notifications} onMarkRead={markNotificationRead} onNavigate={navigate} />}
+      {/* Pending review panel — admin only */}
+      {isAdmin && !loading && (
+        <PendingReviewPanel pendingTrainers={pendingTrainers} notifications={notifications} onMarkRead={markNotificationRead} onNavigate={navigate} />
+      )}
 
+      {/* Two columns — admin only */}
       {isAdmin && (
         <div className="grid grid-cols-2 gap-5">
           <div className="bg-white border border-gray-200 rounded-xl">
@@ -374,9 +485,12 @@ export default function Dashboard({ profile }) {
                     <p className="text-sm text-gray-400 mb-3">No trainers yet</p>
                     <button onClick={() => navigate("/trainers/invite")} className="text-sm font-semibold px-4 py-2 rounded-lg text-white" style={{ backgroundColor: "#1c5ea8" }}>Invite your first trainer</button>
                   </div>
-                ) : trainers.slice(0, 5).map((trainer) => <TrainerRow key={trainer.id} trainer={trainer} onClick={() => navigate(`/trainers/${trainer.id}`)} />)}
+                ) : trainers.slice(0, 5).map((trainer) => (
+                  <TrainerRow key={trainer.id} trainer={trainer} onClick={() => navigate(`/trainers/${trainer.id}`)} />
+                ))}
             </div>
           </div>
+
           <div className="bg-white border border-gray-200 rounded-xl">
             <div className="px-5 py-4 border-b border-gray-100">
               <h3 className="text-sm font-semibold text-gray-800">Recent Notifications</h3>
