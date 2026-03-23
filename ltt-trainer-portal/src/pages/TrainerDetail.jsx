@@ -689,10 +689,22 @@ export default function TrainerDetail({ profile: adminProfile }) {
     setSaving(true);
     await supabase.from("trainers").update({ compliance_status: status }).eq("id", id);
     setTrainer((p) => ({ ...p, compliance_status: status }));
-    if (trainerProfile) await supabase.from("trainer_profiles").update({ profile_status: status === "Compliant" ? "Approved" : "Under Review", reviewed_by: adminProfile?.full_name, reviewed_at: new Date().toISOString(), review_notes: statusNote }).eq("trainer_id", id);
+    if (trainerProfile) {
+      // Only update profile_status to "Approved" when marking Compliant.
+      // For "Under Review" / "Incomplete" — preserve the existing profile_status
+      // (which may be "Rejected" from individual section decisions) and just save notes.
+      const profileUpdate = {
+        reviewed_by: adminProfile?.full_name,
+        reviewed_at: new Date().toISOString(),
+        review_notes: statusNote || null,
+      };
+      if (status === "Compliant") profileUpdate.profile_status = "Approved";
+      await supabase.from("trainer_profiles").update(profileUpdate).eq("trainer_id", id);
+    }
     setSaving(false);
     setShowStatusModal(false);
     setStatusNote("");
+    await fetchAll();
   };
 
   const profilePct = calcProfilePct(trainer, trainerProfile);

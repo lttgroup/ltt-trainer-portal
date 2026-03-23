@@ -212,8 +212,9 @@ function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses,
   const questDone = answeredCount === 150;
   const questStatus = questDone ? "complete" : "incomplete";
 
-  // Global "Under Review" alert banner — shown when compliance officer has flagged
-  const showUnderReviewBanner = compliance === "Under Review" && anyRejected;
+  // Global "Under Review" alert banner — shown whenever admin has set Under Review,
+  // regardless of whether individual section rejections have been set yet
+  const showUnderReviewBanner = compliance === "Under Review";
 
   const sections = [
     {
