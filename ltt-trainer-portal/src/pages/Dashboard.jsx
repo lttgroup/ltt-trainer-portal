@@ -21,7 +21,6 @@ function TrainerRow({ trainer, onClick }) {
   };
   const style = statusStyles[trainer.compliance_status] || statusStyles["Incomplete"];
   const initials = trainer.full_name ? trainer.full_name.split(" ").map((n) => n[0]).join("").toUpperCase() : "?";
-
   return (
     <div className="flex items-center gap-3 py-3 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50 rounded-lg px-2 transition-colors" onClick={onClick}>
       <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>{initials}</div>
@@ -86,8 +85,10 @@ function SectionCard({ number, title, status, sub, actionLabel, onAction, locked
   };
   const s = styles[status] || styles.incomplete;
   return (
-    <div className="bg-white rounded-xl border p-5 flex items-start gap-4 transition-all" style={{ borderColor: s.border, backgroundColor: s.bg, opacity: locked ? 0.5 : 1 }}>
-      <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" style={{ backgroundColor: s.iconBg, color: s.iconColor }}>{s.icon}</div>
+    <div className="bg-white rounded-xl border p-5 flex items-start gap-4 transition-all"
+      style={{ borderColor: s.border, backgroundColor: s.bg, opacity: locked ? 0.5 : 1 }}>
+      <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+        style={{ backgroundColor: s.iconBg, color: s.iconColor }}>{s.icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold" style={{ color: s.titleColor }}>{title}</p>
         <p className="text-xs text-gray-500 mt-0.5">{sub}</p>
@@ -102,10 +103,13 @@ function SectionCard({ number, title, status, sub, actionLabel, onAction, locked
   );
 }
 
+// ── Collapsible Trainer Progress Dashboard ─────────────────────────────────────
 function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses, expData, assignedUnits, navigate }) {
+  const [collapsed, setCollapsed] = useState(false);
+
   if (!trainerData)
     return (
-      <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
+      <div className="bg-white border border-gray-200 rounded-xl p-8 text-center mb-6">
         <p className="text-sm text-gray-400">No trainer record found. Contact your compliance officer.</p>
       </div>
     );
@@ -117,32 +121,23 @@ function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses,
   const profileRejected = profileStatus === "Rejected";
   const profilePending = profileStatus === "Submitted" || profileStatus === "Under Review";
 
-  // Section 1 — personal details
+  // Section statuses
   const s1Done = !!(trainerData.full_name && trainerData.state && trainerData.position && trainerData.employment_status && trainerData.phone);
   const s1Status = profileApproved ? "approved" : profileRejected ? "rejected" : profilePending ? "pending" : s1Done ? "complete" : "incomplete";
 
-  // Section 2 — TAE credentials
   const s2Done = !!(trainerProfile?.tae_qualification || trainerProfile?.under_direction_qualification);
   const s2Status = profileApproved ? "approved" : profileRejected ? "rejected" : profilePending ? "pending" : s2Done ? "complete" : "incomplete";
 
-  // Section 3 — industry quals (own approval flag)
-  const s3Status =
-    industryQualsApproved === true ? "approved"
-    : industryQualsApproved === false ? "rejected"
-    : profilePending ? "pending"
-    : "incomplete";
+  const s3Status = industryQualsApproved === true ? "approved" : industryQualsApproved === false ? "rejected" : profilePending ? "pending" : "incomplete";
 
-  // Section 4 — declaration
   const s4Done = !!(trainerProfile?.declaration_credentials && trainerProfile?.declaration_copies && trainerProfile?.declaration_signature && trainerProfile?.declaration_date);
   const s4Status = profileApproved ? "approved" : profileRejected ? "rejected" : profilePending ? "pending" : s4Done ? "complete" : "incomplete";
 
-  // Section 5 — questionnaire
   const answeredCount = questResponses.length;
   const totalUnits = 150;
   const questDone = answeredCount === totalUnits;
   const questStatus = questDone ? "complete" : "incomplete";
 
-  // Section 6 — industry experience
   const assignedCount = assignedUnits.length;
   const approvedCount = expData.filter((e) => e.competency_confirmed === true).length;
   const notApprovedCount = expData.filter((e) => e.competency_confirmed === false).length;
@@ -160,25 +155,25 @@ function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses,
   const sections = [
     {
       number: "1", title: "Section 1 — Trainer Details", status: s1Status,
-      sub: s1Status === "approved" ? "Details verified by quality team" : s1Status === "rejected" ? "Details need attention — check your profile" : s1Status === "pending" ? "Submitted — awaiting quality review" : s1Done ? "Complete — ready to submit" : "Complete your personal and employment details",
+      sub: s1Status === "approved" ? "Details verified" : s1Status === "rejected" ? "Details need attention" : s1Status === "pending" ? "Awaiting quality review" : s1Done ? "Complete — ready to submit" : "Complete your personal and employment details",
       actionLabel: s1Status === "incomplete" || s1Status === "complete" ? "Go to Profile" : null,
       onAction: () => navigate("/profile"),
     },
     {
       number: "2", title: "Section 2 — Training Credentials", status: s2Status,
-      sub: s2Status === "approved" ? "TAE credentials verified by quality team" : s2Status === "rejected" ? "Credentials not approved — check your profile" : s2Status === "pending" ? "Submitted — awaiting quality review" : s2Done ? "Complete — ready to submit" : "Enter your TAE qualification and upload evidence",
+      sub: s2Status === "approved" ? "TAE credentials verified" : s2Status === "rejected" ? "Credentials not approved — check your profile" : s2Status === "pending" ? "Awaiting quality review" : s2Done ? "Complete — ready to submit" : "Enter your TAE qualification and upload evidence",
       actionLabel: s2Status === "incomplete" || s2Status === "complete" ? "Go to Profile" : null,
       onAction: () => navigate("/profile"),
     },
     {
       number: "3", title: "Section 3 — Industry Competencies", status: s3Status,
-      sub: s3Status === "approved" ? "Industry qualifications verified" : s3Status === "rejected" ? "Not approved — upload updated evidence" : s3Status === "pending" ? "Submitted — awaiting quality review" : "List your industry qualifications and upload certificates",
+      sub: s3Status === "approved" ? "Industry qualifications verified" : s3Status === "rejected" ? "Not approved — upload updated evidence" : s3Status === "pending" ? "Awaiting quality review" : "List your industry qualifications and upload certificates",
       actionLabel: s3Status !== "pending" && s3Status !== "approved" ? "Go to Profile" : null,
       onAction: () => navigate("/profile"),
     },
     {
       number: "4", title: "Section 4 — Credentials Declaration", status: s4Status,
-      sub: s4Status === "approved" ? "Declaration verified by quality team" : s4Status === "rejected" ? "Declaration needs attention — check your profile" : s4Status === "pending" ? "Submitted — awaiting quality review" : s4Done ? "Complete — ready to submit" : "Complete your credentials declaration and sign",
+      sub: s4Status === "approved" ? "Declaration verified" : s4Status === "rejected" ? "Declaration needs attention" : s4Status === "pending" ? "Awaiting quality review" : s4Done ? "Complete — ready to submit" : "Complete your credentials declaration and sign",
       actionLabel: s4Status === "incomplete" || s4Status === "complete" ? "Go to Profile" : null,
       onAction: () => navigate("/profile"),
     },
@@ -190,21 +185,59 @@ function TrainerProgressDashboard({ trainerData, trainerProfile, questResponses,
     },
     {
       number: "6", title: "Section 6 — Industry Experience", status: s6Locked ? "incomplete" : s6Status, locked: s6Locked,
-      sub: s6Locked ? "Awaiting unit assignment from your compliance officer" : s6AllApproved ? `All ${assignedCount} units quality approved` : notApprovedCount > 0 && updatedCount > 0 ? `${notApprovedCount} unit${notApprovedCount !== 1 ? "s" : ""} not approved — updated evidence submitted` : notApprovedCount > 0 ? `${notApprovedCount} unit${notApprovedCount !== 1 ? "s" : ""} not approved — review feedback and update your evidence` : compliance === "Pending" ? `Submitted — ${approvedCount} of ${assignedCount} units approved` : `${approvedCount} of ${assignedCount} units approved`,
+      sub: s6Locked ? "Awaiting unit assignment from your compliance officer"
+        : s6AllApproved ? `All ${assignedCount} units quality approved`
+        : notApprovedCount > 0 && updatedCount > 0 ? `${notApprovedCount} unit${notApprovedCount !== 1 ? "s" : ""} not approved — updated evidence submitted`
+        : notApprovedCount > 0 ? `${notApprovedCount} unit${notApprovedCount !== 1 ? "s" : ""} not approved — review feedback and update your evidence`
+        : compliance === "Pending" ? `Submitted — ${approvedCount} of ${assignedCount} units approved`
+        : `${approvedCount} of ${assignedCount} units approved`,
       actionLabel: !s6Locked && !s6AllApproved ? (compliance === "Pending" && notApprovedCount === 0 ? null : "Go to Experience") : null,
       onAction: () => navigate("/experience"),
     },
   ];
 
+  const approvedSections = sections.filter((s) => s.status === "approved").length;
+  const actionSections = sections.filter((s) => ["rejected", "updated", "incomplete", "complete"].includes(s.status) && !s.locked).length;
+
   return (
     <div className="mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-700">Your Onboarding Progress</h3>
-        <span className="text-xs text-gray-400">{sections.filter((s) => s.status === "approved").length} of {sections.length} sections approved</span>
-      </div>
-      <div className="space-y-3">
-        {sections.map((s) => <SectionCard key={s.number} {...s} />)}
-      </div>
+      {/* Collapsible header */}
+      <button
+        onClick={() => setCollapsed((c) => !c)}
+        className="w-full flex items-center justify-between mb-4 group"
+      >
+        <div className="flex items-center gap-3">
+          <h3 className="text-sm font-semibold text-gray-700">Your Onboarding Progress</h3>
+          {/* Summary badges — visible when collapsed */}
+          {collapsed && (
+            <div className="flex items-center gap-2">
+              {approvedSections > 0 && (
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>
+                  ✓ {approvedSections} complete
+                </span>
+              )}
+              {actionSections > 0 && (
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#fdf3e0", color: "#92500a" }}>
+                  ⚠ {actionSections} action required
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {!collapsed && <span className="text-xs text-gray-400">{approvedSections} of {sections.length} sections approved</span>}
+          <span className="text-xs text-gray-400 group-hover:text-gray-600 transition-colors">
+            {collapsed ? "▾ expand" : "▴ collapse"}
+          </span>
+        </div>
+      </button>
+
+      {/* Sections — hidden when collapsed */}
+      {!collapsed && (
+        <div className="space-y-3">
+          {sections.map((s) => <SectionCard key={s.number} {...s} />)}
+        </div>
+      )}
     </div>
   );
 }
@@ -266,6 +299,7 @@ export default function Dashboard({ profile }) {
 
   return (
     <div>
+      {/* Welcome banner */}
       <div className="rounded-xl p-7 mb-6 relative overflow-hidden" style={{ backgroundColor: "#081a47" }}>
         <div className="relative z-10">
           <h2 className="text-xl font-semibold text-white mb-1">Welcome back, {profile?.full_name?.split(" ")[0] || "there"} 👋</h2>
@@ -299,7 +333,10 @@ export default function Dashboard({ profile }) {
         </div>
       )}
 
-      {!isAdmin && !loading && <TrainerProgressDashboard trainerData={trainerData} trainerProfile={trainerProfile} questResponses={questResponses} expData={expData} assignedUnits={assignedUnits} navigate={navigate} />}
+      {!isAdmin && !loading && (
+        <TrainerProgressDashboard trainerData={trainerData} trainerProfile={trainerProfile} questResponses={questResponses} expData={expData} assignedUnits={assignedUnits} navigate={navigate} />
+      )}
+
       {isAdmin && !loading && <PendingReviewPanel pendingTrainers={pendingTrainers} notifications={notifications} onMarkRead={markNotificationRead} onNavigate={navigate} />}
 
       {isAdmin && (

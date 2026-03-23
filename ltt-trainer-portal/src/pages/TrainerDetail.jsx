@@ -3,16 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { UNITS } from "../lib/units";
 
-// ── Section header colours ─────────────────────────────────────────────────────
-const SECTION_COLORS = {
-  1: { bg: "#081a47", text: "#fff" },
-  2: { bg: "#16406f", text: "#fff" },
-  3: { bg: "#1c5ea8", text: "#fff" },
-  4: { bg: "#0f7a5a", text: "#fff" },
-  5: { bg: "#6d28d9", text: "#fff" },
-  6: { bg: "#92500a", text: "#fff" },
-};
-
 // ── Admin Experience Tab ───────────────────────────────────────────────────────
 function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile, onUpdate }) {
   const [saving, setSaving] = useState({});
@@ -23,30 +13,15 @@ function ExperienceTab({ trainerId, assignedUnits, experienceData, adminProfile,
     const mapped = {};
     const initialCollapsed = {};
     experienceData.forEach((e) => {
-      mapped[e.unit_code] = {
-        competency_confirmed: e.competency_confirmed,
-        holds_unit: e.holds_unit || false,
-        quality_notes: e.quality_notes || "",
-        professional_development: e.professional_development || "",
-        element_descriptions: e.element_descriptions || {},
-      };
-      if (e.competency_confirmed !== null && e.competency_confirmed !== undefined) {
-        initialCollapsed[e.unit_code] = true;
-      }
+      mapped[e.unit_code] = { competency_confirmed: e.competency_confirmed, holds_unit: e.holds_unit || false, quality_notes: e.quality_notes || "", professional_development: e.professional_development || "", element_descriptions: e.element_descriptions || {} };
+      if (e.competency_confirmed !== null && e.competency_confirmed !== undefined) initialCollapsed[e.unit_code] = true;
     });
     setLocalExp(mapped);
     setCollapsed((prev) => ({ ...initialCollapsed, ...prev }));
   }, [experienceData]);
 
   const unitsToShow = assignedUnits.map((a) => UNITS.find((u) => u.code === a.unit_code)).filter(Boolean).sort((a, b) => a.code.localeCompare(b.code));
-
-  const completedCount = experienceData.filter((e) => {
-    const unit = UNITS.find((u) => u.code === e.unit_code);
-    if (!unit) return false;
-    if (unit.elements.length === 0) return !!e.professional_development?.trim();
-    const descs = e.element_descriptions || {};
-    return unit.elements.every((_, i) => descs[i]?.trim());
-  }).length;
+  const completedCount = experienceData.filter((e) => { const unit = UNITS.find((u) => u.code === e.unit_code); if (!unit) return false; if (unit.elements.length === 0) return !!e.professional_development?.trim(); const descs = e.element_descriptions || {}; return unit.elements.every((_, i) => descs[i]?.trim()); }).length;
 
   const saveUnit = async (unitCode) => {
     setSaving((prev) => ({ ...prev, [unitCode]: true }));
@@ -181,36 +156,38 @@ const STATUS_STYLES = {
   "Under Review": { bg: "#e6f0ff", color: "#1c5ea8" },
 };
 
-// ── Coloured section wrapper ───────────────────────────────────────────────────
-function Section({ title, children, action, sectionNumber }) {
-  const colors = sectionNumber ? SECTION_COLORS[sectionNumber] : { bg: "#f9fafb", text: "#374151" };
+// ── Section header status badge ────────────────────────────────────────────────
+function SectionStatusBadge({ status }) {
+  if (status === "approved") return <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>✓ Approved</span>;
+  if (status === "rejected") return <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>✗ Not Approved</span>;
+  if (status === "pending") return <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#fdf3e0", color: "#92500a" }}>⏳ Awaiting Approval</span>;
+  if (status === "submitted") return <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>Submitted</span>;
+  return <span className="text-xs text-gray-400">Not submitted</span>;
+}
+
+// ── Brand-consistent section wrapper ──────────────────────────────────────────
+// All section headers use the same dark brand colour with a subtle left accent
+// to distinguish them, rather than different header colours per section.
+function Section({ title, children, action, statusBadge }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
-      <div className="flex items-center justify-between px-6 py-4" style={{ backgroundColor: colors.bg }}>
-        <h3 className="text-sm font-semibold" style={{ color: colors.text }}>{title}</h3>
-        {action && <div>{action}</div>}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100" style={{ backgroundColor: "#081a47" }}>
+        <h3 className="text-sm font-semibold text-white">{title}</h3>
+        <div className="flex items-center gap-3">
+          {statusBadge}
+          {action && <div>{action}</div>}
+        </div>
       </div>
       <div className="px-6 py-5">{children}</div>
     </div>
   );
 }
 
-// ── Detail cell (for grid layouts) ────────────────────────────────────────────
 function DetailCell({ label, value }) {
   return (
     <div className="flex flex-col gap-0.5">
       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
       <span className="text-sm text-gray-800">{value || "—"}</span>
-    </div>
-  );
-}
-
-// ── Legacy row layout (kept for declaration section) ──────────────────────────
-function DetailRow({ label, value }) {
-  return (
-    <div className="flex justify-between py-2.5 border-b border-gray-100 last:border-0">
-      <span className="text-sm text-gray-500">{label}</span>
-      <span className="text-sm font-medium text-gray-800 text-right max-w-xs">{value || "—"}</span>
     </div>
   );
 }
@@ -256,50 +233,34 @@ function calcExperiencePct(responses, experienceData, assignedUnits) {
   return Math.round((assessed / assignedUnits.length) * 100);
 }
 
-// ── Admin file upload button ───────────────────────────────────────────────────
-function AdminUpload({ trainerId, documentType, bucket = "evidence-files", onDone }) {
+function AdminUpload({ trainerId, documentType, onDone }) {
   const [uploading, setUploading] = useState(false);
   return (
     <label className="flex items-center gap-1.5 cursor-pointer text-xs font-medium px-2.5 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
-      {uploading ? "Uploading..." : (
-        <>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M6 9V2M6 2L3.5 4.5M6 2l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M1 9.5v.5a1 1 0 001 1h8a1 1 0 001-1v-.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-          Upload
-        </>
-      )}
+      {uploading ? "Uploading..." : (<><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 9V2M6 2L3.5 4.5M6 2l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M1 9.5v.5a1 1 0 001 1h8a1 1 0 001-1v-.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>Upload</>)}
       <input type="file" className="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" disabled={uploading}
         onChange={async (e) => {
-          const f = e.target.files?.[0];
-          if (!f) return;
-          setUploading(true);
+          const f = e.target.files?.[0]; if (!f) return; setUploading(true);
           const ext = f.name.split(".").pop();
           const safeType = documentType.replace(/[^a-zA-Z0-9]/g, "_");
           const path = `${trainerId}/${safeType}_admin_${Date.now()}.${ext}`;
-          const { error: upErr } = await supabase.storage.from(bucket).upload(path, f);
-          if (!upErr) {
-            await supabase.from("evidence_files").insert({ trainer_id: trainerId, file_name: f.name, file_path: path, file_size: f.size, document_type: documentType });
-            onDone?.();
-          }
+          const { error: upErr } = await supabase.storage.from("evidence-files").upload(path, f);
+          if (!upErr) { await supabase.from("evidence_files").insert({ trainer_id: trainerId, file_name: f.name, file_path: path, file_size: f.size, document_type: documentType }); onDone?.(); }
           setUploading(false);
         }} />
     </label>
   );
 }
 
-// ── File list ──────────────────────────────────────────────────────────────────
-function FileList({ files, bucket = "evidence-files", emptyMessage }) {
-  if (files.length === 0)
-    return <p className="text-xs text-amber-600 p-2 rounded" style={{ backgroundColor: "#fdf3e0" }}>⚠ {emptyMessage || "No files uploaded yet"}</p>;
+function FileList({ files, emptyMessage }) {
+  if (files.length === 0) return <p className="text-xs text-amber-600 p-2 rounded" style={{ backgroundColor: "#fdf3e0" }}>⚠ {emptyMessage || "No files uploaded yet"}</p>;
   return (
     <div className="space-y-1.5">
       {files.map((f) => (
         <div key={f.id} className="flex items-center gap-3 p-2.5 rounded-lg border" style={{ backgroundColor: "#f9fafb", borderColor: "#e5e7eb" }}>
           <span className="text-sm">📎</span>
           <span className="text-sm text-gray-700 flex-1">{f.file_name}</span>
-          <button onClick={async () => { const { data } = await supabase.storage.from(bucket).createSignedUrl(f.file_path, 120); if (data?.signedUrl) window.open(data.signedUrl, "_blank"); }}
+          <button onClick={async () => { const { data } = await supabase.storage.from("evidence-files").createSignedUrl(f.file_path, 120); if (data?.signedUrl) window.open(data.signedUrl, "_blank"); }}
             className="text-xs font-medium px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-100">View</button>
         </div>
       ))}
@@ -307,20 +268,16 @@ function FileList({ files, bucket = "evidence-files", emptyMessage }) {
   );
 }
 
-// ── Approval buttons (neutral until selected) ─────────────────────────────────
+// Neutral until selected — green when approved, red when rejected
 function ApprovalButtons({ approved, onApprove, onReject, saving, approveLabel = "Approve", rejectLabel = "Not Approved" }) {
   return (
     <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
       <button onClick={onApprove} disabled={saving} className="px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all"
-        style={approved === true
-          ? { backgroundColor: "#dcfce7", color: "#166534", borderColor: "#86efac" }
-          : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>
+        style={approved === true ? { backgroundColor: "#dcfce7", color: "#166534", borderColor: "#86efac" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>
         {approved === true ? `✓ ${approveLabel}` : approveLabel}
       </button>
       <button onClick={onReject} disabled={saving} className="px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all"
-        style={approved === false
-          ? { backgroundColor: "#fdeaea", color: "#c93535", borderColor: "#fca5a5" }
-          : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>
+        style={approved === false ? { backgroundColor: "#fdeaea", color: "#c93535", borderColor: "#fca5a5" } : { backgroundColor: "white", color: "#6b7280", borderColor: "#e5e7eb" }}>
         {approved === false ? `✗ ${rejectLabel}` : rejectLabel}
       </button>
     </div>
@@ -357,8 +314,7 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
     const { data: suData } = await supabase.from("stream_units").select("stream_id, unit_code");
     const map = {};
     (suData || []).forEach((row) => { if (!map[row.stream_id]) map[row.stream_id] = []; map[row.stream_id].push(row.unit_code); });
-    setStreamUnits(map);
-    setLoading(false);
+    setStreamUnits(map); setLoading(false);
   };
 
   const toggleStream = (streamId) => { setSelected((prev) => { const next = new Set(prev); next.has(streamId) ? next.delete(streamId) : next.add(streamId); return next; }); setSaved(false); };
@@ -470,16 +426,16 @@ function StreamsTab({ trainerId, responses, assignedUnits, experienceData, onAss
                         const hasExp = yesSet.has(code);
                         return (
                           <div key={code} className="flex items-center gap-2 px-1 py-1 rounded" style={{ backgroundColor: isApproved ? "#f0fdf4" : isNotApproved ? "#fef2f2" : "#f9fafb" }}>
-                            <span className="text-xs font-bold font-mono flex-shrink-0" style={{ color: isApproved ? "#166534" : isNotApproved ? "#c93535" : hasExp ? "#1c5ea8" : "#9ca3af" }}>{code}</span>
+                            <span className="text-xs font-bold font-mono flex-shrink-0" style={{ color: isApproved ? "#166634" : isNotApproved ? "#c93535" : hasExp ? "#1c5ea8" : "#9ca3af" }}>{code}</span>
                             <span className="text-xs text-gray-500 flex-1 truncate">{unit?.title}</span>
-                            <span className="text-xs font-semibold flex-shrink-0" style={{ color: isApproved ? "#166534" : isNotApproved ? "#c93535" : hasExp ? "#1c5ea8" : "#9ca3af" }}>
+                            <span className="text-xs font-semibold flex-shrink-0" style={{ color: isApproved ? "#166634" : isNotApproved ? "#c93535" : hasExp ? "#1c5ea8" : "#9ca3af" }}>
                               {isApproved ? "✓" : isNotApproved ? "✗" : hasExp ? "~" : "—"}
                             </span>
                           </div>
                         );
                       })}
                       <div className="flex gap-3 pt-1 text-xs text-gray-400">
-                        <span style={{ color: "#166534" }}>✓ Approved</span><span style={{ color: "#c93535" }}>✗ Not approved</span><span style={{ color: "#1c5ea8" }}>~ Experience</span><span>— None</span>
+                        <span style={{ color: "#166634" }}>✓ Approved</span><span style={{ color: "#c93535" }}>✗ Not approved</span><span style={{ color: "#1c5ea8" }}>~ Experience</span><span>— None</span>
                       </div>
                     </div>
                   )}
@@ -559,46 +515,35 @@ export default function TrainerDetail({ profile: adminProfile }) {
   const profilePct = calcProfilePct(trainer, trainerProfile);
   const questPct = calcQuestionnairePct(questionnaireResponses);
   const expPct = calcExperiencePct(questionnaireResponses, experienceData, assignedUnits);
-  const yesCount = questionnaireResponses.filter((r) => r.response === "yes").length;
   const answeredCount = questionnaireResponses.filter((r) => r.response).length;
   const overallPct = Math.round((profilePct + questPct + (expPct ?? 0)) / 3);
 
-  // ── Tab completion logic ───────────────────────────────────────────────────
-  // ✓ only when fully approved, ✗ if rejected/not approved, ⚠ if changes pending
-  const profileApproved = trainerProfile?.profile_status === "Approved";
-  const profileRejected = trainerProfile?.profile_status === "Rejected";
-  const profileHasChanges = trainerProfile?.profile_status === "Submitted" || trainerProfile?.profile_status === "Under Review";
-  const qualsApproved = trainerProfile?.industry_quals_approved === true;
-  const qualsRejected = trainerProfile?.industry_quals_approved === false;
+  // Derived approval states for section headers and tab icons
+  const profileStatus = trainerProfile?.profile_status;
+  const credApprovalStatus = profileStatus === "Approved" ? "approved" : profileStatus === "Rejected" ? "rejected" : (trainerProfile?.tae_qualification || trainerProfile?.under_direction_qualification) ? "pending" : null;
+  const qualsApprovalStatus = trainerProfile?.industry_quals_approved === true ? "approved" : trainerProfile?.industry_quals_approved === false ? "rejected" : industryQuals.length > 0 ? "pending" : null;
+
   const expAllApproved = assignedUnits.length > 0 && assignedUnits.every((a) => experienceData.find((e) => e.unit_code === a.unit_code && e.competency_confirmed === true));
   const expAnyRejected = experienceData.some((e) => e.competency_confirmed === false);
   const expHasUpdates = experienceData.some((e) => e.competency_confirmed === null && Object.values(e.element_descriptions || {}).some((v) => v?.trim()));
 
   const getTabIcon = (tabId) => {
     if (tabId === "profile") {
-      if (profileApproved && qualsApproved) return "✓";
-      if (profileRejected || qualsRejected) return "✗";
-      if (profileHasChanges) return "⚠";
+      if (credApprovalStatus === "approved" && qualsApprovalStatus === "approved") return { icon: "✓", color: "#16a34a" };
+      if (credApprovalStatus === "rejected" || qualsApprovalStatus === "rejected") return { icon: "✗", color: "#c93535" };
+      if (credApprovalStatus === "pending" || qualsApprovalStatus === "pending") return { icon: "⚠", color: "#e8a020" };
       return null;
     }
-    if (tabId === "questionnaire") return questPct === 100 ? "✓" : null;
-    if (tabId === "streams") return assignedUnits.length > 0 ? "✓" : null;
+    if (tabId === "questionnaire") return questPct === 100 ? { icon: "✓", color: "#16a34a" } : null;
+    if (tabId === "streams") return assignedUnits.length > 0 ? { icon: "✓", color: "#16a34a" } : null;
     if (tabId === "experience") {
-      if (expAllApproved) return "✓";
-      if (expAnyRejected && !expHasUpdates) return "✗";
-      if (expHasUpdates) return "⚠";
+      if (expAllApproved) return { icon: "✓", color: "#16a34a" };
+      if (expAnyRejected && !expHasUpdates) return { icon: "✗", color: "#c93535" };
+      if (expHasUpdates) return { icon: "⚠", color: "#e8a020" };
       return null;
     }
-    if (tabId === "evidence") return evidenceFiles.length > 0 ? "✓" : null;
+    if (tabId === "evidence") return evidenceFiles.length > 0 ? { icon: "✓", color: "#16a34a" } : null;
     return null;
-  };
-
-  const getTabIconColor = (tabId) => {
-    const icon = getTabIcon(tabId);
-    if (icon === "✓") return "#16a34a";
-    if (icon === "✗") return "#c93535";
-    if (icon === "⚠") return "#e8a020";
-    return "#32ba9a";
   };
 
   const TABS = [
@@ -614,7 +559,6 @@ export default function TrainerDetail({ profile: adminProfile }) {
 
   const initials = trainer.full_name ? trainer.full_name.split(" ").map((n) => n[0]).join("").toUpperCase() : "?";
   const statusStyle = STATUS_STYLES[trainer.compliance_status] || STATUS_STYLES["Incomplete"];
-
   const taeFiles = evidenceFiles.filter((f) => f.document_type === "TAE Credential" || f.document_type === "TAE Enrolment Evidence");
   const industryFiles = evidenceFiles.filter((f) => f.document_type === "Industry Qualification");
 
@@ -622,7 +566,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
     <div>
       <button onClick={() => navigate("/trainers")} className="flex items-center gap-2 text-sm mb-5 transition-colors" style={{ color: "#1c5ea8" }}>← Back to trainers</button>
 
-      {/* Header */}
+      {/* Header card */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-5 flex items-center gap-5">
         <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>{initials}</div>
         <div className="flex-1">
@@ -665,15 +609,14 @@ export default function TrainerDetail({ profile: adminProfile }) {
       {/* Tabs */}
       <div className="flex gap-1 mb-5 bg-gray-100 p-1 rounded-xl">
         {TABS.map((tab) => {
-          const icon = getTabIcon(tab.id);
-          const iconColor = getTabIconColor(tab.id);
+          const tabIcon = getTabIcon(tab.id);
           return (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} className="flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all"
               style={activeTab === tab.id ? { backgroundColor: "#fff", color: "#081a47", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" } : { backgroundColor: "transparent", color: "#6b7280" }}>
               <span className="flex items-center justify-center gap-1.5">
-                {icon && <span className="text-xs font-bold" style={{ color: iconColor }}>{icon}</span>}
+                {tabIcon && <span className="text-xs font-bold" style={{ color: tabIcon.color }}>{tabIcon.icon}</span>}
                 {tab.label}
-                {tab.id === "streams" && assignedUnits.length > 0 && icon !== "✓" && (
+                {tab.id === "streams" && assignedUnits.length > 0 && !tabIcon && (
                   <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#e6f0ff", color: "#1c5ea8" }}>{assignedUnits.length}</span>
                 )}
               </span>
@@ -685,8 +628,8 @@ export default function TrainerDetail({ profile: adminProfile }) {
       {/* ── PROFILE & CREDENTIALS TAB ── */}
       {activeTab === "profile" && (
         <>
-          {/* Section 1 — 3 columns, left aligned */}
-          <Section title="Section 1 — Personal Details" sectionNumber={1}>
+          {/* Section 1 — personal details, 3 columns */}
+          <Section title="Section 1 — Personal Details">
             <div className="grid grid-cols-3 gap-x-6 gap-y-4">
               <DetailCell label="Full Name" value={trainer.full_name} />
               <DetailCell label="Email" value={trainer.email} />
@@ -697,17 +640,11 @@ export default function TrainerDetail({ profile: adminProfile }) {
             </div>
           </Section>
 
-          {/* Section 2 — 1 row layout + admin upload */}
-          <Section title="Section 2 — Training Credentials" sectionNumber={2}
-            action={(() => {
-              const st = trainerProfile?.profile_status;
-              if (st === "Approved") return <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>✓ Approved</span>;
-              if (st === "Rejected") return <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#fdeaea", color: "#c93535" }}>✗ Not Approved</span>;
-              return <span className="text-xs text-white opacity-60">{trainerProfile?.tae_qualification || trainerProfile?.under_direction_qualification ? "Submitted" : "Not submitted"}</span>;
-            })()}>
+          {/* Section 2 — training credentials with approval status in header */}
+          <Section title="Section 2 — Training Credentials"
+            statusBadge={<SectionStatusBadge status={credApprovalStatus} />}>
             {trainerProfile?.tae_qualification || trainerProfile?.under_direction_qualification ? (
               <>
-                {/* TAE credential — 1 row */}
                 {trainerProfile.tae_qualification && (
                   <div className="grid grid-cols-4 gap-x-6 gap-y-4 mb-4">
                     <DetailCell label="TAE Qualification" value={trainerProfile.tae_qualification} />
@@ -716,7 +653,6 @@ export default function TrainerDetail({ profile: adminProfile }) {
                     <DetailCell label="Issue Date" value={trainerProfile.tae_issue_date} />
                   </div>
                 )}
-                {/* Under direction — 1 row */}
                 {trainerProfile.under_direction_qualification && (
                   <>
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3 mt-2 pt-2 border-t border-gray-100">Under Direction</p>
@@ -728,7 +664,6 @@ export default function TrainerDetail({ profile: adminProfile }) {
                     </div>
                   </>
                 )}
-                {/* Uploaded credential files + admin upload */}
                 <div className="pt-3 border-t border-gray-100">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Uploaded Evidence</p>
@@ -736,9 +671,8 @@ export default function TrainerDetail({ profile: adminProfile }) {
                   </div>
                   <FileList files={taeFiles} emptyMessage="No credential file uploaded yet" />
                 </div>
-                {/* Approve / Not Approve — neutral until selected */}
                 <ApprovalButtons
-                  approved={trainerProfile?.profile_status === "Approved" ? true : trainerProfile?.profile_status === "Rejected" ? false : null}
+                  approved={profileStatus === "Approved" ? true : profileStatus === "Rejected" ? false : null}
                   onApprove={() => updateCredentialApproval(true)}
                   onReject={() => updateCredentialApproval(false)}
                   saving={savingCredApproval}
@@ -751,8 +685,9 @@ export default function TrainerDetail({ profile: adminProfile }) {
             )}
           </Section>
 
-          {/* Section 3 — industry quals */}
-          <Section title="Section 3 — Industry Competencies" sectionNumber={3}
+          {/* Section 3 — industry quals with approval status in header */}
+          <Section title="Section 3 — Industry Competencies"
+            statusBadge={<SectionStatusBadge status={qualsApprovalStatus} />}
             action={<span className="text-xs text-white opacity-60">{industryQuals.length} qualification{industryQuals.length !== 1 ? "s" : ""}</span>}>
             {industryQuals.length === 0 ? (
               <p className="text-sm text-gray-400">No industry qualifications submitted yet</p>
@@ -800,7 +735,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
           </Section>
 
           {/* Section 4 — declaration, 1 row */}
-          <Section title="Section 4 — Credentials Declaration" sectionNumber={4}>
+          <Section title="Section 4 — Credentials Declaration">
             {trainerProfile ? (
               <div className="grid grid-cols-4 gap-x-6 gap-y-4">
                 <DetailCell label="Credentials Declared" value={trainerProfile.declaration_credentials ? "✓ Confirmed" : "Not confirmed"} />
@@ -817,7 +752,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
 
       {/* ── QUESTIONNAIRE TAB ── */}
       {activeTab === "questionnaire" && (
-        <Section title="Section 5 — Skills Questionnaire" sectionNumber={5}
+        <Section title="Section 5 — Skills Questionnaire"
           action={<span className="text-xs text-white opacity-60">{answeredCount} of {UNITS.length} answered</span>}>
           {questionnaireResponses.length === 0 ? (
             <p className="text-sm text-gray-400">Trainer has not completed the questionnaire yet</p>
@@ -848,8 +783,9 @@ export default function TrainerDetail({ profile: adminProfile }) {
       {activeTab === "streams" && <StreamsTab trainerId={id} responses={questionnaireResponses} assignedUnits={assignedUnits} experienceData={experienceData} onAssignmentChange={fetchAll} />}
       {activeTab === "experience" && <ExperienceTab trainerId={id} assignedUnits={assignedUnits} experienceData={experienceData} adminProfile={adminProfile} onUpdate={fetchAll} />}
 
+      {/* ── EVIDENCE TAB ── */}
       {activeTab === "evidence" && (
-        <Section title="Evidence Documents" sectionNumber={6}
+        <Section title="Evidence Documents"
           action={<span className="text-xs text-white opacity-60">{evidenceFiles.length} file{evidenceFiles.length !== 1 ? "s" : ""}</span>}>
           {evidenceFiles.length === 0 ? <p className="text-sm text-gray-400">No evidence files uploaded yet</p> : (
             <div className="divide-y divide-gray-100">
@@ -868,6 +804,7 @@ export default function TrainerDetail({ profile: adminProfile }) {
         </Section>
       )}
 
+      {/* Status modal */}
       {showStatusModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
@@ -875,7 +812,8 @@ export default function TrainerDetail({ profile: adminProfile }) {
             <p className="text-sm text-gray-400 mb-5">Mark this trainer as <strong>{newStatus}</strong></p>
             <div className="mb-5">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Notes (optional)</label>
-              <textarea value={statusNote} onChange={(e) => setStatusNote(e.target.value)} placeholder="Add any review notes..." className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-400 resize-none" rows={3} />
+              <textarea value={statusNote} onChange={(e) => setStatusNote(e.target.value)} placeholder="Add any review notes..."
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-400 resize-none" rows={3} />
             </div>
             <div className="flex gap-3">
               <button onClick={() => setShowStatusModal(false)} className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">Cancel</button>
